@@ -35,6 +35,7 @@ export default function SiteFooter() {
             <Link href='/faq'>FAQ</Link>
             <Link href='/privacy'>Privacy</Link>
             <Link href='/terms'>Terms</Link>
+            <Link href='/login'>Staff Login</Link>
           </div>
         </div>
       </div>
