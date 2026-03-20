@@ -1,8 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@supabase/ssr": ["./lib/shims/supabase-ssr.js"]
-    }
+    "baseUrl": "."
   }
 }
