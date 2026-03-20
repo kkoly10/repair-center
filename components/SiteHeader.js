@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import StaffAuthActions from './StaffAuthActions'
 
 const navItems = [
   { href: '/how-it-works', label: 'How It Works' },
@@ -37,12 +38,13 @@ export default function SiteHeader() {
           <Link href='/track' className='button button-secondary button-compact'>
             Track Order
           </Link>
-          <Link href='/login' className='button button-ghost button-compact'>
-            Staff Login
-          </Link>
+
+          <StaffAuthActions />
+
           <Link href='/estimate' className='button button-primary button-compact'>
             Get Free Estimate
           </Link>
+
           <button
             className='mobile-menu-button'
             type='button'
@@ -65,9 +67,13 @@ export default function SiteHeader() {
                 {item.label}
               </Link>
             ))}
-            <Link href='/login' className='button button-ghost' onClick={() => setOpen(false)}>
-              Staff Login
+
+            <Link href='/track' className='button button-secondary' onClick={() => setOpen(false)}>
+              Track Order
             </Link>
+
+            <StaffAuthActions mobile />
+
             <Link href='/estimate' className='button button-primary' onClick={() => setOpen(false)}>
               Get Free Estimate
             </Link>
