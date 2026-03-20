@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
 import { getSupabaseBrowser } from '../lib/supabase/browser'
 
 export default function AdminAuthGate({ children }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const [state, setState] = useState({ loading: true, user: null, profile: null, error: null })
+  const [state, setState] = useState({
+    loading: true,
+    user: null,
+    profile: null,
+    error: null,
+  })
 
   useEffect(() => {
     let ignore = false
@@ -18,8 +20,12 @@ export default function AdminAuthGate({ children }) {
 
       if (sessionError) {
         if (!ignore) {
-          setState({ loading: false, user: null, profile: null, error: sessionError.message })
-          router.replace('/admin/login')
+          setState({
+            loading: false,
+            user: null,
+            profile: null,
+            error: sessionError.message,
+          })
         }
         return
       }
@@ -28,8 +34,12 @@ export default function AdminAuthGate({ children }) {
 
       if (!user) {
         if (!ignore) {
-          setState({ loading: false, user: null, profile: null, error: null })
-          router.replace(`/admin/login?next=${encodeURIComponent(pathname || '/admin/quotes')}`)
+          setState({
+            loading: false,
+            user: null,
+            profile: null,
+            error: 'No active admin session found.',
+          })
         }
         return
       }
@@ -42,22 +52,35 @@ export default function AdminAuthGate({ children }) {
 
       if (profileError) {
         if (!ignore) {
-          setState({ loading: false, user, profile: null, error: profileError.message })
+          setState({
+            loading: false,
+            user,
+            profile: null,
+            error: profileError.message,
+          })
         }
         return
       }
 
       if (!profile || !['admin', 'tech'].includes(profile.role)) {
-        await supabase.auth.signOut()
         if (!ignore) {
-          setState({ loading: false, user: null, profile: null, error: 'Your account is not authorized for admin access.' })
-          router.replace('/admin/login?error=unauthorized')
+          setState({
+            loading: false,
+            user,
+            profile: null,
+            error: 'Your account is not authorized for admin access.',
+          })
         }
         return
       }
 
       if (!ignore) {
-        setState({ loading: false, user, profile, error: null })
+        setState({
+          loading: false,
+          user,
+          profile,
+          error: null,
+        })
       }
     }
 
@@ -73,7 +96,7 @@ export default function AdminAuthGate({ children }) {
       ignore = true
       subscription.unsubscribe()
     }
-  }, [pathname, router])
+  }, [])
 
   if (state.loading) {
     return (
@@ -89,14 +112,14 @@ export default function AdminAuthGate({ children }) {
     )
   }
 
-  if (state.error && !state.profile) {
+  if (state.error || !state.profile) {
     return (
       <div className='page-hero'>
         <div className='site-shell'>
           <div className='policy-card center-card'>
             <div className='kicker'>Admin</div>
             <h1>Access issue</h1>
-            <p>{state.error}</p>
+            <p>{state.error || 'You do not have access to this page.'}</p>
           </div>
         </div>
       </div>
