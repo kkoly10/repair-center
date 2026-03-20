@@ -46,7 +46,8 @@ export default function AdminLoginForm() {
           <h1>Sign in to review quotes</h1>
           <p>
             Use a staff account from Supabase Auth. The account must also have a matching row in
-            <strong> profiles </strong>with role <strong>admin</strong> or <strong>tech</strong>.
+            <strong> profiles </strong>
+            with role <strong>admin</strong> or <strong>tech</strong>.
           </p>
 
           <form onSubmit={handleSubmit} className='page-stack' style={{ marginTop: 24 }}>
@@ -75,7 +76,9 @@ export default function AdminLoginForm() {
             </div>
 
             {queryError === 'unauthorized' ? (
-              <div className='notice'>Your account exists, but it does not have admin or tech access yet.</div>
+              <div className='notice'>
+                Your account exists, but it does not have admin or tech access yet.
+              </div>
             ) : null}
 
             {error ? <div className='notice'>{error}</div> : null}
@@ -89,7 +92,8 @@ export default function AdminLoginForm() {
 
           <div className='notice' style={{ marginTop: 20 }}>
             Long-term setup: create the staff user in Supabase Auth, then set that user’s row in
-            <strong> public.profiles </strong>to role <strong>admin</strong> or <strong>tech</strong>.
+            <strong> public.profiles </strong>
+            to role <strong>admin</strong> or <strong>tech</strong>.
           </div>
         </div>
       </div>
