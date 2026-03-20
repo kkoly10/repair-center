@@ -27,16 +27,12 @@ export async function proxy(request) {
           request,
         })
 
-        cookiesToSet.forEach(({ name, value, options }) =>
+        cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options)
-        )
+        })
       },
     },
   })
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
   const isAdminPath = pathname.startsWith('/admin')
@@ -44,17 +40,11 @@ export async function proxy(request) {
 
   if (!isAdminPath) return response
 
-  if (isAdminLogin && user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    if (profile && ['admin', 'tech'].includes(profile.role)) {
-      return NextResponse.redirect(new URL('/admin/quotes', request.url))
-    }
-
+  if (isAdminLogin) {
     return response
   }
 
