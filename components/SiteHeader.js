@@ -37,6 +37,9 @@ export default function SiteHeader() {
           <Link href='/track' className='button button-secondary button-compact'>
             Track Order
           </Link>
+          <Link href='/login' className='button button-ghost button-compact'>
+            Staff Login
+          </Link>
           <Link href='/estimate' className='button button-primary button-compact'>
             Get Free Estimate
           </Link>
@@ -62,6 +65,9 @@ export default function SiteHeader() {
                 {item.label}
               </Link>
             ))}
+            <Link href='/login' className='button button-ghost' onClick={() => setOpen(false)}>
+              Staff Login
+            </Link>
             <Link href='/estimate' className='button button-primary' onClick={() => setOpen(false)}>
               Get Free Estimate
             </Link>
