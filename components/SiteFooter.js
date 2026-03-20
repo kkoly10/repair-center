@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import StaffAuthActions from './StaffAuthActions'
 
 export default function SiteFooter() {
   return (
@@ -35,7 +36,13 @@ export default function SiteFooter() {
             <Link href='/faq'>FAQ</Link>
             <Link href='/privacy'>Privacy</Link>
             <Link href='/terms'>Terms</Link>
-            <Link href='/login'>Staff Login</Link>
+          </div>
+        </div>
+
+        <div>
+          <h4>Staff</h4>
+          <div className='footer-links'>
+            <StaffAuthActions />
           </div>
         </div>
       </div>
