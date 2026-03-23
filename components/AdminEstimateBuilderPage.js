@@ -273,6 +273,12 @@ function AdminEstimateBuilderInner({ quoteId }) {
             >
               Back to quote
             </Link>
+            <Link
+              href={`/admin/quotes/${quoteId}/order`}
+              className='button button-secondary button-compact'
+            >
+              Manage Repair Order
+            </Link>
           </div>
         </div>
 
@@ -509,6 +515,12 @@ function AdminEstimateBuilderInner({ quoteId }) {
             </button>
             <Link href={reviewPath} className='button button-secondary'>
               Open Review Page
+            </Link>
+            <Link
+              href={`/admin/quotes/${quoteId}/order`}
+              className='button button-secondary'
+            >
+              Manage Repair Order
             </Link>
             {mailInPath ? (
               <Link href={mailInPath} className='button button-secondary'>
