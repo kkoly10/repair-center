@@ -20,6 +20,8 @@ const ALLOWED_STATUSES = [
   'cancelled',
   'declined',
   'returned_unrepaired',
+  'beyond_economical_repair',
+  'no_fault_found',
 ]
 
 export async function GET(request, context) {
@@ -44,7 +46,7 @@ export async function GET(request, context) {
       return NextResponse.json({ error: 'Quote request not found.' }, { status: 404 })
     }
 
-    const [customerResult, orderResult] = await Promise.all([
+    const [customerResult, orderResult, techniciansResult] = await Promise.all([
       quoteRequest.customer_id
         ? supabase
             .from('customers')
@@ -57,10 +59,16 @@ export async function GET(request, context) {
         .select('*')
         .eq('quote_request_id', quoteRequest.id)
         .maybeSingle(),
+      supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .in('role', ['admin', 'tech'])
+        .order('full_name', { ascending: true }),
     ])
 
     if (customerResult.error) throw customerResult.error
     if (orderResult.error) throw orderResult.error
+    if (techniciansResult.error) throw techniciansResult.error
 
     let history = []
     let shipments = []
@@ -111,6 +119,7 @@ export async function GET(request, context) {
       order: orderResult.data,
       history,
       shipments,
+      technicians: techniciansResult.data || [],
     })
   } catch (error) {
     return NextResponse.json(
@@ -137,6 +146,8 @@ export async function POST(request, context) {
     const trackingNumber = (body?.trackingNumber || '').toString().trim()
     const trackingUrl = (body?.trackingUrl || '').toString().trim()
     const shipmentStatus = (body?.shipmentStatus || '').toString().trim()
+    const technicianId = (body?.technicianId || '').toString().trim() || null
+    const technicianNote = (body?.technicianNote || '').toString().trim() || null
 
     if (!quoteId) {
       return NextResponse.json({ error: 'Missing quote ID.' }, { status: 400 })
@@ -204,6 +215,8 @@ export async function POST(request, context) {
       const nowIso = new Date().toISOString()
       const updatePayload = {
         current_status: newStatus,
+        ...(technicianId !== null ? { assigned_technician_user_id: technicianId || null } : {}),
+        ...(technicianNote !== null ? { technician_note: technicianNote } : {}),
       }
 
       if (newStatus === 'received' && !repairOrder.intake_received_at) {
