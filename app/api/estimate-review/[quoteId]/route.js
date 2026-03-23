@@ -38,9 +38,7 @@ export async function POST(request, context) {
       quoteRequest.customer_id
         ? supabase
             .from('customers')
-            .select(
-              'id, first_name, last_name, email, phone, preferred_contact_method'
-            )
+            .select('id, first_name, last_name, email, phone, preferred_contact_method')
             .eq('id', quoteRequest.customer_id)
             .maybeSingle()
         : Promise.resolve({ data: null, error: null }),
@@ -54,7 +52,7 @@ export async function POST(request, context) {
         .maybeSingle(),
       supabase
         .from('repair_orders')
-        .select('id, order_number, current_status')
+        .select('id, order_number, current_status, final_estimate_id')
         .eq('quote_request_id', quoteRequest.id)
         .maybeSingle(),
     ])
@@ -75,6 +73,8 @@ export async function POST(request, context) {
     }
 
     const estimate = estimateResult.data
+    const repairOrder = orderResult.data
+
     if (!estimate) {
       return NextResponse.json(
         { error: 'No sent estimate is available for this quote yet.' },
@@ -90,6 +90,16 @@ export async function POST(request, context) {
 
     if (itemsError) throw itemsError
 
+    const reviewPath = `/estimate-review/${quoteId}`
+    const trackingPath = repairOrder ? `/track/${quoteId}` : null
+    const mailInPath =
+      repairOrder &&
+      ['awaiting_mail_in', 'in_transit_to_shop'].includes(repairOrder.current_status)
+        ? `/mail-in/${quoteId}`
+        : !repairOrder && quoteRequest.status === 'approved_for_mail_in'
+          ? `/mail-in/${quoteId}`
+          : null
+
     if (action === 'approve') {
       const { error: estimateUpdateError } = await supabase
         .from('quote_estimates')
@@ -101,6 +111,116 @@ export async function POST(request, context) {
 
       if (estimateUpdateError) throw estimateUpdateError
 
+      if (repairOrder) {
+        const nextOrderStatus =
+          repairOrder.current_status === 'awaiting_final_approval'
+            ? 'approved'
+            : repairOrder.current_status || 'approved'
+
+        const { error: orderUpdateError } = await supabase
+          .from('repair_orders')
+          .update({
+            current_status: nextOrderStatus,
+            final_estimate_id: estimate.id,
+          })
+          .eq('id', repairOrder.id)
+
+        if (orderUpdateError) throw orderUpdateError
+
+        const { error: quoteUpdateError } = await supabase
+          .from('quote_requests')
+          .update({
+            status: 'approved_for_mail_in',
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq('id', quoteRequest.id)
+
+        if (quoteUpdateError) throw quoteUpdateError
+
+        return NextResponse.json({
+          ok: true,
+          action: 'approve',
+          nextAction: 'tracking',
+          quoteId,
+          estimateId: estimate.id,
+          orderNumber: repairOrder.order_number || null,
+          quoteStatus: 'approved_for_mail_in',
+          estimateStatus: 'approved',
+          reviewPath,
+          trackingPath: `/track/${quoteId}`,
+          mailInPath:
+            nextOrderStatus === 'awaiting_mail_in' || nextOrderStatus === 'in_transit_to_shop'
+              ? `/mail-in/${quoteId}`
+              : null,
+        })
+      }
+
+      const [modelResult, repairTypeResult, pricingRuleResult, existingOrderResult] =
+        await Promise.all([
+          quoteRequest.model_key
+            ? supabase
+                .from('repair_catalog_models')
+                .select('id')
+                .eq('model_key', quoteRequest.model_key)
+                .maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+          quoteRequest.repair_type_key
+            ? supabase
+                .from('repair_types')
+                .select('id')
+                .eq('repair_key', quoteRequest.repair_type_key)
+                .maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+          quoteRequest.selected_pricing_rule_id
+            ? supabase
+                .from('pricing_rules')
+                .select('deposit_amount')
+                .eq('id', quoteRequest.selected_pricing_rule_id)
+                .maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+          supabase
+            .from('repair_orders')
+            .select('id, order_number')
+            .eq('quote_request_id', quoteRequest.id)
+            .maybeSingle(),
+        ])
+
+      if (modelResult.error) throw modelResult.error
+      if (repairTypeResult.error) throw repairTypeResult.error
+      if (pricingRuleResult.error) throw pricingRuleResult.error
+      if (existingOrderResult.error) throw existingOrderResult.error
+
+      let createdOrder = existingOrderResult.data
+
+      if (!createdOrder) {
+        const { data: insertedOrder, error: orderInsertError } = await supabase
+          .from('repair_orders')
+          .insert({
+            quote_request_id: quoteRequest.id,
+            customer_id: quoteRequest.customer_id,
+            model_id: modelResult.data?.id || null,
+            repair_type_id: repairTypeResult.data?.id || null,
+            current_status: 'awaiting_mail_in',
+            inspection_deposit_required: pricingRuleResult.data?.deposit_amount || 0,
+            final_estimate_id: estimate.id,
+          })
+          .select('id, order_number')
+          .single()
+
+        if (orderInsertError) throw orderInsertError
+        createdOrder = insertedOrder
+      } else {
+        const { error: orderUpdateError } = await supabase
+          .from('repair_orders')
+          .update({
+            current_status: 'awaiting_mail_in',
+            final_estimate_id: estimate.id,
+          })
+          .eq('id', createdOrder.id)
+
+        if (orderUpdateError) throw orderUpdateError
+      }
+
       const { error: quoteUpdateError } = await supabase
         .from('quote_requests')
         .update({
@@ -111,86 +231,17 @@ export async function POST(request, context) {
 
       if (quoteUpdateError) throw quoteUpdateError
 
-      const [
-        modelResult,
-        repairTypeResult,
-        pricingRuleResult,
-        existingOrderResult,
-      ] = await Promise.all([
-        quoteRequest.model_key
-          ? supabase
-              .from('repair_catalog_models')
-              .select('id')
-              .eq('model_key', quoteRequest.model_key)
-              .maybeSingle()
-          : Promise.resolve({ data: null, error: null }),
-        quoteRequest.repair_type_key
-          ? supabase
-              .from('repair_types')
-              .select('id')
-              .eq('repair_key', quoteRequest.repair_type_key)
-              .maybeSingle()
-          : Promise.resolve({ data: null, error: null }),
-        quoteRequest.selected_pricing_rule_id
-          ? supabase
-              .from('pricing_rules')
-              .select('deposit_amount')
-              .eq('id', quoteRequest.selected_pricing_rule_id)
-              .maybeSingle()
-          : Promise.resolve({ data: null, error: null }),
-        supabase
-          .from('repair_orders')
-          .select('id, order_number')
-          .eq('quote_request_id', quoteRequest.id)
-          .maybeSingle(),
-      ])
-
-      if (modelResult.error) throw modelResult.error
-      if (repairTypeResult.error) throw repairTypeResult.error
-      if (pricingRuleResult.error) throw pricingRuleResult.error
-      if (existingOrderResult.error) throw existingOrderResult.error
-
-      let repairOrder = existingOrderResult.data
-
-      if (!repairOrder) {
-        const { data: insertedOrder, error: orderInsertError } = await supabase
-          .from('repair_orders')
-          .insert({
-            quote_request_id: quoteRequest.id,
-            customer_id: quoteRequest.customer_id,
-            model_id: modelResult.data?.id || null,
-            repair_type_id: repairTypeResult.data?.id || null,
-            current_status: 'awaiting_mail_in',
-            inspection_deposit_required:
-              pricingRuleResult.data?.deposit_amount || 0,
-            final_estimate_id: estimate.id,
-          })
-          .select('id, order_number')
-          .single()
-
-        if (orderInsertError) throw orderInsertError
-        repairOrder = insertedOrder
-      } else {
-        const { error: orderUpdateError } = await supabase
-          .from('repair_orders')
-          .update({
-            current_status: 'awaiting_mail_in',
-            final_estimate_id: estimate.id,
-          })
-          .eq('id', repairOrder.id)
-
-        if (orderUpdateError) throw orderUpdateError
-      }
-
       return NextResponse.json({
         ok: true,
         action: 'approve',
+        nextAction: 'mail_in',
         quoteId,
         estimateId: estimate.id,
-        orderNumber: repairOrder?.order_number || null,
+        orderNumber: createdOrder?.order_number || null,
         quoteStatus: 'approved_for_mail_in',
         estimateStatus: 'approved',
-        reviewPath: `/estimate-review/${quoteId}`,
+        reviewPath,
+        trackingPath: `/track/${quoteId}`,
         mailInPath: `/mail-in/${quoteId}`,
       })
     }
@@ -206,6 +257,17 @@ export async function POST(request, context) {
 
       if (estimateUpdateError) throw estimateUpdateError
 
+      if (repairOrder && repairOrder.current_status === 'awaiting_final_approval') {
+        const { error: orderUpdateError } = await supabase
+          .from('repair_orders')
+          .update({
+            current_status: 'returned_unrepaired',
+          })
+          .eq('id', repairOrder.id)
+
+        if (orderUpdateError) throw orderUpdateError
+      }
+
       const { error: quoteUpdateError } = await supabase
         .from('quote_requests')
         .update({
@@ -219,24 +281,24 @@ export async function POST(request, context) {
       return NextResponse.json({
         ok: true,
         action: 'decline',
+        nextAction: repairOrder ? 'tracking' : 'closed',
         quoteId,
         estimateId: estimate.id,
         quoteStatus: 'declined',
         estimateStatus: 'declined',
-        reviewPath: `/estimate-review/${quoteId}`,
+        reviewPath,
+        trackingPath: repairOrder ? `/track/${quoteId}` : null,
+        mailInPath: null,
       })
     }
 
     return NextResponse.json({
       ok: true,
       action: 'view',
-      reviewPath: `/estimate-review/${quoteId}`,
-      mailInPath:
-        quoteRequest.status === 'approved_for_mail_in' ||
-        orderResult.data?.order_number
-          ? `/mail-in/${quoteId}`
-          : null,
-      orderNumber: orderResult.data?.order_number || null,
+      reviewPath,
+      trackingPath,
+      mailInPath,
+      orderNumber: repairOrder?.order_number || null,
       quote: {
         quote_id: quoteRequest.quote_id,
         brand_name: quoteRequest.brand_name,
