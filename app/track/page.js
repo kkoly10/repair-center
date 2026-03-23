@@ -1,67 +1,49 @@
-import StatusTracker from '../../components/StatusTracker'
-import { REPAIR_STATUS_STEPS } from '../../lib/repairCatalog'
+'use client'
 
-export default function TrackPage() {
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+
+export default function TrackLookupPage() {
+  const router = useRouter()
+  const [quoteId, setQuoteId] = useState('')
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    const normalized = quoteId.trim()
+    if (!normalized) return
+    router.push(`/track/${normalized}`)
+  }
+
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
-        <div className='lookup-card'>
+        <div className='info-card'>
           <div className='kicker'>Track your repair</div>
-          <h1>Follow each step with confidence</h1>
+          <h1>Enter your quote ID to continue</h1>
           <p>
-            This first version shows the visual workflow and layout for quote-ID-based tracking.
-            The next build can connect this to a database and email magic links.
+            Use your quote ID to open the secure repair tracking page, then verify with
+            the same email used for the estimate.
           </p>
-
-          <div className='lookup-grid'>
-            <div className='form-grid'>
-              <div className='field'>
-                <label>Quote ID</label>
-                <input placeholder='RC-10284' />
-              </div>
-              <div className='field'>
-                <label>Email address</label>
-                <input placeholder='name@example.com' />
-              </div>
-            </div>
-            <div className='inline-actions'>
-              <button type='button' className='button button-primary'>Look up repair</button>
-            </div>
-          </div>
         </div>
 
-        <div className='quote-card'>
-          <div className='quote-top'>
-            <div>
-              <div className='quote-id'>Quote ID · RC-10284</div>
-              <h2 className='quote-title'>iPhone 13 · Screen replacement</h2>
-            </div>
-            <span className='price-chip'>Awaiting final approval</span>
+        <form className='policy-card center-card' onSubmit={handleSubmit}>
+          <div className='field'>
+            <label htmlFor='quote-id-lookup'>Quote ID</label>
+            <input
+              id='quote-id-lookup'
+              value={quoteId}
+              onChange={(event) => setQuoteId(event.target.value)}
+              placeholder='RCQ-001000'
+              required
+            />
           </div>
 
-          <div className='quote-summary'>
-            <div className='quote-summary-card'>
-              <strong>Preliminary estimate</strong>
-              <span>$159–$189</span>
-            </div>
-            <div className='quote-summary-card'>
-              <strong>Inspection deposit</strong>
-              <span>$25 credited</span>
-            </div>
-            <div className='quote-summary-card'>
-              <strong>Return shipping</strong>
-              <span>$14.95 tracked</span>
-            </div>
+          <div className='inline-actions'>
+            <button type='submit' className='button button-primary'>
+              Continue to Tracking
+            </button>
           </div>
-
-          <StatusTracker steps={REPAIR_STATUS_STEPS} currentStep={4} />
-
-          <div className='notice'>
-            <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>Latest update</strong>
-            Inspection has been completed and the final quote is ready for customer approval. The next stage in the real workflow
-            would be approval, repair, payment confirmation, and tracked return shipment.
-          </div>
-        </div>
+        </form>
       </div>
     </main>
   )
