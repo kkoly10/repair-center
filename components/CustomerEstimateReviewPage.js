@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
 
 export default function CustomerEstimateReviewPage({ quoteId }) {
@@ -9,6 +10,7 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
   const [error, setError] = useState('')
   const [record, setRecord] = useState(null)
   const [resultMessage, setResultMessage] = useState('')
+  const [mailInPath, setMailInPath] = useState('')
 
   const totalDisplay = useMemo(() => {
     if (!record?.estimate?.total_amount && record?.estimate?.total_amount !== 0) return '—'
@@ -37,8 +39,10 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
       if (!response.ok) throw new Error(result.error || 'Unable to verify this estimate.')
 
       setRecord(result)
+      setMailInPath(result.mailInPath || '')
     } catch (verifyError) {
       setRecord(null)
+      setMailInPath('')
       setError(verifyError.message || 'Unable to verify this estimate.')
     } finally {
       setLoading(false)
@@ -71,8 +75,10 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
             ? `Estimate approved. Repair order ${result.orderNumber} has been created and the request is now ready for mail-in instructions.`
             : 'Estimate approved. The request is now ready for mail-in instructions.'
         )
+        setMailInPath(result.mailInPath || '')
       } else {
         setResultMessage('Estimate declined. The quote has been updated.')
+        setMailInPath('')
       }
 
       setRecord((current) =>
@@ -241,6 +247,14 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
                       {submittingAction === 'decline' ? 'Declining…' : 'Decline Estimate'}
                     </button>
                   </div>
+
+                  {mailInPath ? (
+                    <div className='inline-actions' style={{ marginTop: 14 }}>
+                      <Link href={mailInPath} className='button button-secondary'>
+                        View Mail-In Instructions
+                      </Link>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
