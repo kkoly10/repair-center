@@ -103,6 +103,8 @@ function AdminRepairOrderInner({ quoteId }) {
     [status]
   )
 
+  const revisedEstimatePath = `/admin/quotes/${quoteId}/revised-estimate`
+
   const handleSubmit = async (event) => {
     event.preventDefault()
     setSaving(true)
@@ -208,6 +210,12 @@ function AdminRepairOrderInner({ quoteId }) {
               className='button button-secondary button-compact'
             >
               Open Customer Tracking
+            </Link>
+            <Link
+              href={revisedEstimatePath}
+              className='button button-primary button-compact'
+            >
+              Send Revised Estimate
             </Link>
           </div>
 
@@ -320,10 +328,27 @@ function AdminRepairOrderInner({ quoteId }) {
               <button type='submit' className='button button-primary' disabled={saving}>
                 {saving ? 'Saving…' : 'Save Repair Update'}
               </button>
+              <Link href={revisedEstimatePath} className='button button-secondary'>
+                Send Revised Estimate
+              </Link>
             </div>
           </form>
 
           <div className='page-stack'>
+            <div className='policy-card'>
+              <div className='kicker'>Final approval workflow</div>
+              <h3>Use when intake changes the quote</h3>
+              <p>
+                If inspection reveals extra damage, hidden defects, or additional labor,
+                send a revised estimate and move the repair into final customer approval.
+              </p>
+              <div className='inline-actions'>
+                <Link href={revisedEstimatePath} className='button button-primary'>
+                  Open Revised Estimate Builder
+                </Link>
+              </div>
+            </div>
+
             <div className='policy-card'>
               <div className='kicker'>Status history</div>
               <h3>Customer-visible timeline</h3>
