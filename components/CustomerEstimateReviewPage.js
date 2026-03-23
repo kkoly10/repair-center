@@ -11,6 +11,7 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
   const [record, setRecord] = useState(null)
   const [resultMessage, setResultMessage] = useState('')
   const [mailInPath, setMailInPath] = useState('')
+  const [trackingPath, setTrackingPath] = useState('')
 
   const totalDisplay = useMemo(() => {
     if (!record?.estimate?.total_amount && record?.estimate?.total_amount !== 0) return '—'
@@ -40,9 +41,11 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
 
       setRecord(result)
       setMailInPath(result.mailInPath || '')
+      setTrackingPath(result.trackingPath || '')
     } catch (verifyError) {
       setRecord(null)
       setMailInPath('')
+      setTrackingPath('')
       setError(verifyError.message || 'Unable to verify this estimate.')
     } finally {
       setLoading(false)
@@ -70,16 +73,21 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
       if (!response.ok) throw new Error(result.error || 'Unable to update estimate decision.')
 
       if (action === 'approve') {
-        setResultMessage(
-          result.orderNumber
-            ? `Estimate approved. Repair order ${result.orderNumber} has been created and the request is now ready for mail-in instructions.`
-            : 'Estimate approved. The request is now ready for mail-in instructions.'
-        )
-        setMailInPath(result.mailInPath || '')
+        if (result.nextAction === 'tracking') {
+          setResultMessage('Estimate approved. Repair can now continue and your tracking page has been updated.')
+        } else {
+          setResultMessage(
+            result.orderNumber
+              ? `Estimate approved. Repair order ${result.orderNumber} has been created and the request is now ready for mail-in instructions.`
+              : 'Estimate approved. The request is now ready for mail-in instructions.'
+          )
+        }
       } else {
         setResultMessage('Estimate declined. The quote has been updated.')
-        setMailInPath('')
       }
+
+      setMailInPath(result.mailInPath || '')
+      setTrackingPath(result.trackingPath || '')
 
       setRecord((current) =>
         current
@@ -146,8 +154,8 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
             <h3>What happens after approval</h3>
             <div className='preview-meta' style={{ marginTop: 18 }}>
               <div className='preview-meta-row'><span>1</span><span>Review the estimate and included line items.</span></div>
-              <div className='preview-meta-row'><span>2</span><span>Approve to move into the mail-in and intake workflow.</span></div>
-              <div className='preview-meta-row'><span>3</span><span>Receive shipping instructions and next-step communication.</span></div>
+              <div className='preview-meta-row'><span>2</span><span>Approve to continue into mail-in or final repair continuation.</span></div>
+              <div className='preview-meta-row'><span>3</span><span>Follow the next-step page shown after approval.</span></div>
             </div>
           </div>
         </div>
@@ -226,7 +234,7 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
                   <div className='kicker'>Decision</div>
                   <h3>Approve or decline</h3>
                   <p>
-                    Approving this estimate moves the repair into the mail-in workflow. Declining will close this estimate path.
+                    Approving this estimate moves the repair to the next stage. Declining will close this estimate path.
                   </p>
 
                   <div className='inline-actions'>
@@ -252,6 +260,14 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
                     <div className='inline-actions' style={{ marginTop: 14 }}>
                       <Link href={mailInPath} className='button button-secondary'>
                         View Mail-In Instructions
+                      </Link>
+                    </div>
+                  ) : null}
+
+                  {trackingPath ? (
+                    <div className='inline-actions' style={{ marginTop: 14 }}>
+                      <Link href={trackingPath} className='button button-secondary'>
+                        Open Tracking Page
                       </Link>
                     </div>
                   ) : null}
