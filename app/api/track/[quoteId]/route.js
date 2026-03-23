@@ -141,8 +141,11 @@ export async function POST(request, context) {
       statusHistory,
       shipments,
       mailInPath:
-        quoteRequest.status === 'approved_for_mail_in' ||
-        orderResult.data?.order_number
+        (orderResult.data &&
+          ['awaiting_mail_in', 'in_transit_to_shop'].includes(
+            orderResult.data.current_status
+          )) ||
+        (!orderResult.data && quoteRequest.status === 'approved_for_mail_in')
           ? `/mail-in/${quoteId}`
           : null,
       reviewPath: `/estimate-review/${quoteId}`,

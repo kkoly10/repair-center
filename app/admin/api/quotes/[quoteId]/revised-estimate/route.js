@@ -82,6 +82,14 @@ export async function POST(request, context) {
       )
     }
 
+    const { error: supersededError } = await supabase
+      .from('quote_estimates')
+      .update({ status: 'superseded' })
+      .eq('quote_request_id', quoteRequest.id)
+      .not('status', 'in', '("draft","superseded","declined")')
+
+    if (supersededError) throw supersededError
+
     const { data: estimate, error: estimateError } = await supabase
       .from('quote_estimates')
       .insert({

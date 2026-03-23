@@ -122,6 +122,22 @@ export default function CustomerTrackingPage({ quoteId }) {
 
         {record ? (
           <div className='page-stack'>
+            {record.order?.current_status === 'awaiting_final_approval' ? (
+              <div className='info-card'>
+                <div className='kicker'>Action required</div>
+                <h2>A revised estimate needs your approval</h2>
+                <p>
+                  During inspection, new findings changed the scope of the repair. Please
+                  review the updated estimate and approve it before the repair can continue.
+                </p>
+                <div className='inline-actions'>
+                  <Link href={record.reviewPath} className='button button-primary'>
+                    Review &amp; Approve Estimate
+                  </Link>
+                </div>
+              </div>
+            ) : null}
+
             <div className='quote-card'>
               <div className='quote-top'>
                 <div>

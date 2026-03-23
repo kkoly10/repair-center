@@ -155,13 +155,38 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
             <div className='preview-meta' style={{ marginTop: 18 }}>
               <div className='preview-meta-row'><span>1</span><span>Review the estimate and included line items.</span></div>
               <div className='preview-meta-row'><span>2</span><span>Approve to continue into mail-in or final repair continuation.</span></div>
-              <div className='preview-meta-row'><span>3</span><span>Follow the next-step page shown after approval.</span></div>
+              <div className='preview-meta-row'>
+                <span>3</span>
+                <span>
+                  {record?.estimate?.estimate_kind != null && record.estimate.estimate_kind !== 'preliminary'
+                    ? 'Repair continues after approval.'
+                    : 'Follow the next-step page shown after approval.'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
         {record ? (
           <div className='page-stack'>
+            {record.estimate.estimate_kind !== 'preliminary' ? (
+              <div className='info-card'>
+                <div className='kicker'>
+                  {record.estimate.estimate_kind === 'final' ? 'Final estimate' : 'Revised estimate'}
+                </div>
+                <h2>
+                  {record.estimate.estimate_kind === 'final'
+                    ? 'This is your final estimate'
+                    : 'Your repair scope has been updated'}
+                </h2>
+                <p>
+                  {record.estimate.estimate_kind === 'final'
+                    ? 'Inspection and diagnosis are complete. This final estimate reflects the full cost of the repair. Approving it authorizes the shop to proceed.'
+                    : 'New findings during inspection changed the repair scope. Please review the updated line items and cost before deciding whether to continue.'}
+                </p>
+              </div>
+            ) : null}
+
             <div className='quote-card'>
               <div className='quote-top'>
                 <div>
@@ -234,7 +259,9 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
                   <div className='kicker'>Decision</div>
                   <h3>Approve or decline</h3>
                   <p>
-                    Approving this estimate moves the repair to the next stage. Declining will close this estimate path.
+                    {record.estimate.estimate_kind !== 'preliminary'
+                      ? 'Approving this revised estimate authorizes the repair to continue. Declining will close this estimate path.'
+                      : 'Approving this estimate moves the repair to the next stage. Declining will close this estimate path.'}
                   </p>
 
                   <div className='inline-actions'>
