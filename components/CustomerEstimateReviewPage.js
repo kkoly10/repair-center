@@ -2,8 +2,10 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function CustomerEstimateReviewPage({ quoteId }) {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [submittingAction, setSubmittingAction] = useState('')
@@ -71,6 +73,11 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
 
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Unable to update estimate decision.')
+
+      if (action === 'approve' && result.requiresPayment) {
+        router.push(result.checkoutPath)
+        return
+      }
 
       if (action === 'approve') {
         if (result.nextAction === 'tracking') {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
+import { sendShippingNotificationEmail } from '../../../../../../lib/email'
 
 export const runtime = 'nodejs'
 
@@ -320,6 +321,49 @@ export async function POST(request, context) {
         .eq('id', quoteRequest.id)
 
       if (quoteUpdateError) throw quoteUpdateError
+    }
+
+    // Send shipping notification when status is shipped and a tracking number was provided
+    if (newStatus === 'shipped' && trackingNumber) {
+      try {
+        const [customerResult, quoteDetailsResult] = await Promise.all([
+          quoteRequest.customer_id
+            ? supabase
+                .from('customers')
+                .select('first_name, last_name, email')
+                .eq('id', quoteRequest.customer_id)
+                .maybeSingle()
+            : Promise.resolve({ data: null }),
+          supabase
+            .from('quote_requests')
+            .select('guest_email, first_name, last_name')
+            .eq('id', quoteRequest.id)
+            .maybeSingle(),
+        ])
+
+        const toEmail = customerResult.data?.email || quoteDetailsResult.data?.guest_email
+
+        if (toEmail) {
+          const name = [
+            customerResult.data?.first_name || quoteDetailsResult.data?.first_name,
+            customerResult.data?.last_name || quoteDetailsResult.data?.last_name,
+          ]
+            .filter(Boolean)
+            .join(' ')
+
+          await sendShippingNotificationEmail({
+            to: toEmail,
+            customerName: name,
+            quoteId,
+            orderNumber: repairOrder.order_number || null,
+            carrier: carrier || null,
+            trackingNumber,
+            trackingUrl: trackingUrl || null,
+          })
+        }
+      } catch (emailError) {
+        console.error('[order] Failed to send shipping notification email:', emailError)
+      }
     }
 
     return NextResponse.json({

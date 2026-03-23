@@ -192,6 +192,16 @@ export async function POST(request, context) {
 
       let createdOrder = existingOrderResult.data
 
+      // If no repair order yet and a deposit is required, redirect to payment first
+      if (!createdOrder && pricingRuleResult.data?.deposit_amount > 0) {
+        return NextResponse.json({
+          ok: true,
+          requiresPayment: true,
+          depositAmount: pricingRuleResult.data.deposit_amount,
+          checkoutPath: `/pay/${quoteId}`,
+        })
+      }
+
       if (!createdOrder) {
         const { data: insertedOrder, error: orderInsertError } = await supabase
           .from('repair_orders')
