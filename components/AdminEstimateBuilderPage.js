@@ -38,6 +38,8 @@ function AdminEstimateBuilderInner({ quoteId }) {
   const [turnaroundNote, setTurnaroundNote] = useState('')
   const [customerVisibleNotes, setCustomerVisibleNotes] = useState('')
   const [internalNotes, setInternalNotes] = useState('')
+  const [reviewPath, setReviewPath] = useState(`/estimate-review/${quoteId}`)
+  const [mailInPath, setMailInPath] = useState('')
 
   useEffect(() => {
     let ignore = false
@@ -61,12 +63,18 @@ function AdminEstimateBuilderInner({ quoteId }) {
           quote.customer_id
             ? supabase
                 .from('customers')
-                .select('id, first_name, last_name, email, phone, preferred_contact_method')
+                .select(
+                  'id, first_name, last_name, email, phone, preferred_contact_method'
+                )
                 .eq('id', quote.customer_id)
                 .maybeSingle()
             : Promise.resolve({ data: null, error: null }),
           quote.selected_pricing_rule_id
-            ? supabase.from('pricing_rules').select('*').eq('id', quote.selected_pricing_rule_id).maybeSingle()
+            ? supabase
+                .from('pricing_rules')
+                .select('*')
+                .eq('id', quote.selected_pricing_rule_id)
+                .maybeSingle()
             : Promise.resolve({ data: null, error: null }),
         ])
 
@@ -81,9 +89,10 @@ function AdminEstimateBuilderInner({ quoteId }) {
             customer: customerResult.data,
             pricingRule: pricingRuleResult.data,
             customerName:
-              (customerResult.data
-                ? [customerResult.data.first_name, customerResult.data.last_name]
-                : [quote.first_name, quote.last_name]
+              (
+                customerResult.data
+                  ? [customerResult.data.first_name, customerResult.data.last_name]
+                  : [quote.first_name, quote.last_name]
               )
                 .filter(Boolean)
                 .join(' ') || 'Guest customer',
@@ -95,6 +104,9 @@ function AdminEstimateBuilderInner({ quoteId }) {
           setTurnaroundNote(buildTurnaroundNote(pricingRuleResult.data))
           setCustomerVisibleNotes(quote.quote_summary || '')
           setInternalNotes(quote.internal_notes || '')
+          setMailInPath(
+            quote.status === 'approved_for_mail_in' ? `/mail-in/${quoteId}` : ''
+          )
         }
       } catch (loadError) {
         if (!ignore) setError(loadError.message || 'Unable to load quote request.')
@@ -131,7 +143,11 @@ function AdminEstimateBuilderInner({ quoteId }) {
   }, [subtotal, shippingAmount, taxAmount, discountAmount, depositCreditAmount])
 
   const updateItem = (index, key, value) => {
-    setItems((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, [key]: value } : item)))
+    setItems((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [key]: value } : item
+      )
+    )
   }
 
   const addItem = () => {
@@ -139,7 +155,11 @@ function AdminEstimateBuilderInner({ quoteId }) {
   }
 
   const removeItem = (index) => {
-    setItems((current) => (current.length === 1 ? current : current.filter((_, itemIndex) => itemIndex !== index)))
+    setItems((current) =>
+      current.length === 1
+        ? current
+        : current.filter((_, itemIndex) => itemIndex !== index)
+    )
   }
 
   const handleSubmit = async (event) => {
@@ -179,6 +199,8 @@ function AdminEstimateBuilderInner({ quoteId }) {
       if (!response.ok) throw new Error(result.error || 'Unable to send estimate.')
 
       setSuccess(`Estimate ${result.estimateId} created and quote moved to estimate_sent.`)
+      setReviewPath(result.reviewPath || `/estimate-review/${quoteId}`)
+      setMailInPath(result.mailInPath || '')
       setRecord((current) =>
         current
           ? {
@@ -215,7 +237,9 @@ function AdminEstimateBuilderInner({ quoteId }) {
             <h1>Unable to open estimate builder</h1>
             <p>{error}</p>
             <div className='inline-actions'>
-              <Link href='/admin/quotes' className='button button-secondary'>Back to quotes</Link>
+              <Link href='/admin/quotes' className='button button-secondary'>
+                Back to quotes
+              </Link>
             </div>
           </div>
         </div>
@@ -231,7 +255,10 @@ function AdminEstimateBuilderInner({ quoteId }) {
             <div>
               <div className='quote-id'>{record.quote.quote_id}</div>
               <h1 className='quote-title'>Build estimate for {record.customerName}</h1>
-              <p className='muted'>{[record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ')} · {record.quote.repair_type_key || 'Repair type not set'}</p>
+              <p className='muted'>
+                {[record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ')} ·{' '}
+                {record.quote.repair_type_key || 'Repair type not set'}
+              </p>
             </div>
             <div className='inline-actions' style={{ margin: 0 }}>
               <QuoteStatusBadge status={record.quote.status} />
@@ -240,7 +267,42 @@ function AdminEstimateBuilderInner({ quoteId }) {
           </div>
 
           <div className='inline-actions' style={{ marginTop: 0 }}>
-            <Link href={`/admin/quotes/${quoteId}`} className='button button-secondary button-compact'>Back to quote</Link>
+            <Link
+              href={`/admin/quotes/${quoteId}`}
+              className='button button-secondary button-compact'
+            >
+              Back to quote
+            </Link>
+          </div>
+        </div>
+
+        <div className='grid-2'>
+          <div className='policy-card'>
+            <div className='kicker'>Customer review link</div>
+            <h3>Send this estimate review URL</h3>
+            <div className='notice' style={{ marginTop: 18 }}>
+              {reviewPath}
+            </div>
+            <div className='inline-actions'>
+              <Link href={reviewPath} className='button button-secondary'>
+                Open Review Page
+              </Link>
+            </div>
+          </div>
+
+          <div className='policy-card'>
+            <div className='kicker'>Mail-in link</div>
+            <h3>Available after approval</h3>
+            <div className='notice' style={{ marginTop: 18 }}>
+              {mailInPath || 'This link becomes active after the customer approves the estimate.'}
+            </div>
+            {mailInPath ? (
+              <div className='inline-actions'>
+                <Link href={mailInPath} className='button button-secondary'>
+                  Open Mail-In Page
+                </Link>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -251,7 +313,11 @@ function AdminEstimateBuilderInner({ quoteId }) {
             <div className='form-grid'>
               <div className='field'>
                 <label htmlFor='estimate-kind'>Estimate type</label>
-                <select id='estimate-kind' value={estimateKind} onChange={(event) => setEstimateKind(event.target.value)}>
+                <select
+                  id='estimate-kind'
+                  value={estimateKind}
+                  onChange={(event) => setEstimateKind(event.target.value)}
+                >
                   <option value='preliminary'>Preliminary</option>
                   <option value='final'>Final</option>
                   <option value='revised'>Revised</option>
@@ -259,12 +325,21 @@ function AdminEstimateBuilderInner({ quoteId }) {
               </div>
               <div className='field'>
                 <label htmlFor='warranty-days'>Warranty days</label>
-                <input id='warranty-days' value={warrantyDays} onChange={(event) => setWarrantyDays(event.target.value)} />
+                <input
+                  id='warranty-days'
+                  value={warrantyDays}
+                  onChange={(event) => setWarrantyDays(event.target.value)}
+                />
               </div>
             </div>
             <div className='field' style={{ marginTop: 14 }}>
               <label htmlFor='turnaround-note'>Turnaround note</label>
-              <input id='turnaround-note' value={turnaroundNote} onChange={(event) => setTurnaroundNote(event.target.value)} placeholder='3–5 business days after approval' />
+              <input
+                id='turnaround-note'
+                value={turnaroundNote}
+                onChange={(event) => setTurnaroundNote(event.target.value)}
+                placeholder='3–5 business days after approval'
+              />
             </div>
           </div>
 
@@ -277,7 +352,12 @@ function AdminEstimateBuilderInner({ quoteId }) {
                   <div className='form-grid'>
                     <div className='field'>
                       <label>Type</label>
-                      <select value={item.line_type} onChange={(event) => updateItem(index, 'line_type', event.target.value)}>
+                      <select
+                        value={item.line_type}
+                        onChange={(event) =>
+                          updateItem(index, 'line_type', event.target.value)
+                        }
+                      >
                         <option value='labor'>Labor</option>
                         <option value='part'>Part</option>
                         <option value='fee'>Fee</option>
@@ -285,26 +365,53 @@ function AdminEstimateBuilderInner({ quoteId }) {
                     </div>
                     <div className='field'>
                       <label>Description</label>
-                      <input value={item.description} onChange={(event) => updateItem(index, 'description', event.target.value)} placeholder='Screen replacement labor' />
+                      <input
+                        value={item.description}
+                        onChange={(event) =>
+                          updateItem(index, 'description', event.target.value)
+                        }
+                        placeholder='Screen replacement labor'
+                      />
                     </div>
                     <div className='field'>
                       <label>Quantity</label>
-                      <input value={item.quantity} onChange={(event) => updateItem(index, 'quantity', event.target.value)} />
+                      <input
+                        value={item.quantity}
+                        onChange={(event) =>
+                          updateItem(index, 'quantity', event.target.value)
+                        }
+                      />
                     </div>
                     <div className='field'>
                       <label>Unit amount</label>
-                      <input value={item.unit_amount} onChange={(event) => updateItem(index, 'unit_amount', event.target.value)} placeholder='89' />
+                      <input
+                        value={item.unit_amount}
+                        onChange={(event) =>
+                          updateItem(index, 'unit_amount', event.target.value)
+                        }
+                        placeholder='89'
+                      />
                     </div>
                   </div>
                   <div className='inline-actions' style={{ marginBottom: 0 }}>
-                    <button type='button' className='button button-secondary button-compact' onClick={() => removeItem(index)}>
+                    <button
+                      type='button'
+                      className='button button-secondary button-compact'
+                      onClick={() => removeItem(index)}
+                    >
                       Remove item
                     </button>
                   </div>
                 </div>
               ))}
               <div className='inline-actions'>
-                <button type='button' className='button button-secondary' onClick={addItem}>Add line item</button>
+                <button
+                  type='button'
+                  className='button button-secondary'
+                  onClick={addItem}
+                >
+                  Add line item
+                </button>
               </div>
             </div>
           </div>
@@ -316,19 +423,35 @@ function AdminEstimateBuilderInner({ quoteId }) {
               <div className='page-stack' style={{ marginTop: 18 }}>
                 <div className='field'>
                   <label htmlFor='shipping-amount'>Shipping amount</label>
-                  <input id='shipping-amount' value={shippingAmount} onChange={(event) => setShippingAmount(event.target.value)} />
+                  <input
+                    id='shipping-amount'
+                    value={shippingAmount}
+                    onChange={(event) => setShippingAmount(event.target.value)}
+                  />
                 </div>
                 <div className='field'>
                   <label htmlFor='tax-amount'>Tax amount</label>
-                  <input id='tax-amount' value={taxAmount} onChange={(event) => setTaxAmount(event.target.value)} />
+                  <input
+                    id='tax-amount'
+                    value={taxAmount}
+                    onChange={(event) => setTaxAmount(event.target.value)}
+                  />
                 </div>
                 <div className='field'>
                   <label htmlFor='discount-amount'>Discount amount</label>
-                  <input id='discount-amount' value={discountAmount} onChange={(event) => setDiscountAmount(event.target.value)} />
+                  <input
+                    id='discount-amount'
+                    value={discountAmount}
+                    onChange={(event) => setDiscountAmount(event.target.value)}
+                  />
                 </div>
                 <div className='field'>
                   <label htmlFor='deposit-credit-amount'>Deposit credit</label>
-                  <input id='deposit-credit-amount' value={depositCreditAmount} onChange={(event) => setDepositCreditAmount(event.target.value)} />
+                  <input
+                    id='deposit-credit-amount'
+                    value={depositCreditAmount}
+                    onChange={(event) => setDepositCreditAmount(event.target.value)}
+                  />
                 </div>
               </div>
             </div>
@@ -353,7 +476,12 @@ function AdminEstimateBuilderInner({ quoteId }) {
               <h3>Visible message</h3>
               <div className='field' style={{ marginTop: 18 }}>
                 <label htmlFor='customer-visible-notes'>Customer-facing notes</label>
-                <textarea id='customer-visible-notes' value={customerVisibleNotes} onChange={(event) => setCustomerVisibleNotes(event.target.value)} placeholder='What the customer should know about this estimate.' />
+                <textarea
+                  id='customer-visible-notes'
+                  value={customerVisibleNotes}
+                  onChange={(event) => setCustomerVisibleNotes(event.target.value)}
+                  placeholder='What the customer should know about this estimate.'
+                />
               </div>
             </div>
 
@@ -362,7 +490,12 @@ function AdminEstimateBuilderInner({ quoteId }) {
               <h3>Admin-only notes</h3>
               <div className='field' style={{ marginTop: 18 }}>
                 <label htmlFor='internal-notes'>Internal notes</label>
-                <textarea id='internal-notes' value={internalNotes} onChange={(event) => setInternalNotes(event.target.value)} placeholder='Supplier, margin, or repair planning notes.' />
+                <textarea
+                  id='internal-notes'
+                  value={internalNotes}
+                  onChange={(event) => setInternalNotes(event.target.value)}
+                  placeholder='Supplier, margin, or repair planning notes.'
+                />
               </div>
             </div>
           </div>
@@ -374,6 +507,14 @@ function AdminEstimateBuilderInner({ quoteId }) {
             <button type='submit' className='button button-primary' disabled={saving}>
               {saving ? 'Sending estimate…' : 'Create and send estimate'}
             </button>
+            <Link href={reviewPath} className='button button-secondary'>
+              Open Review Page
+            </Link>
+            {mailInPath ? (
+              <Link href={mailInPath} className='button button-secondary'>
+                Open Mail-In Page
+              </Link>
+            ) : null}
           </div>
         </form>
       </div>
