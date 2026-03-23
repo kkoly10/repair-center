@@ -279,6 +279,12 @@ function AdminQuoteDetailInner({ quoteId }) {
             >
               {estimateActionLabel}
             </Link>
+            <Link
+              href={`/admin/quotes/${quoteId}/order`}
+              className='button button-secondary button-compact'
+            >
+              Manage Repair Order
+            </Link>
           </div>
 
           <div className='quote-summary'>
@@ -403,6 +409,12 @@ function AdminQuoteDetailInner({ quoteId }) {
                   >
                     {estimateActionLabel}
                   </Link>
+                  <Link
+                    href={`/admin/quotes/${quoteId}/order`}
+                    className='button button-secondary'
+                  >
+                    Manage Repair Order
+                  </Link>
                 </div>
               </div>
             </form>
@@ -459,6 +471,23 @@ function AdminQuoteDetailInner({ quoteId }) {
                   </Link>
                 </div>
               ) : null}
+            </div>
+
+            <div className='policy-card'>
+              <div className='kicker'>Repair order</div>
+              <h3>Operations workflow</h3>
+              <p>
+                Once the device is approved and mailed in, use the repair order page to update
+                intake, inspection, repair progress, and return shipment tracking.
+              </p>
+              <div className='inline-actions'>
+                <Link
+                  href={`/admin/quotes/${quoteId}/order`}
+                  className='button button-secondary'
+                >
+                  Manage Repair Order
+                </Link>
+              </div>
             </div>
 
             <div className='policy-card'>
