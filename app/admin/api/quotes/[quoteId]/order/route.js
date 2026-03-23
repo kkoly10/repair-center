@@ -44,7 +44,7 @@ export async function GET(request, context) {
       return NextResponse.json({ error: 'Quote request not found.' }, { status: 404 })
     }
 
-    const [customerResult, orderResult, historyResult, shipmentsResult] = await Promise.all([
+    const [customerResult, orderResult] = await Promise.all([
       quoteRequest.customer_id
         ? supabase
             .from('customers')
@@ -57,28 +57,34 @@ export async function GET(request, context) {
         .select('*')
         .eq('quote_request_id', quoteRequest.id)
         .maybeSingle(),
-      supabase
-        .from('repair_order_status_history')
-        .select('id, previous_status, new_status, customer_visible, note, created_at')
-        .order('created_at', { ascending: true }),
-      supabase
-        .from('shipments')
-        .select('*')
-        .order('created_at', { ascending: false }),
     ])
 
     if (customerResult.error) throw customerResult.error
     if (orderResult.error) throw orderResult.error
-    if (historyResult.error) throw historyResult.error
-    if (shipmentsResult.error) throw shipmentsResult.error
 
-    const repairOrder = orderResult.data
-    const history = repairOrder
-      ? (historyResult.data || []).filter((item) => item.repair_order_id === repairOrder.id)
-      : []
-    const shipments = repairOrder
-      ? (shipmentsResult.data || []).filter((item) => item.repair_order_id === repairOrder.id)
-      : []
+    let history = []
+    let shipments = []
+
+    if (orderResult.data?.id) {
+      const [historyResult, shipmentsResult] = await Promise.all([
+        supabase
+          .from('repair_order_status_history')
+          .select('id, repair_order_id, previous_status, new_status, customer_visible, note, created_at')
+          .eq('repair_order_id', orderResult.data.id)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('shipments')
+          .select('*')
+          .eq('repair_order_id', orderResult.data.id)
+          .order('created_at', { ascending: false }),
+      ])
+
+      if (historyResult.error) throw historyResult.error
+      if (shipmentsResult.error) throw shipmentsResult.error
+
+      history = historyResult.data || []
+      shipments = shipmentsResult.data || []
+    }
 
     return NextResponse.json({
       ok: true,
@@ -102,7 +108,7 @@ export async function GET(request, context) {
         email: customerResult.data?.email || quoteRequest.guest_email,
         phone: customerResult.data?.phone || quoteRequest.guest_phone,
       },
-      order: repairOrder,
+      order: orderResult.data,
       history,
       shipments,
     })
@@ -272,7 +278,10 @@ export async function POST(request, context) {
         tracking_number: trackingNumber || null,
         tracking_url: trackingUrl || null,
         status: shipmentStatus || (newStatus === 'shipped' ? 'shipped' : null),
-        shipped_at: newStatus === 'shipped' ? new Date().toISOString() : existingShipment?.shipped_at || null,
+        shipped_at:
+          newStatus === 'shipped'
+            ? new Date().toISOString()
+            : existingShipment?.shipped_at || null,
       }
 
       if (existingShipment) {
