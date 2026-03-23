@@ -14,7 +14,10 @@ export async function POST(request, context) {
     const action = (body?.action || 'view').toString().trim()
 
     if (!quoteId || !email) {
-      return NextResponse.json({ error: 'Quote ID and email are required.' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Quote ID and email are required.' },
+        { status: 400 }
+      )
     }
 
     const { data: quoteRequest, error: quoteError } = await supabase
@@ -25,14 +28,19 @@ export async function POST(request, context) {
 
     if (quoteError) throw quoteError
     if (!quoteRequest) {
-      return NextResponse.json({ error: 'Quote request not found.' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Quote request not found.' },
+        { status: 404 }
+      )
     }
 
-    const [customerResult, estimateResult] = await Promise.all([
+    const [customerResult, estimateResult, orderResult] = await Promise.all([
       quoteRequest.customer_id
         ? supabase
             .from('customers')
-            .select('id, first_name, last_name, email, phone, preferred_contact_method')
+            .select(
+              'id, first_name, last_name, email, phone, preferred_contact_method'
+            )
             .eq('id', quoteRequest.customer_id)
             .maybeSingle()
         : Promise.resolve({ data: null, error: null }),
@@ -44,22 +52,34 @@ export async function POST(request, context) {
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle(),
+      supabase
+        .from('repair_orders')
+        .select('id, order_number, current_status')
+        .eq('quote_request_id', quoteRequest.id)
+        .maybeSingle(),
     ])
 
     if (customerResult.error) throw customerResult.error
     if (estimateResult.error) throw estimateResult.error
+    if (orderResult.error) throw orderResult.error
 
     const allowedEmails = [quoteRequest.guest_email, customerResult.data?.email]
       .filter(Boolean)
       .map((value) => value.toLowerCase())
 
     if (!allowedEmails.includes(email)) {
-      return NextResponse.json({ error: 'Email does not match this estimate request.' }, { status: 403 })
+      return NextResponse.json(
+        { error: 'Email does not match this estimate request.' },
+        { status: 403 }
+      )
     }
 
     const estimate = estimateResult.data
     if (!estimate) {
-      return NextResponse.json({ error: 'No sent estimate is available for this quote yet.' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'No sent estimate is available for this quote yet.' },
+        { status: 404 }
+      )
     }
 
     const { data: estimateItems, error: itemsError } = await supabase
@@ -91,7 +111,12 @@ export async function POST(request, context) {
 
       if (quoteUpdateError) throw quoteUpdateError
 
-      const [modelResult, repairTypeResult, pricingRuleResult, existingOrderResult] = await Promise.all([
+      const [
+        modelResult,
+        repairTypeResult,
+        pricingRuleResult,
+        existingOrderResult,
+      ] = await Promise.all([
         quoteRequest.model_key
           ? supabase
               .from('repair_catalog_models')
@@ -136,7 +161,8 @@ export async function POST(request, context) {
             model_id: modelResult.data?.id || null,
             repair_type_id: repairTypeResult.data?.id || null,
             current_status: 'awaiting_mail_in',
-            inspection_deposit_required: pricingRuleResult.data?.deposit_amount || 0,
+            inspection_deposit_required:
+              pricingRuleResult.data?.deposit_amount || 0,
             final_estimate_id: estimate.id,
           })
           .select('id, order_number')
@@ -164,6 +190,8 @@ export async function POST(request, context) {
         orderNumber: repairOrder?.order_number || null,
         quoteStatus: 'approved_for_mail_in',
         estimateStatus: 'approved',
+        reviewPath: `/estimate-review/${quoteId}`,
+        mailInPath: `/mail-in/${quoteId}`,
       })
     }
 
@@ -195,12 +223,20 @@ export async function POST(request, context) {
         estimateId: estimate.id,
         quoteStatus: 'declined',
         estimateStatus: 'declined',
+        reviewPath: `/estimate-review/${quoteId}`,
       })
     }
 
     return NextResponse.json({
       ok: true,
       action: 'view',
+      reviewPath: `/estimate-review/${quoteId}`,
+      mailInPath:
+        quoteRequest.status === 'approved_for_mail_in' ||
+        orderResult.data?.order_number
+          ? `/mail-in/${quoteId}`
+          : null,
+      orderNumber: orderResult.data?.order_number || null,
       quote: {
         quote_id: quoteRequest.quote_id,
         brand_name: quoteRequest.brand_name,
@@ -211,7 +247,10 @@ export async function POST(request, context) {
         status: quoteRequest.status,
       },
       customer: {
-        name: [customerResult.data?.first_name || quoteRequest.first_name, customerResult.data?.last_name || quoteRequest.last_name]
+        name: [
+          customerResult.data?.first_name || quoteRequest.first_name,
+          customerResult.data?.last_name || quoteRequest.last_name,
+        ]
           .filter(Boolean)
           .join(' '),
         email: customerResult.data?.email || quoteRequest.guest_email,
@@ -235,7 +274,12 @@ export async function POST(request, context) {
     })
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unable to load estimate review.' },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to load estimate review.',
+      },
       { status: 500 }
     )
   }
