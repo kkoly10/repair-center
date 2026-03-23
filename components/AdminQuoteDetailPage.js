@@ -83,9 +83,7 @@ function AdminQuoteDetailInner({ quoteId }) {
               : Promise.resolve({ data: null, error: null }),
             supabase
               .from('quote_estimates')
-              .select(
-                'id, estimate_kind, status, total_amount, created_at, sent_at'
-              )
+              .select('id, estimate_kind, status, total_amount, created_at, sent_at')
               .eq('quote_request_id', quote.id)
               .order('created_at', { ascending: false }),
           ])
@@ -104,9 +102,7 @@ function AdminQuoteDetailInner({ quoteId }) {
             return {
               ...photo,
               signed_url: signedUrlError ? null : data?.signedUrl || null,
-              signed_url_error: signedUrlError
-                ? signedUrlError.message
-                : null,
+              signed_url_error: signedUrlError ? signedUrlError.message : null,
             }
           })
         )
@@ -154,9 +150,7 @@ function AdminQuoteDetailInner({ quoteId }) {
   const priceDisplay = useMemo(() => {
     if (priceFixed !== '') return `$${Number(priceFixed || 0).toFixed(2)}`
     if (priceMin !== '' && priceMax !== '') {
-      return `$${Number(priceMin || 0).toFixed(2)}–$${Number(
-        priceMax || 0
-      ).toFixed(2)}`
+      return `$${Number(priceMin || 0).toFixed(2)}–$${Number(priceMax || 0).toFixed(2)}`
     }
     return 'Manual review'
   }, [priceFixed, priceMax, priceMin])
@@ -169,6 +163,10 @@ function AdminQuoteDetailInner({ quoteId }) {
   const latestEstimate = useMemo(() => {
     return record?.estimates?.[0] || null
   }, [record])
+
+  const reviewPath = `/estimate-review/${quoteId}`
+  const mailInPath =
+    status === 'approved_for_mail_in' ? `/mail-in/${quoteId}` : null
 
   const handleSave = async (event) => {
     event.preventDefault()
@@ -261,10 +259,8 @@ function AdminQuoteDetailInner({ quoteId }) {
               <div className='quote-id'>{record.quote.quote_id}</div>
               <h1 className='quote-title'>{record.customerName}</h1>
               <p className='muted'>
-                {[record.quote.brand_name, record.quote.model_name]
-                  .filter(Boolean)
-                  .join(' ')}{' '}
-                · {record.quote.repair_type_key || 'Repair type not set'}
+                {[record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ')} ·{' '}
+                {record.quote.repair_type_key || 'Repair type not set'}
               </p>
             </div>
             <div className='inline-actions' style={{ margin: 0 }}>
@@ -274,10 +270,7 @@ function AdminQuoteDetailInner({ quoteId }) {
           </div>
 
           <div className='inline-actions' style={{ marginTop: 0 }}>
-            <Link
-              href='/admin/quotes'
-              className='button button-secondary button-compact'
-            >
+            <Link href='/admin/quotes' className='button button-secondary button-compact'>
               Back to queue
             </Link>
             <Link
@@ -314,18 +307,9 @@ function AdminQuoteDetailInner({ quoteId }) {
               <div className='kicker'>Customer</div>
               <h3>Contact details</h3>
               <div className='preview-meta'>
-                <div className='preview-meta-row'>
-                  <span>Name</span>
-                  <span>{record.customerName}</span>
-                </div>
-                <div className='preview-meta-row'>
-                  <span>Email</span>
-                  <span>{record.customer?.email || record.quote.guest_email || '—'}</span>
-                </div>
-                <div className='preview-meta-row'>
-                  <span>Phone</span>
-                  <span>{record.customer?.phone || record.quote.guest_phone || '—'}</span>
-                </div>
+                <div className='preview-meta-row'><span>Name</span><span>{record.customerName}</span></div>
+                <div className='preview-meta-row'><span>Email</span><span>{record.customer?.email || record.quote.guest_email || '—'}</span></div>
+                <div className='preview-meta-row'><span>Phone</span><span>{record.customer?.phone || record.quote.guest_phone || '—'}</span></div>
               </div>
             </div>
 
@@ -334,26 +318,11 @@ function AdminQuoteDetailInner({ quoteId }) {
               <h3>Customer notes</h3>
               <p>{record.quote.issue_description || 'No issue description provided.'}</p>
               <div className='preview-meta' style={{ marginTop: 18 }}>
-                <div className='preview-meta-row'>
-                  <span>Powers on</span>
-                  <span>{record.quote.powers_on || '—'}</span>
-                </div>
-                <div className='preview-meta-row'>
-                  <span>Charges</span>
-                  <span>{record.quote.charges || '—'}</span>
-                </div>
-                <div className='preview-meta-row'>
-                  <span>Liquid damage</span>
-                  <span>{record.quote.liquid_damage || '—'}</span>
-                </div>
-                <div className='preview-meta-row'>
-                  <span>Prior repairs</span>
-                  <span>{record.quote.prior_repairs || '—'}</span>
-                </div>
-                <div className='preview-meta-row'>
-                  <span>Preserve data</span>
-                  <span>{record.quote.preserve_data || '—'}</span>
-                </div>
+                <div className='preview-meta-row'><span>Powers on</span><span>{record.quote.powers_on || '—'}</span></div>
+                <div className='preview-meta-row'><span>Charges</span><span>{record.quote.charges || '—'}</span></div>
+                <div className='preview-meta-row'><span>Liquid damage</span><span>{record.quote.liquid_damage || '—'}</span></div>
+                <div className='preview-meta-row'><span>Prior repairs</span><span>{record.quote.prior_repairs || '—'}</span></div>
+                <div className='preview-meta-row'><span>Preserve data</span><span>{record.quote.preserve_data || '—'}</span></div>
               </div>
             </div>
 
@@ -425,11 +394,7 @@ function AdminQuoteDetailInner({ quoteId }) {
                 {success ? <div className='notice'>{success}</div> : null}
 
                 <div className='inline-actions'>
-                  <button
-                    type='submit'
-                    className='button button-primary'
-                    disabled={saving}
-                  >
+                  <button type='submit' className='button button-primary' disabled={saving}>
                     {saving ? 'Saving…' : 'Save review'}
                   </button>
                   <Link
@@ -453,26 +418,9 @@ function AdminQuoteDetailInner({ quoteId }) {
               </p>
 
               <div className='preview-meta' style={{ marginTop: 18 }}>
-                <div className='preview-meta-row'>
-                  <span>Existing estimates</span>
-                  <span>{record.estimates.length}</span>
-                </div>
-                <div className='preview-meta-row'>
-                  <span>Latest estimate</span>
-                  <span>
-                    {latestEstimate
-                      ? `${latestEstimate.estimate_kind} · ${latestEstimate.status}`
-                      : 'None yet'}
-                  </span>
-                </div>
-                <div className='preview-meta-row'>
-                  <span>Latest total</span>
-                  <span>
-                    {latestEstimate?.total_amount != null
-                      ? `$${Number(latestEstimate.total_amount).toFixed(2)}`
-                      : '—'}
-                  </span>
-                </div>
+                <div className='preview-meta-row'><span>Existing estimates</span><span>{record.estimates.length}</span></div>
+                <div className='preview-meta-row'><span>Latest estimate</span><span>{latestEstimate ? `${latestEstimate.estimate_kind} · ${latestEstimate.status}` : 'None yet'}</span></div>
+                <div className='preview-meta-row'><span>Latest total</span><span>{latestEstimate?.total_amount != null ? `$${Number(latestEstimate.total_amount).toFixed(2)}` : '—'}</span></div>
               </div>
 
               <div className='inline-actions' style={{ marginBottom: 0 }}>
@@ -486,34 +434,42 @@ function AdminQuoteDetailInner({ quoteId }) {
             </div>
 
             <div className='policy-card'>
+              <div className='kicker'>Customer review link</div>
+              <h3>Review page</h3>
+              <div className='notice' style={{ marginTop: 18 }}>
+                {reviewPath}
+              </div>
+              <div className='inline-actions'>
+                <Link href={reviewPath} className='button button-secondary'>
+                  Open Review Page
+                </Link>
+              </div>
+            </div>
+
+            <div className='policy-card'>
+              <div className='kicker'>Mail-in instructions</div>
+              <h3>Post-approval page</h3>
+              <div className='notice' style={{ marginTop: 18 }}>
+                {mailInPath || 'This link becomes active after the estimate is approved.'}
+              </div>
+              {mailInPath ? (
+                <div className='inline-actions'>
+                  <Link href={mailInPath} className='button button-secondary'>
+                    Open Mail-In Page
+                  </Link>
+                </div>
+              ) : null}
+            </div>
+
+            <div className='policy-card'>
               <div className='kicker'>Pricing rule</div>
               <h3>Matched catalog rule</h3>
               {record.pricingRule ? (
                 <div className='preview-meta'>
-                  <div className='preview-meta-row'>
-                    <span>Mode</span>
-                    <span>{record.pricingRule.price_mode}</span>
-                  </div>
-                  <div className='preview-meta-row'>
-                    <span>Part grade</span>
-                    <span>{record.pricingRule.part_grade || '—'}</span>
-                  </div>
-                  <div className='preview-meta-row'>
-                    <span>Deposit</span>
-                    <span>
-                      {record.pricingRule.deposit_amount != null
-                        ? `$${Number(record.pricingRule.deposit_amount).toFixed(2)}`
-                        : '—'}
-                    </span>
-                  </div>
-                  <div className='preview-meta-row'>
-                    <span>Shipping</span>
-                    <span>
-                      {record.pricingRule.return_shipping_fee != null
-                        ? `$${Number(record.pricingRule.return_shipping_fee).toFixed(2)}`
-                        : '—'}
-                    </span>
-                  </div>
+                  <div className='preview-meta-row'><span>Mode</span><span>{record.pricingRule.price_mode}</span></div>
+                  <div className='preview-meta-row'><span>Part grade</span><span>{record.pricingRule.part_grade || '—'}</span></div>
+                  <div className='preview-meta-row'><span>Deposit</span><span>{record.pricingRule.deposit_amount != null ? `$${Number(record.pricingRule.deposit_amount).toFixed(2)}` : '—'}</span></div>
+                  <div className='preview-meta-row'><span>Shipping</span><span>{record.pricingRule.return_shipping_fee != null ? `$${Number(record.pricingRule.return_shipping_fee).toFixed(2)}` : '—'}</span></div>
                 </div>
               ) : (
                 <p>No pricing rule is linked to this quote request yet.</p>
