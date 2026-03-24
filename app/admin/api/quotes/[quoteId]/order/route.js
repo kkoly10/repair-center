@@ -147,8 +147,11 @@ export async function POST(request, context) {
     const trackingNumber = (body?.trackingNumber || '').toString().trim()
     const trackingUrl = (body?.trackingUrl || '').toString().trim()
     const shipmentStatus = (body?.shipmentStatus || '').toString().trim()
-    const technicianId = (body?.technicianId || '').toString().trim() || null
-    const technicianNote = (body?.technicianNote || '').toString().trim() || null
+    // Use explicit presence checks so that sending null/empty intentionally clears the field
+    const hasTechnicianId = body !== null && 'technicianId' in body
+    const technicianId = hasTechnicianId ? ((body.technicianId || '').toString().trim() || null) : undefined
+    const hasTechnicianNote = body !== null && 'technicianNote' in body
+    const technicianNote = hasTechnicianNote ? ((body.technicianNote || '').toString().trim() || null) : undefined
 
     if (!quoteId) {
       return NextResponse.json({ error: 'Missing quote ID.' }, { status: 400 })
@@ -156,6 +159,19 @@ export async function POST(request, context) {
 
     if (!ALLOWED_STATUSES.includes(newStatus)) {
       return NextResponse.json({ error: 'Invalid repair order status.' }, { status: 400 })
+    }
+
+    const RETURN_WITHOUT_REPAIR = new Set([
+      'returned_unrepaired',
+      'beyond_economical_repair',
+      'no_fault_found',
+    ])
+
+    if (RETURN_WITHOUT_REPAIR.has(newStatus) && !trackingNumber) {
+      return NextResponse.json(
+        { error: 'A return tracking number is required when marking an order as returned without repair.' },
+        { status: 400 }
+      )
     }
 
     const { data: quoteRequest, error: quoteError } = await supabase
@@ -216,8 +232,8 @@ export async function POST(request, context) {
       const nowIso = new Date().toISOString()
       const updatePayload = {
         current_status: newStatus,
-        ...(technicianId !== null ? { assigned_technician_user_id: technicianId || null } : {}),
-        ...(technicianNote !== null ? { technician_note: technicianNote } : {}),
+        ...(hasTechnicianId ? { assigned_technician_user_id: technicianId } : {}),
+        ...(hasTechnicianNote ? { technician_note: technicianNote } : {}),
       }
 
       if (newStatus === 'received' && !repairOrder.intake_received_at) {

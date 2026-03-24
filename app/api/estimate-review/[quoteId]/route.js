@@ -127,12 +127,11 @@ export async function POST(request, context) {
 
         if (orderUpdateError) throw orderUpdateError
 
+        // Device is already at the shop — only stamp reviewed_at, do not overwrite
+        // quote status with the pre-intake 'approved_for_mail_in' value.
         const { error: quoteUpdateError } = await supabase
           .from('quote_requests')
-          .update({
-            status: 'approved_for_mail_in',
-            reviewed_at: new Date().toISOString(),
-          })
+          .update({ reviewed_at: new Date().toISOString() })
           .eq('id', quoteRequest.id)
 
         if (quoteUpdateError) throw quoteUpdateError
@@ -144,7 +143,7 @@ export async function POST(request, context) {
           quoteId,
           estimateId: estimate.id,
           orderNumber: repairOrder.order_number || null,
-          quoteStatus: 'approved_for_mail_in',
+          quoteStatus: quoteRequest.status,
           estimateStatus: 'approved',
           reviewPath,
           trackingPath: `/track/${quoteId}`,
