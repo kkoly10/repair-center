@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
+import { sendEstimateReadyEmail } from '../../../../../../lib/email'
 
 export const runtime = 'nodejs'
 
@@ -61,6 +62,17 @@ export async function POST(request, context) {
       return NextResponse.json({ error: 'Quote request not found.' }, { status: 404 })
     }
 
+    const { error: supersededError } = await supabase
+      .from('quote_estimates')
+      .update({ status: 'superseded' })
+      .eq('quote_request_id', quoteRequest.id)
+      .not('status', 'in', '("draft","superseded","declined")')
+
+    if (supersededError) throw supersededError
+
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 14)
+
     const { data: estimate, error: estimateError } = await supabase
       .from('quote_estimates')
       .insert({
@@ -78,6 +90,7 @@ export async function POST(request, context) {
         customer_visible_notes: customerVisibleNotes || null,
         internal_notes: internalNotes || null,
         sent_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString(),
       })
       .select('id')
       .single()
@@ -159,6 +172,46 @@ export async function POST(request, context) {
       .eq('id', quoteRequest.id)
 
     if (quoteUpdateError) throw quoteUpdateError
+
+    // Send notification email to customer (non-blocking – failure won't break the response)
+    try {
+      const [customerResult, quoteDetailsResult] = await Promise.all([
+        quoteRequest.customer_id
+          ? supabase
+              .from('customers')
+              .select('first_name, last_name, email')
+              .eq('id', quoteRequest.customer_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+        supabase
+          .from('quote_requests')
+          .select('guest_email, first_name, last_name, brand_name, model_name')
+          .eq('id', quoteRequest.id)
+          .maybeSingle(),
+      ])
+
+      const toEmail = customerResult.data?.email || quoteDetailsResult.data?.guest_email
+
+      if (toEmail) {
+        const name = [
+          customerResult.data?.first_name || quoteDetailsResult.data?.first_name,
+          customerResult.data?.last_name || quoteDetailsResult.data?.last_name,
+        ]
+          .filter(Boolean)
+          .join(' ')
+
+        const deviceDescription = [
+          quoteDetailsResult.data?.brand_name,
+          quoteDetailsResult.data?.model_name,
+        ]
+          .filter(Boolean)
+          .join(' ')
+
+        await sendEstimateReadyEmail({ to: toEmail, customerName: name, quoteId, deviceDescription, totalAmount })
+      }
+    } catch (emailError) {
+      console.error('[send-estimate] Failed to send estimate email:', emailError)
+    }
 
     return NextResponse.json({
       ok: true,

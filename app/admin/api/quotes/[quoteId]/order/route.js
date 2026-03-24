@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
+import { sendShippingNotificationEmail } from '../../../../../../lib/email'
 
 export const runtime = 'nodejs'
 
@@ -20,6 +21,8 @@ const ALLOWED_STATUSES = [
   'cancelled',
   'declined',
   'returned_unrepaired',
+  'beyond_economical_repair',
+  'no_fault_found',
 ]
 
 export async function GET(request, context) {
@@ -44,7 +47,7 @@ export async function GET(request, context) {
       return NextResponse.json({ error: 'Quote request not found.' }, { status: 404 })
     }
 
-    const [customerResult, orderResult] = await Promise.all([
+    const [customerResult, orderResult, techniciansResult] = await Promise.all([
       quoteRequest.customer_id
         ? supabase
             .from('customers')
@@ -57,10 +60,16 @@ export async function GET(request, context) {
         .select('*')
         .eq('quote_request_id', quoteRequest.id)
         .maybeSingle(),
+      supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .in('role', ['admin', 'tech'])
+        .order('full_name', { ascending: true }),
     ])
 
     if (customerResult.error) throw customerResult.error
     if (orderResult.error) throw orderResult.error
+    if (techniciansResult.error) throw techniciansResult.error
 
     let history = []
     let shipments = []
@@ -111,6 +120,7 @@ export async function GET(request, context) {
       order: orderResult.data,
       history,
       shipments,
+      technicians: techniciansResult.data || [],
     })
   } catch (error) {
     return NextResponse.json(
@@ -137,6 +147,8 @@ export async function POST(request, context) {
     const trackingNumber = (body?.trackingNumber || '').toString().trim()
     const trackingUrl = (body?.trackingUrl || '').toString().trim()
     const shipmentStatus = (body?.shipmentStatus || '').toString().trim()
+    const technicianId = (body?.technicianId || '').toString().trim() || null
+    const technicianNote = (body?.technicianNote || '').toString().trim() || null
 
     if (!quoteId) {
       return NextResponse.json({ error: 'Missing quote ID.' }, { status: 400 })
@@ -204,6 +216,8 @@ export async function POST(request, context) {
       const nowIso = new Date().toISOString()
       const updatePayload = {
         current_status: newStatus,
+        ...(technicianId !== null ? { assigned_technician_user_id: technicianId || null } : {}),
+        ...(technicianNote !== null ? { technician_note: technicianNote } : {}),
       }
 
       if (newStatus === 'received' && !repairOrder.intake_received_at) {
@@ -307,6 +321,49 @@ export async function POST(request, context) {
         .eq('id', quoteRequest.id)
 
       if (quoteUpdateError) throw quoteUpdateError
+    }
+
+    // Send shipping notification when status is shipped and a tracking number was provided
+    if (newStatus === 'shipped' && trackingNumber) {
+      try {
+        const [customerResult, quoteDetailsResult] = await Promise.all([
+          quoteRequest.customer_id
+            ? supabase
+                .from('customers')
+                .select('first_name, last_name, email')
+                .eq('id', quoteRequest.customer_id)
+                .maybeSingle()
+            : Promise.resolve({ data: null }),
+          supabase
+            .from('quote_requests')
+            .select('guest_email, first_name, last_name')
+            .eq('id', quoteRequest.id)
+            .maybeSingle(),
+        ])
+
+        const toEmail = customerResult.data?.email || quoteDetailsResult.data?.guest_email
+
+        if (toEmail) {
+          const name = [
+            customerResult.data?.first_name || quoteDetailsResult.data?.first_name,
+            customerResult.data?.last_name || quoteDetailsResult.data?.last_name,
+          ]
+            .filter(Boolean)
+            .join(' ')
+
+          await sendShippingNotificationEmail({
+            to: toEmail,
+            customerName: name,
+            quoteId,
+            orderNumber: repairOrder.order_number || null,
+            carrier: carrier || null,
+            trackingNumber,
+            trackingUrl: trackingUrl || null,
+          })
+        }
+      } catch (emailError) {
+        console.error('[order] Failed to send shipping notification email:', emailError)
+      }
     }
 
     return NextResponse.json({

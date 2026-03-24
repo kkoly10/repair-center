@@ -22,7 +22,15 @@ const STATUS_OPTIONS = [
   'cancelled',
   'declined',
   'returned_unrepaired',
+  'beyond_economical_repair',
+  'no_fault_found',
 ]
+
+const UNREPAIRED_RETURN_STATUSES = new Set([
+  'returned_unrepaired',
+  'beyond_economical_repair',
+  'no_fault_found',
+])
 
 function formatStatusLabel(status) {
   return status
@@ -46,13 +54,44 @@ function AdminRepairOrderInner({ quoteId }) {
   const [success, setSuccess] = useState('')
   const [record, setRecord] = useState(null)
 
+  // Status + notes
   const [status, setStatus] = useState('awaiting_mail_in')
   const [customerNote, setCustomerNote] = useState('')
+  const [technicianNote, setTechnicianNote] = useState('')
+
+  // Return shipment
   const [carrier, setCarrier] = useState('')
   const [serviceLevel, setServiceLevel] = useState('')
   const [trackingNumber, setTrackingNumber] = useState('')
   const [trackingUrl, setTrackingUrl] = useState('')
   const [shipmentStatus, setShipmentStatus] = useState('')
+
+  // Technician assignment
+  const [technicianId, setTechnicianId] = useState('')
+
+  // Intake report
+  const [intake, setIntake] = useState(null)
+  const [intakeSaving, setIntakeSaving] = useState(false)
+  const [intakeError, setIntakeError] = useState('')
+  const [intakeSuccess, setIntakeSuccess] = useState('')
+  const [packageCondition, setPackageCondition] = useState('')
+  const [deviceCondition, setDeviceCondition] = useState('')
+  const [includedItems, setIncludedItems] = useState('')
+  const [imeiOrSerial, setImeiOrSerial] = useState('')
+  const [powerTestResult, setPowerTestResult] = useState('')
+  const [intakePhotosComplete, setIntakePhotosComplete] = useState(false)
+  const [hiddenDamageFound, setHiddenDamageFound] = useState(false)
+  const [liquidDamageFound, setLiquidDamageFound] = useState(false)
+  const [boardDamageFound, setBoardDamageFound] = useState(false)
+  const [intakeNotes, setIntakeNotes] = useState('')
+
+  // Messaging
+  const [messages, setMessages] = useState([])
+  const [messagesLoading, setMessagesLoading] = useState(false)
+  const [messageBody, setMessageBody] = useState('')
+  const [messageInternalOnly, setMessageInternalOnly] = useState(false)
+  const [messageSending, setMessageSending] = useState(false)
+  const [messageError, setMessageError] = useState('')
 
   useEffect(() => {
     let ignore = false
@@ -72,11 +111,12 @@ function AdminRepairOrderInner({ quoteId }) {
         if (!ignore) {
           setRecord(result)
           setStatus(result.order?.current_status || 'awaiting_mail_in')
+          setTechnicianNote(result.order?.technician_note || '')
+          setTechnicianId(result.order?.assigned_technician_user_id || '')
 
           const returnShipment = (result.shipments || []).find(
             (item) => item.shipment_type === 'return'
           )
-
           setCarrier(returnShipment?.carrier || '')
           setServiceLevel(returnShipment?.service_level || '')
           setTrackingNumber(returnShipment?.tracking_number || '')
@@ -98,11 +138,60 @@ function AdminRepairOrderInner({ quoteId }) {
     }
   }, [quoteId])
 
-  const currentStatusLabel = useMemo(
-    () => formatStatusLabel(status),
-    [status]
-  )
+  useEffect(() => {
+    if (!record?.order?.id) return
+    let ignore = false
 
+    async function loadIntake() {
+      try {
+        const response = await fetch(`/admin/api/quotes/${quoteId}/intake`, { cache: 'no-store' })
+        const result = await response.json()
+        if (!ignore && result.ok) {
+          const r = result.intake
+          if (r) {
+            setIntake(r)
+            setPackageCondition(r.package_condition || '')
+            setDeviceCondition(r.device_condition || '')
+            setIncludedItems(r.included_items || '')
+            setImeiOrSerial(r.imei_or_serial || '')
+            setPowerTestResult(r.power_test_result || '')
+            setIntakePhotosComplete(r.intake_photos_complete || false)
+            setHiddenDamageFound(r.hidden_damage_found || false)
+            setLiquidDamageFound(r.liquid_damage_found || false)
+            setBoardDamageFound(r.board_damage_found || false)
+            setIntakeNotes(r.notes || '')
+          }
+        }
+      } catch {
+        // non-blocking
+      }
+    }
+
+    async function loadMessages() {
+      setMessagesLoading(true)
+      try {
+        const response = await fetch(`/admin/api/quotes/${quoteId}/messages`, { cache: 'no-store' })
+        const result = await response.json()
+        if (!ignore && result.ok) {
+          setMessages(result.messages || [])
+        }
+      } catch {
+        // non-blocking
+      } finally {
+        if (!ignore) setMessagesLoading(false)
+      }
+    }
+
+    loadIntake()
+    loadMessages()
+
+    return () => {
+      ignore = true
+    }
+  }, [quoteId, record?.order?.id])
+
+  const currentStatusLabel = useMemo(() => formatStatusLabel(status), [status])
+  const isUnrepairedReturn = useMemo(() => UNREPAIRED_RETURN_STATUSES.has(status), [status])
   const revisedEstimatePath = `/admin/quotes/${quoteId}/revised-estimate`
 
   const handleSubmit = async (event) => {
@@ -114,12 +203,12 @@ function AdminRepairOrderInner({ quoteId }) {
     try {
       const response = await fetch(`/admin/api/quotes/${quoteId}/order`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status,
           customerNote,
+          technicianNote,
+          technicianId: technicianId || null,
           carrier,
           serviceLevel,
           trackingNumber,
@@ -134,9 +223,7 @@ function AdminRepairOrderInner({ quoteId }) {
       setSuccess(`Repair order updated to ${formatStatusLabel(result.currentStatus)}.`)
       setCustomerNote('')
 
-      const refreshResponse = await fetch(`/admin/api/quotes/${quoteId}/order`, {
-        cache: 'no-store',
-      })
+      const refreshResponse = await fetch(`/admin/api/quotes/${quoteId}/order`, { cache: 'no-store' })
       const refreshResult = await refreshResponse.json()
       if (refreshResponse.ok) {
         setRecord(refreshResult)
@@ -146,6 +233,72 @@ function AdminRepairOrderInner({ quoteId }) {
       setError(submitError.message || 'Unable to update repair order.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleIntakeSave = async (event) => {
+    event.preventDefault()
+    setIntakeSaving(true)
+    setIntakeError('')
+    setIntakeSuccess('')
+
+    try {
+      const response = await fetch(`/admin/api/quotes/${quoteId}/intake`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packageCondition,
+          deviceCondition,
+          includedItems,
+          imeiOrSerial,
+          powerTestResult,
+          intakePhotosComplete,
+          hiddenDamageFound,
+          liquidDamageFound,
+          boardDamageFound,
+          notes: intakeNotes,
+        }),
+      })
+
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to save intake report.')
+
+      setIntake(result.intake)
+      setIntakeSuccess('Intake report saved.')
+    } catch (err) {
+      setIntakeError(err.message || 'Unable to save intake report.')
+    } finally {
+      setIntakeSaving(false)
+    }
+  }
+
+  const handleSendMessage = async (event) => {
+    event.preventDefault()
+    if (!messageBody.trim()) return
+
+    setMessageSending(true)
+    setMessageError('')
+
+    try {
+      const response = await fetch(`/admin/api/quotes/${quoteId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          body: messageBody,
+          senderRole: 'admin',
+          internalOnly: messageInternalOnly,
+        }),
+      })
+
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to send message.')
+
+      setMessages((current) => [...current, result.message])
+      setMessageBody('')
+    } catch (err) {
+      setMessageError(err.message || 'Unable to send message.')
+    } finally {
+      setMessageSending(false)
     }
   }
 
@@ -176,6 +329,8 @@ function AdminRepairOrderInner({ quoteId }) {
       </main>
     )
   }
+
+  const technicians = record?.technicians || []
 
   return (
     <main className='page-hero'>
@@ -265,11 +420,61 @@ function AdminRepairOrderInner({ quoteId }) {
                   placeholder='Example: Device received and checked into intake.'
                 />
               </div>
+
+              <div className='field' style={{ marginTop: 18 }}>
+                <label htmlFor='technician-note'>Technician findings (internal only)</label>
+                <textarea
+                  id='technician-note'
+                  value={technicianNote}
+                  onChange={(event) => setTechnicianNote(event.target.value)}
+                  placeholder='Example: Backlight circuit damaged. Will need board-level repair in addition to screen replacement.'
+                />
+              </div>
+
+              {technicians.length > 0 && (
+                <div className='field' style={{ marginTop: 18 }}>
+                  <label htmlFor='technician-id'>Assigned technician</label>
+                  <select
+                    id='technician-id'
+                    value={technicianId}
+                    onChange={(event) => setTechnicianId(event.target.value)}
+                  >
+                    <option value=''>— Unassigned —</option>
+                    {technicians.map((tech) => (
+                      <option key={tech.id} value={tech.id}>
+                        {tech.full_name || tech.id} ({tech.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
+
+            {isUnrepairedReturn && (
+              <div className='policy-card'>
+                <div className='kicker'>Return without repair</div>
+                <h3>
+                  {status === 'beyond_economical_repair'
+                    ? 'Beyond economical repair — ship device back'
+                    : status === 'no_fault_found'
+                    ? 'No fault found — ship device back'
+                    : 'Unrepaired return — ship device back'}
+                </h3>
+                <p>
+                  {status === 'beyond_economical_repair'
+                    ? 'The repair cost exceeds the value of the device. Record the return shipment details below and notify the customer.'
+                    : status === 'no_fault_found'
+                    ? 'No defect was found. Record the return shipment details below and notify the customer.'
+                    : 'The customer declined the revised estimate. Record the return shipment details below.'}
+                </p>
+              </div>
+            )}
 
             <div className='policy-card'>
               <div className='kicker'>Return shipment</div>
-              <h3>Optional shipping details</h3>
+              <h3>
+                {isUnrepairedReturn ? 'Return shipping details (required)' : 'Optional shipping details'}
+              </h3>
 
               <div className='form-grid' style={{ marginTop: 18 }}>
                 <div className='field'>
@@ -349,6 +554,120 @@ function AdminRepairOrderInner({ quoteId }) {
               </div>
             </div>
 
+            {record.order?.id && (
+              <form className='policy-card' onSubmit={handleIntakeSave}>
+                <div className='kicker'>Device intake</div>
+                <h3>Condition on arrival</h3>
+                <p style={{ marginBottom: 18 }}>
+                  Record the device state when it arrives. This protects against disputes about
+                  pre-existing damage.
+                </p>
+
+                <div className='form-grid'>
+                  <div className='field'>
+                    <label htmlFor='package-condition'>Package condition</label>
+                    <input
+                      id='package-condition'
+                      value={packageCondition}
+                      onChange={(e) => setPackageCondition(e.target.value)}
+                      placeholder='Good, Damaged, etc.'
+                    />
+                  </div>
+                  <div className='field'>
+                    <label htmlFor='device-condition'>Device condition</label>
+                    <input
+                      id='device-condition'
+                      value={deviceCondition}
+                      onChange={(e) => setDeviceCondition(e.target.value)}
+                      placeholder='Good, Cracked screen, etc.'
+                    />
+                  </div>
+                  <div className='field'>
+                    <label htmlFor='imei-serial'>IMEI / Serial</label>
+                    <input
+                      id='imei-serial'
+                      value={imeiOrSerial}
+                      onChange={(e) => setImeiOrSerial(e.target.value)}
+                      placeholder='IMEI or serial number'
+                    />
+                  </div>
+                  <div className='field'>
+                    <label htmlFor='power-test'>Power test result</label>
+                    <input
+                      id='power-test'
+                      value={powerTestResult}
+                      onChange={(e) => setPowerTestResult(e.target.value)}
+                      placeholder='Powers on, No power, etc.'
+                    />
+                  </div>
+                </div>
+
+                <div className='field' style={{ marginTop: 18 }}>
+                  <label htmlFor='included-items'>Included items</label>
+                  <input
+                    id='included-items'
+                    value={includedItems}
+                    onChange={(e) => setIncludedItems(e.target.value)}
+                    placeholder='Device only, charger included, etc.'
+                  />
+                </div>
+
+                <div className='form-grid' style={{ marginTop: 18 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type='checkbox'
+                      checked={intakePhotosComplete}
+                      onChange={(e) => setIntakePhotosComplete(e.target.checked)}
+                    />
+                    Photos complete
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type='checkbox'
+                      checked={hiddenDamageFound}
+                      onChange={(e) => setHiddenDamageFound(e.target.checked)}
+                    />
+                    Hidden damage found
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type='checkbox'
+                      checked={liquidDamageFound}
+                      onChange={(e) => setLiquidDamageFound(e.target.checked)}
+                    />
+                    Liquid damage found
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type='checkbox'
+                      checked={boardDamageFound}
+                      onChange={(e) => setBoardDamageFound(e.target.checked)}
+                    />
+                    Board damage found
+                  </label>
+                </div>
+
+                <div className='field' style={{ marginTop: 18 }}>
+                  <label htmlFor='intake-notes'>Intake notes</label>
+                  <textarea
+                    id='intake-notes'
+                    value={intakeNotes}
+                    onChange={(e) => setIntakeNotes(e.target.value)}
+                    placeholder='Any additional observations about the device on arrival.'
+                  />
+                </div>
+
+                {intakeError ? <div className='notice'>{intakeError}</div> : null}
+                {intakeSuccess ? <div className='notice'>{intakeSuccess}</div> : null}
+
+                <div className='inline-actions' style={{ marginTop: 18 }}>
+                  <button type='submit' className='button button-primary' disabled={intakeSaving}>
+                    {intakeSaving ? 'Saving…' : intake ? 'Update Intake Report' : 'Save Intake Report'}
+                  </button>
+                </div>
+              </form>
+            )}
+
             <div className='policy-card'>
               <div className='kicker'>Status history</div>
               <h3>Customer-visible timeline</h3>
@@ -394,6 +713,82 @@ function AdminRepairOrderInner({ quoteId }) {
                 )}
               </div>
             </div>
+
+            {record.order?.id && (
+              <div className='policy-card'>
+                <div className='kicker'>Messages</div>
+                <h3>Order communication log</h3>
+                <p style={{ marginBottom: 18 }}>
+                  Staff notes and customer-facing messages. Mark internal-only to keep a note
+                  visible only to staff.
+                </p>
+
+                <div className='preview-meta' style={{ marginTop: 0 }}>
+                  {messagesLoading ? (
+                    <div className='preview-meta-row'>
+                      <span>Loading messages…</span>
+                      <span>—</span>
+                    </div>
+                  ) : messages.length ? (
+                    messages.map((msg) => (
+                      <div key={msg.id} className='preview-meta-row'>
+                        <span>
+                          <strong>{msg.sender_role}</strong>
+                          {msg.internal_only ? ' (internal)' : ''}: {msg.body}
+                        </span>
+                        <span style={{ whiteSpace: 'nowrap' }}>
+                          {new Date(msg.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className='preview-meta-row'>
+                      <span>No messages yet.</span>
+                      <span>—</span>
+                    </div>
+                  )}
+                </div>
+
+                <form onSubmit={handleSendMessage} style={{ marginTop: 18 }}>
+                  <div className='field'>
+                    <label htmlFor='message-body'>New message</label>
+                    <textarea
+                      id='message-body'
+                      value={messageBody}
+                      onChange={(e) => setMessageBody(e.target.value)}
+                      placeholder='Type a message or internal note…'
+                    />
+                  </div>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      marginTop: 10,
+                      cursor: 'pointer',
+                      fontSize: 14,
+                    }}
+                  >
+                    <input
+                      type='checkbox'
+                      checked={messageInternalOnly}
+                      onChange={(e) => setMessageInternalOnly(e.target.checked)}
+                    />
+                    Internal only (not visible to customer)
+                  </label>
+                  {messageError ? <div className='notice' style={{ marginTop: 10 }}>{messageError}</div> : null}
+                  <div className='inline-actions' style={{ marginTop: 12 }}>
+                    <button
+                      type='submit'
+                      className='button button-primary'
+                      disabled={messageSending || !messageBody.trim()}
+                    >
+                      {messageSending ? 'Sending…' : 'Send Message'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
 
             <div className='policy-card'>
               <div className='kicker'>Quick links</div>

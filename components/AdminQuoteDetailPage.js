@@ -31,6 +31,8 @@ function AdminQuoteDetailInner({ quoteId }) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [record, setRecord] = useState(null)
+  const [expandedEstimateId, setExpandedEstimateId] = useState(null)
+  const [estimateDetails, setEstimateDetails] = useState({})
 
   const [status, setStatus] = useState('submitted')
   const [quoteSummary, setQuoteSummary] = useState('')
@@ -83,7 +85,7 @@ function AdminQuoteDetailInner({ quoteId }) {
               : Promise.resolve({ data: null, error: null }),
             supabase
               .from('quote_estimates')
-              .select('id, estimate_kind, status, total_amount, created_at, sent_at')
+              .select('id, estimate_kind, status, total_amount, created_at, sent_at, expires_at')
               .eq('quote_request_id', quote.id)
               .order('created_at', { ascending: false }),
           ])
@@ -218,6 +220,31 @@ function AdminQuoteDetailInner({ quoteId }) {
       setError(saveError.message || 'Unable to save quote review.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleToggleEstimate = async (estimateId) => {
+    if (expandedEstimateId === estimateId) {
+      setExpandedEstimateId(null)
+      return
+    }
+    setExpandedEstimateId(estimateId)
+    if (estimateDetails[estimateId]) return
+
+    try {
+      const response = await fetch(
+        `/admin/api/quotes/${quoteId}/estimates/${estimateId}`,
+        { cache: 'no-store' }
+      )
+      const result = await response.json()
+      if (result.ok) {
+        setEstimateDetails((current) => ({
+          ...current,
+          [estimateId]: { estimate: result.estimate, items: result.items },
+        }))
+      }
+    } catch {
+      // non-blocking
     }
   }
 
@@ -435,7 +462,81 @@ function AdminQuoteDetailInner({ quoteId }) {
                 <div className='preview-meta-row'><span>Latest total</span><span>{latestEstimate?.total_amount != null ? `$${Number(latestEstimate.total_amount).toFixed(2)}` : '—'}</span></div>
               </div>
 
-              <div className='inline-actions' style={{ marginBottom: 0 }}>
+              {record.estimates.length > 0 && (
+                <div style={{ marginTop: 18 }}>
+                  <strong style={{ fontSize: 13 }}>Estimate history</strong>
+                  <div className='preview-meta' style={{ marginTop: 8 }}>
+                    {record.estimates.map((est) => {
+                      const isExpanded = expandedEstimateId === est.id
+                      const detail = estimateDetails[est.id]
+                      const now = new Date()
+                      const expired = est.expires_at && new Date(est.expires_at) < now && est.status === 'sent'
+                      return (
+                        <div key={est.id}>
+                          <div className='preview-meta-row'>
+                            <span>
+                              {est.estimate_kind} · {est.status}
+                              {expired ? ' · EXPIRED' : ''}
+                              {est.expires_at && est.status === 'sent' && !expired
+                                ? ` · expires ${new Date(est.expires_at).toLocaleDateString()}`
+                                : ''}
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {est.total_amount != null ? `$${Number(est.total_amount).toFixed(2)}` : '—'}
+                              <button
+                                type='button'
+                                onClick={() => handleToggleEstimate(est.id)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: 13,
+                                  padding: '2px 6px',
+                                  textDecoration: 'underline',
+                                }}
+                              >
+                                {isExpanded ? 'hide' : 'view'}
+                              </button>
+                            </span>
+                          </div>
+                          {isExpanded && (
+                            <div style={{ paddingLeft: 12, paddingBottom: 8 }}>
+                              {!detail ? (
+                                <div style={{ fontSize: 13, color: '#888', padding: '4px 0' }}>Loading…</div>
+                              ) : detail.items.length === 0 ? (
+                                <div style={{ fontSize: 13, color: '#888', padding: '4px 0' }}>No line items.</div>
+                              ) : (
+                                <div className='preview-meta' style={{ marginTop: 4 }}>
+                                  {detail.items.map((item) => (
+                                    <div key={item.id} className='preview-meta-row'>
+                                      <span style={{ fontSize: 13 }}>
+                                        [{item.line_type}] {item.description} × {item.quantity}
+                                      </span>
+                                      <span style={{ fontSize: 13 }}>
+                                        ${Number(item.line_total).toFixed(2)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                  {detail.estimate.customer_visible_notes && (
+                                    <div className='preview-meta-row'>
+                                      <span style={{ fontSize: 13, fontStyle: 'italic' }}>
+                                        Note: {detail.estimate.customer_visible_notes}
+                                      </span>
+                                      <span>—</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className='inline-actions' style={{ marginBottom: 0, marginTop: 18 }}>
                 <Link
                   href={`/admin/quotes/${quoteId}/estimate`}
                   className='button button-primary'
