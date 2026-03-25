@@ -5,6 +5,7 @@ import {
   sendDepositPaidNotification,
   sendMailInReadyNotification,
 } from '../../../../lib/notifications'
+import { finalizeFinalBalancePayment } from '../../../../lib/payments/finalizeFinalBalancePayment'
 
 export const runtime = 'nodejs'
 
@@ -43,13 +44,37 @@ export async function POST(request) {
   }
 
   const paymentIntent = event.data.object
-  const { quoteRequestId, estimateId, depositAmount } = paymentIntent.metadata || {}
-
-  if (!quoteRequestId) {
-    return NextResponse.json({ received: true })
-  }
+  const metadata = paymentIntent.metadata || {}
+  const paymentKind = metadata.paymentKind || 'inspection_deposit'
 
   try {
+    if (paymentKind === 'final_balance') {
+      const quoteRequestId = metadata.quoteRequestId
+      const repairOrderId = metadata.repairOrderId
+      const estimateId = metadata.estimateId
+      const finalBalanceAmount = Number(metadata.finalBalanceAmount || 0)
+
+      if (!quoteRequestId) {
+        return NextResponse.json({ received: true })
+      }
+
+      await finalizeFinalBalancePayment({
+        quoteRequestId,
+        repairOrderId,
+        estimateId,
+        paymentIntentId: paymentIntent.id,
+        amount: finalBalanceAmount,
+      })
+
+      return NextResponse.json({ received: true })
+    }
+
+    const { quoteRequestId, estimateId, depositAmount } = metadata
+
+    if (!quoteRequestId) {
+      return NextResponse.json({ received: true })
+    }
+
     await finalizeDepositPayment({
       quoteRequestId,
       estimateId,
