@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
-import { sendShippingNotificationEmail } from '../../../../../../lib/email'
+import {
+  sendRepairStatusNotification,
+  sendShipmentNotification,
+} from '../../../../../../lib/notifications'
 
 export const runtime = 'nodejs'
 
@@ -147,7 +150,6 @@ export async function POST(request, context) {
     const trackingNumber = (body?.trackingNumber || '').toString().trim()
     const trackingUrl = (body?.trackingUrl || '').toString().trim()
     const shipmentStatus = (body?.shipmentStatus || '').toString().trim()
-    // Use explicit presence checks so that sending null/empty intentionally clears the field
     const hasTechnicianId = body !== null && 'technicianId' in body
     const technicianId = hasTechnicianId ? ((body.technicianId || '').toString().trim() || null) : undefined
     const hasTechnicianNote = body !== null && 'technicianNote' in body
@@ -193,6 +195,8 @@ export async function POST(request, context) {
 
     if (orderLookupError) throw orderLookupError
 
+    const previousStatus = repairOrder?.current_status || null
+
     if (!repairOrder) {
       const [modelResult, repairTypeResult] = await Promise.all([
         quoteRequest.model_key
@@ -222,6 +226,8 @@ export async function POST(request, context) {
           model_id: modelResult.data?.id || null,
           repair_type_id: repairTypeResult.data?.id || null,
           current_status: newStatus,
+          ...(hasTechnicianId ? { assigned_technician_user_id: technicianId } : {}),
+          ...(hasTechnicianNote ? { technician_note: technicianNote } : {}),
         })
         .select('*')
         .single()
@@ -267,16 +273,20 @@ export async function POST(request, context) {
       repairOrder = updatedOrder
     }
 
+    let latestHistoryId = null
+    let latestHistoryStatus = null
+
     const { data: historyRows, error: historyLookupError } = await supabase
       .from('repair_order_status_history')
-      .select('id')
+      .select('id, new_status')
       .eq('repair_order_id', repairOrder.id)
       .order('created_at', { ascending: false })
       .limit(1)
 
     if (historyLookupError) throw historyLookupError
 
-    const latestHistoryId = historyRows?.[0]?.id
+    latestHistoryId = historyRows?.[0]?.id || null
+    latestHistoryStatus = historyRows?.[0]?.new_status || null
 
     if (latestHistoryId && customerNote) {
       const { error: updateHistoryError } = await supabase
@@ -289,6 +299,8 @@ export async function POST(request, context) {
 
       if (updateHistoryError) throw updateHistoryError
     }
+
+    let shipmentId = null
 
     if (trackingNumber || carrier || trackingUrl || shipmentStatus || newStatus === 'shipped') {
       const { data: existingShipment, error: shipmentLookupError } = await supabase
@@ -321,12 +333,16 @@ export async function POST(request, context) {
           .eq('id', existingShipment.id)
 
         if (updateShipmentError) throw updateShipmentError
+        shipmentId = existingShipment.id
       } else {
-        const { error: insertShipmentError } = await supabase
+        const { data: insertedShipment, error: insertShipmentError } = await supabase
           .from('shipments')
           .insert(shipmentPayload)
+          .select('id')
+          .single()
 
         if (insertShipmentError) throw insertShipmentError
+        shipmentId = insertedShipment.id
       }
     }
 
@@ -339,46 +355,40 @@ export async function POST(request, context) {
       if (quoteUpdateError) throw quoteUpdateError
     }
 
-    // Send shipping notification when status is shipped and a tracking number was provided
-    if (newStatus === 'shipped' && trackingNumber) {
+    const shouldNotifyStatus =
+      Boolean(customerNote) &&
+      latestHistoryId &&
+      latestHistoryStatus === newStatus &&
+      previousStatus !== newStatus
+
+    if (shouldNotifyStatus) {
       try {
-        const [customerResult, quoteDetailsResult] = await Promise.all([
-          quoteRequest.customer_id
-            ? supabase
-                .from('customers')
-                .select('first_name, last_name, email')
-                .eq('id', quoteRequest.customer_id)
-                .maybeSingle()
-            : Promise.resolve({ data: null }),
-          supabase
-            .from('quote_requests')
-            .select('guest_email, first_name, last_name')
-            .eq('id', quoteRequest.id)
-            .maybeSingle(),
-        ])
+        await sendRepairStatusNotification({
+          supabase,
+          quoteRequestId: quoteRequest.id,
+          repairOrderId: repairOrder.id,
+          historyId: latestHistoryId,
+          status: newStatus,
+          note: customerNote,
+        })
+      } catch (notificationError) {
+        console.error('[order] failed to send repair status notification:', notificationError)
+      }
+    }
 
-        const toEmail = customerResult.data?.email || quoteDetailsResult.data?.guest_email
-
-        if (toEmail) {
-          const name = [
-            customerResult.data?.first_name || quoteDetailsResult.data?.first_name,
-            customerResult.data?.last_name || quoteDetailsResult.data?.last_name,
-          ]
-            .filter(Boolean)
-            .join(' ')
-
-          await sendShippingNotificationEmail({
-            to: toEmail,
-            customerName: name,
-            quoteId,
-            orderNumber: repairOrder.order_number || null,
-            carrier: carrier || null,
-            trackingNumber,
-            trackingUrl: trackingUrl || null,
-          })
-        }
-      } catch (emailError) {
-        console.error('[order] Failed to send shipping notification email:', emailError)
+    if (newStatus === 'shipped' && trackingNumber && shipmentId) {
+      try {
+        await sendShipmentNotification({
+          supabase,
+          quoteRequestId: quoteRequest.id,
+          repairOrderId: repairOrder.id,
+          shipmentId,
+          carrier: carrier || null,
+          trackingNumber,
+          trackingUrl: trackingUrl || null,
+        })
+      } catch (notificationError) {
+        console.error('[order] failed to send shipment notification:', notificationError)
       }
     }
 
