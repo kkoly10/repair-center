@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 import AdminSignOutButton from './AdminSignOutButton'
+import AdminPaymentSummaryCard from './AdminPaymentSummaryCard'
 
 const STATUS_OPTIONS = [
   'awaiting_mail_in',
@@ -53,23 +54,20 @@ function AdminRepairOrderInner({ quoteId }) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [record, setRecord] = useState(null)
+  const [paymentData, setPaymentData] = useState(null)
 
-  // Status + notes
   const [status, setStatus] = useState('awaiting_mail_in')
   const [customerNote, setCustomerNote] = useState('')
   const [technicianNote, setTechnicianNote] = useState('')
 
-  // Return shipment
   const [carrier, setCarrier] = useState('')
   const [serviceLevel, setServiceLevel] = useState('')
   const [trackingNumber, setTrackingNumber] = useState('')
   const [trackingUrl, setTrackingUrl] = useState('')
   const [shipmentStatus, setShipmentStatus] = useState('')
 
-  // Technician assignment
   const [technicianId, setTechnicianId] = useState('')
 
-  // Intake report
   const [intake, setIntake] = useState(null)
   const [intakeSaving, setIntakeSaving] = useState(false)
   const [intakeError, setIntakeError] = useState('')
@@ -85,7 +83,6 @@ function AdminRepairOrderInner({ quoteId }) {
   const [boardDamageFound, setBoardDamageFound] = useState(false)
   const [intakeNotes, setIntakeNotes] = useState('')
 
-  // Messaging
   const [messages, setMessages] = useState([])
   const [messagesLoading, setMessagesLoading] = useState(false)
   const [messageBody, setMessageBody] = useState('')
@@ -101,12 +98,21 @@ function AdminRepairOrderInner({ quoteId }) {
       setError('')
 
       try {
-        const response = await fetch(`/admin/api/quotes/${quoteId}/order`, {
-          cache: 'no-store',
-        })
+        const [orderResponse, paymentResponse] = await Promise.all([
+          fetch(`/admin/api/quotes/${quoteId}/order`, {
+            cache: 'no-store',
+          }),
+          fetch(`/admin/api/quotes/${quoteId}/payment-summary`, {
+            cache: 'no-store',
+          }),
+        ])
 
-        const result = await response.json()
-        if (!response.ok) throw new Error(result.error || 'Unable to load repair order.')
+        const result = await orderResponse.json()
+        const paymentResult = await paymentResponse.json().catch(() => null)
+
+        if (!orderResponse.ok) {
+          throw new Error(result.error || 'Unable to load repair order.')
+        }
 
         if (!ignore) {
           setRecord(result)
@@ -122,6 +128,8 @@ function AdminRepairOrderInner({ quoteId }) {
           setTrackingNumber(returnShipment?.tracking_number || '')
           setTrackingUrl(returnShipment?.tracking_url || '')
           setShipmentStatus(returnShipment?.status || '')
+
+          setPaymentData(paymentResponse.ok ? paymentResult : null)
         }
       } catch (loadError) {
         if (!ignore) {
@@ -193,6 +201,7 @@ function AdminRepairOrderInner({ quoteId }) {
   const currentStatusLabel = useMemo(() => formatStatusLabel(status), [status])
   const isUnrepairedReturn = useMemo(() => UNREPAIRED_RETURN_STATUSES.has(status), [status])
   const revisedEstimatePath = `/admin/quotes/${quoteId}/revised-estimate`
+  const paymentsPath = `/admin/quotes/${quoteId}/payments`
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -223,11 +232,20 @@ function AdminRepairOrderInner({ quoteId }) {
       setSuccess(`Repair order updated to ${formatStatusLabel(result.currentStatus)}.`)
       setCustomerNote('')
 
-      const refreshResponse = await fetch(`/admin/api/quotes/${quoteId}/order`, { cache: 'no-store' })
+      const [refreshResponse, paymentRefreshResponse] = await Promise.all([
+        fetch(`/admin/api/quotes/${quoteId}/order`, { cache: 'no-store' }),
+        fetch(`/admin/api/quotes/${quoteId}/payment-summary`, { cache: 'no-store' }),
+      ])
+
       const refreshResult = await refreshResponse.json()
+      const paymentRefreshResult = await paymentRefreshResponse.json().catch(() => null)
+
       if (refreshResponse.ok) {
         setRecord(refreshResult)
         setStatus(refreshResult.order?.current_status || status)
+      }
+      if (paymentRefreshResponse.ok) {
+        setPaymentData(paymentRefreshResult)
       }
     } catch (submitError) {
       setError(submitError.message || 'Unable to update repair order.')
@@ -371,6 +389,12 @@ function AdminRepairOrderInner({ quoteId }) {
               className='button button-primary button-compact'
             >
               Send Revised Estimate
+            </Link>
+            <Link
+              href={paymentsPath}
+              className='button button-secondary button-compact'
+            >
+              Manage Payments
             </Link>
           </div>
 
@@ -536,6 +560,9 @@ function AdminRepairOrderInner({ quoteId }) {
               <Link href={revisedEstimatePath} className='button button-secondary'>
                 Send Revised Estimate
               </Link>
+              <Link href={paymentsPath} className='button button-secondary'>
+                Manage Payments
+              </Link>
             </div>
           </form>
 
@@ -553,6 +580,14 @@ function AdminRepairOrderInner({ quoteId }) {
                 </Link>
               </div>
             </div>
+
+            {paymentData ? (
+              <AdminPaymentSummaryCard
+                quoteId={quoteId}
+                paymentData={paymentData}
+                compact
+              />
+            ) : null}
 
             {record.order?.id && (
               <form className='policy-card' onSubmit={handleIntakeSave}>
@@ -802,6 +837,9 @@ function AdminRepairOrderInner({ quoteId }) {
                 </Link>
                 <Link href={`/track/${quoteId}`} className='button button-secondary'>
                   Tracking Page
+                </Link>
+                <Link href={paymentsPath} className='button button-secondary'>
+                  Payments
                 </Link>
               </div>
             </div>
