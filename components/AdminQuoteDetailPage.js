@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 import AdminSignOutButton from './AdminSignOutButton'
 import QuoteStatusBadge from './QuoteStatusBadge'
+import AdminPaymentSummaryCard from './AdminPaymentSummaryCard'
 import { getSupabaseBrowser } from '../lib/supabase/browser'
 
 const STATUS_OPTIONS = [
@@ -33,6 +34,7 @@ function AdminQuoteDetailInner({ quoteId }) {
   const [record, setRecord] = useState(null)
   const [expandedEstimateId, setExpandedEstimateId] = useState(null)
   const [estimateDetails, setEstimateDetails] = useState({})
+  const [paymentData, setPaymentData] = useState(null)
 
   const [status, setStatus] = useState('submitted')
   const [quoteSummary, setQuoteSummary] = useState('')
@@ -60,40 +62,50 @@ function AdminQuoteDetailInner({ quoteId }) {
         if (quoteError) throw quoteError
         if (!quote) throw new Error('Quote request not found.')
 
-        const [photosResult, pricingRuleResult, customerResult, estimatesResult] =
-          await Promise.all([
-            supabase
-              .from('quote_request_photos')
-              .select('id, storage_path, photo_type, sort_order, created_at')
-              .eq('quote_request_id', quote.id)
-              .order('sort_order', { ascending: true }),
-            quote.selected_pricing_rule_id
-              ? supabase
-                  .from('pricing_rules')
-                  .select('*')
-                  .eq('id', quote.selected_pricing_rule_id)
-                  .maybeSingle()
-              : Promise.resolve({ data: null, error: null }),
-            quote.customer_id
-              ? supabase
-                  .from('customers')
-                  .select(
-                    'id, first_name, last_name, email, phone, preferred_contact_method'
-                  )
-                  .eq('id', quote.customer_id)
-                  .maybeSingle()
-              : Promise.resolve({ data: null, error: null }),
-            supabase
-              .from('quote_estimates')
-              .select('id, estimate_kind, status, total_amount, created_at, sent_at, expires_at')
-              .eq('quote_request_id', quote.id)
-              .order('created_at', { ascending: false }),
-          ])
+        const [
+          photosResult,
+          pricingRuleResult,
+          customerResult,
+          estimatesResult,
+          paymentResponse,
+        ] = await Promise.all([
+          supabase
+            .from('quote_request_photos')
+            .select('id, storage_path, photo_type, sort_order, created_at')
+            .eq('quote_request_id', quote.id)
+            .order('sort_order', { ascending: true }),
+          quote.selected_pricing_rule_id
+            ? supabase
+                .from('pricing_rules')
+                .select('*')
+                .eq('id', quote.selected_pricing_rule_id)
+                .maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+          quote.customer_id
+            ? supabase
+                .from('customers')
+                .select(
+                  'id, first_name, last_name, email, phone, preferred_contact_method'
+                )
+                .eq('id', quote.customer_id)
+                .maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+          supabase
+            .from('quote_estimates')
+            .select(
+              'id, estimate_kind, status, total_amount, created_at, sent_at, expires_at'
+            )
+            .eq('quote_request_id', quote.id)
+            .order('created_at', { ascending: false }),
+          fetch(`/admin/api/quotes/${quoteId}/payment-summary`, { cache: 'no-store' }),
+        ])
 
         if (photosResult.error) throw photosResult.error
         if (pricingRuleResult.error) throw pricingRuleResult.error
         if (customerResult.error) throw customerResult.error
         if (estimatesResult.error) throw estimatesResult.error
+
+        const paymentResult = await paymentResponse.json().catch(() => null)
 
         const photos = await Promise.all(
           (photosResult.data || []).map(async (photo) => {
@@ -133,6 +145,7 @@ function AdminQuoteDetailInner({ quoteId }) {
           setPriceFixed(toInputValue(quote.preliminary_price_fixed))
           setPriceMin(toInputValue(quote.preliminary_price_min))
           setPriceMax(toInputValue(quote.preliminary_price_max))
+          setPaymentData(paymentResponse.ok ? paymentResult : null)
         }
       } catch (loadError) {
         if (!ignore) {
@@ -169,6 +182,7 @@ function AdminQuoteDetailInner({ quoteId }) {
   const reviewPath = `/estimate-review/${quoteId}`
   const mailInPath =
     status === 'approved_for_mail_in' ? `/mail-in/${quoteId}` : null
+  const paymentsPath = `/admin/quotes/${quoteId}/payments`
 
   const handleSave = async (event) => {
     event.preventDefault()
@@ -312,6 +326,12 @@ function AdminQuoteDetailInner({ quoteId }) {
             >
               Manage Repair Order
             </Link>
+            <Link
+              href={paymentsPath}
+              className='button button-secondary button-compact'
+            >
+              Manage Payments
+            </Link>
           </div>
 
           <div className='quote-summary'>
@@ -442,6 +462,12 @@ function AdminQuoteDetailInner({ quoteId }) {
                   >
                     Manage Repair Order
                   </Link>
+                  <Link
+                    href={paymentsPath}
+                    className='button button-secondary'
+                  >
+                    Manage Payments
+                  </Link>
                 </div>
               </div>
             </form>
@@ -470,7 +496,11 @@ function AdminQuoteDetailInner({ quoteId }) {
                       const isExpanded = expandedEstimateId === est.id
                       const detail = estimateDetails[est.id]
                       const now = new Date()
-                      const expired = est.expires_at && new Date(est.expires_at) < now && est.status === 'sent'
+                      const expired =
+                        est.expires_at &&
+                        new Date(est.expires_at) < now &&
+                        est.status === 'sent'
+
                       return (
                         <div key={est.id}>
                           <div className='preview-meta-row'>
@@ -499,12 +529,17 @@ function AdminQuoteDetailInner({ quoteId }) {
                               </button>
                             </span>
                           </div>
+
                           {isExpanded && (
                             <div style={{ paddingLeft: 12, paddingBottom: 8 }}>
                               {!detail ? (
-                                <div style={{ fontSize: 13, color: '#888', padding: '4px 0' }}>Loading…</div>
+                                <div style={{ fontSize: 13, color: '#888', padding: '4px 0' }}>
+                                  Loading…
+                                </div>
                               ) : detail.items.length === 0 ? (
-                                <div style={{ fontSize: 13, color: '#888', padding: '4px 0' }}>No line items.</div>
+                                <div style={{ fontSize: 13, color: '#888', padding: '4px 0' }}>
+                                  No line items.
+                                </div>
                               ) : (
                                 <div className='preview-meta' style={{ marginTop: 4 }}>
                                   {detail.items.map((item) => (
@@ -545,6 +580,14 @@ function AdminQuoteDetailInner({ quoteId }) {
                 </Link>
               </div>
             </div>
+
+            {paymentData ? (
+              <AdminPaymentSummaryCard
+                quoteId={quoteId}
+                paymentData={paymentData}
+                compact
+              />
+            ) : null}
 
             <div className='policy-card'>
               <div className='kicker'>Customer review link</div>
@@ -587,6 +630,12 @@ function AdminQuoteDetailInner({ quoteId }) {
                   className='button button-secondary'
                 >
                   Manage Repair Order
+                </Link>
+                <Link
+                  href={paymentsPath}
+                  className='button button-secondary'
+                >
+                  Manage Payments
                 </Link>
               </div>
             </div>
