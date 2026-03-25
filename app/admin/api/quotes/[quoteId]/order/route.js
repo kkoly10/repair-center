@@ -151,9 +151,13 @@ export async function POST(request, context) {
     const trackingUrl = (body?.trackingUrl || '').toString().trim()
     const shipmentStatus = (body?.shipmentStatus || '').toString().trim()
     const hasTechnicianId = body !== null && 'technicianId' in body
-    const technicianId = hasTechnicianId ? ((body.technicianId || '').toString().trim() || null) : undefined
+    const technicianId = hasTechnicianId
+      ? ((body.technicianId || '').toString().trim() || null)
+      : undefined
     const hasTechnicianNote = body !== null && 'technicianNote' in body
-    const technicianNote = hasTechnicianNote ? ((body.technicianNote || '').toString().trim() || null) : undefined
+    const technicianNote = hasTechnicianNote
+      ? ((body.technicianNote || '').toString().trim() || null)
+      : undefined
 
     if (!quoteId) {
       return NextResponse.json({ error: 'Missing quote ID.' }, { status: 400 })
@@ -171,7 +175,10 @@ export async function POST(request, context) {
 
     if (RETURN_WITHOUT_REPAIR.has(newStatus) && !trackingNumber) {
       return NextResponse.json(
-        { error: 'A return tracking number is required when marking an order as returned without repair.' },
+        {
+          error:
+            'A return tracking number is required when marking an order as returned without repair.',
+        },
         { status: 400 }
       )
     }
@@ -196,6 +203,46 @@ export async function POST(request, context) {
     if (orderLookupError) throw orderLookupError
 
     const previousStatus = repairOrder?.current_status || null
+
+    if (repairOrder && ['ready_to_ship', 'shipped'].includes(newStatus)) {
+      const { data: latestEstimate, error: estimateError } = await supabase
+        .from('quote_estimates')
+        .select('id, total_amount')
+        .eq('quote_request_id', quoteRequest.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (estimateError) throw estimateError
+
+      const { data: paidPayments, error: paymentsError } = await supabase
+        .from('payments')
+        .select('amount, status')
+        .eq('repair_order_id', repairOrder.id)
+        .eq('status', 'paid')
+
+      if (paymentsError) throw paymentsError
+
+      const totalPaid = (paidPayments || []).reduce(
+        (sum, payment) => sum + Number(payment.amount || 0),
+        0
+      )
+
+      const finalBalanceDue = Math.max(
+        Number(latestEstimate?.total_amount || 0) - totalPaid,
+        0
+      )
+
+      if (finalBalanceDue > 0) {
+        return NextResponse.json(
+          {
+            error:
+              'Final balance is still unpaid. Request or collect the remaining balance before moving this order to ready to ship or shipped.',
+          },
+          { status: 400 }
+        )
+      }
+    }
 
     if (!repairOrder) {
       const [modelResult, repairTypeResult] = await Promise.all([
