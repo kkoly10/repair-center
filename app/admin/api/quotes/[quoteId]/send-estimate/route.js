@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
-import { sendEstimateReadyEmail } from '../../../../../../lib/email'
+import { sendEstimateSentNotification } from '../../../../../../lib/notifications'
 
 export const runtime = 'nodejs'
 
@@ -49,7 +49,12 @@ export async function POST(request, context) {
       0
     )
 
-    const totalAmount = subtotalAmount + shippingAmount + taxAmount - discountAmount - depositCreditAmount
+    const totalAmount =
+      subtotalAmount +
+      shippingAmount +
+      taxAmount -
+      discountAmount -
+      depositCreditAmount
 
     const { data: quoteRequest, error: quoteError } = await supabase
       .from('quote_requests')
@@ -156,61 +161,31 @@ export async function POST(request, context) {
 
     if (itemsError) throw itemsError
 
-    const updatePayload = {
-      status: 'estimate_sent',
-      quote_summary: customerVisibleNotes || null,
-      internal_notes: internalNotes || null,
-      reviewed_at: new Date().toISOString(),
-      preliminary_price_fixed: Number.isFinite(totalAmount) ? totalAmount : null,
-      preliminary_price_min: null,
-      preliminary_price_max: null,
-    }
-
     const { error: quoteUpdateError } = await supabase
       .from('quote_requests')
-      .update(updatePayload)
+      .update({
+        status: 'estimate_sent',
+        quote_summary: customerVisibleNotes || null,
+        internal_notes: internalNotes || null,
+        reviewed_at: new Date().toISOString(),
+        preliminary_price_fixed: Number.isFinite(totalAmount) ? totalAmount : null,
+        preliminary_price_min: null,
+        preliminary_price_max: null,
+      })
       .eq('id', quoteRequest.id)
 
     if (quoteUpdateError) throw quoteUpdateError
 
-    // Send notification email to customer (non-blocking – failure won't break the response)
     try {
-      const [customerResult, quoteDetailsResult] = await Promise.all([
-        quoteRequest.customer_id
-          ? supabase
-              .from('customers')
-              .select('first_name, last_name, email')
-              .eq('id', quoteRequest.customer_id)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-        supabase
-          .from('quote_requests')
-          .select('guest_email, first_name, last_name, brand_name, model_name')
-          .eq('id', quoteRequest.id)
-          .maybeSingle(),
-      ])
-
-      const toEmail = customerResult.data?.email || quoteDetailsResult.data?.guest_email
-
-      if (toEmail) {
-        const name = [
-          customerResult.data?.first_name || quoteDetailsResult.data?.first_name,
-          customerResult.data?.last_name || quoteDetailsResult.data?.last_name,
-        ]
-          .filter(Boolean)
-          .join(' ')
-
-        const deviceDescription = [
-          quoteDetailsResult.data?.brand_name,
-          quoteDetailsResult.data?.model_name,
-        ]
-          .filter(Boolean)
-          .join(' ')
-
-        await sendEstimateReadyEmail({ to: toEmail, customerName: name, quoteId, deviceDescription, totalAmount })
-      }
-    } catch (emailError) {
-      console.error('[send-estimate] Failed to send estimate email:', emailError)
+      await sendEstimateSentNotification({
+        supabase,
+        quoteRequestId: quoteRequest.id,
+        estimateId: estimate.id,
+        estimateKind,
+        totalAmount,
+      })
+    } catch (notificationError) {
+      console.error('[send-estimate] failed to send estimate notification:', notificationError)
     }
 
     return NextResponse.json({
@@ -218,6 +193,9 @@ export async function POST(request, context) {
       estimateId: estimate.id,
       totalAmount,
       status: 'estimate_sent',
+      reviewPath: `/estimate-review/${quoteId}`,
+      trackingPath: `/track/${quoteId}`,
+      mailInPath: null,
     })
   } catch (error) {
     return NextResponse.json(
