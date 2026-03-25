@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
+import { sendEstimateSentNotification } from '../../../../../../lib/notifications'
 
 export const runtime = 'nodejs'
 
@@ -33,8 +34,7 @@ export async function POST(request, context) {
       )
     }
 
-    const estimateKind =
-      body.estimateKind === 'final' ? 'final' : 'revised'
+    const estimateKind = body.estimateKind === 'final' ? 'final' : 'revised'
 
     const shippingAmount = safeMoney(body.shippingAmount)
     const taxAmount = safeMoney(body.taxAmount)
@@ -196,6 +196,18 @@ export async function POST(request, context) {
       .eq('id', repairOrder.id)
 
     if (orderUpdateError) throw orderUpdateError
+
+    try {
+      await sendEstimateSentNotification({
+        supabase,
+        quoteRequestId: quoteRequest.id,
+        estimateId: estimate.id,
+        estimateKind,
+        totalAmount,
+      })
+    } catch (notificationError) {
+      console.error('[revised-estimate] failed to send revised estimate notification:', notificationError)
+    }
 
     return NextResponse.json({
       ok: true,
