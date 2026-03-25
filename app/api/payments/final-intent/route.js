@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { getSupabaseAdmin } from '../../../../../lib/supabase/admin'
+import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
 
 export const runtime = 'nodejs'
 
@@ -35,7 +35,11 @@ export async function POST(request) {
     }
 
     const customerResult = quoteRequest.customer_id
-      ? await supabase.from('customers').select('email').eq('id', quoteRequest.customer_id).maybeSingle()
+      ? await supabase
+          .from('customers')
+          .select('email')
+          .eq('id', quoteRequest.customer_id)
+          .maybeSingle()
       : { data: null, error: null }
 
     if (customerResult.error) throw customerResult.error
@@ -80,7 +84,11 @@ export async function POST(request) {
 
     if (paymentsError) throw paymentsError
 
-    const totalPaid = (paidPayments || []).reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+    const totalPaid = (paidPayments || []).reduce(
+      (sum, payment) => sum + Number(payment.amount || 0),
+      0
+    )
+
     const finalBalanceDue = Math.max(Number(latestEstimate.total_amount || 0) - totalPaid, 0)
 
     if (finalBalanceDue <= 0) {
@@ -99,7 +107,9 @@ export async function POST(request) {
       amount: Math.round(finalBalanceDue * 100),
       currency: 'usd',
       receipt_email: email,
-      description: `Repair balance – ${[quoteRequest.brand_name, quoteRequest.model_name].filter(Boolean).join(' ')} ${quoteRequest.repair_type_key || ''}`.trim(),
+      description: `Repair balance – ${[quoteRequest.brand_name, quoteRequest.model_name]
+        .filter(Boolean)
+        .join(' ')} ${quoteRequest.repair_type_key || ''}`.trim(),
       metadata: {
         quoteId: quoteRequest.quote_id,
         quoteRequestId: quoteRequest.id,
@@ -124,7 +134,10 @@ export async function POST(request) {
     })
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unable to create final balance payment.' },
+      {
+        error:
+          error instanceof Error ? error.message : 'Unable to create final balance payment.',
+      },
       { status: 500 }
     )
   }
