@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPaymentSummaryByQuoteId } from '../../../../../lib/payments/getPaymentSummary'
+import { getPaymentSummaryByQuoteId } from '../../../../lib/payments/getPaymentSummary'
 
 export const runtime = 'nodejs'
 
@@ -36,7 +36,10 @@ export async function POST(request) {
       quoteId,
       orderNumber: record.repairOrder.order_number,
       customerName:
-        [record.customer?.first_name || record.quoteRequest.first_name, record.customer?.last_name || record.quoteRequest.last_name]
+        [
+          record.customer?.first_name || record.quoteRequest.first_name,
+          record.customer?.last_name || record.quoteRequest.last_name,
+        ]
           .filter(Boolean)
           .join(' ') || 'Customer',
       summary: {
@@ -49,13 +52,18 @@ export async function POST(request) {
         depositPaid: record.summary.depositPaid,
         finalBalancePaid: record.summary.finalBalancePaid,
       },
-      device: [record.quoteRequest.brand_name, record.quoteRequest.model_name].filter(Boolean).join(' '),
+      device: [record.quoteRequest.brand_name, record.quoteRequest.model_name]
+        .filter(Boolean)
+        .join(' '),
       repair: record.quoteRequest.repair_type_key || '',
       trackingPath: `/track/${quoteId}`,
     })
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unable to load final balance summary.' },
+      {
+        error:
+          error instanceof Error ? error.message : 'Unable to load final balance summary.',
+      },
       { status: 500 }
     )
   }
