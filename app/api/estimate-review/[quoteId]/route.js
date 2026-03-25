@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
+import { sendMailInReadyNotification } from '../../../../lib/notifications'
 
 export const runtime = 'nodejs'
 
@@ -127,8 +128,6 @@ export async function POST(request, context) {
 
         if (orderUpdateError) throw orderUpdateError
 
-        // Device is already at the shop — only stamp reviewed_at, do not overwrite
-        // quote status with the pre-intake 'approved_for_mail_in' value.
         const { error: quoteUpdateError } = await supabase
           .from('quote_requests')
           .update({ reviewed_at: new Date().toISOString() })
@@ -191,7 +190,6 @@ export async function POST(request, context) {
 
       let createdOrder = existingOrderResult.data
 
-      // If no repair order yet and a deposit is required, redirect to payment first
       if (!createdOrder && pricingRuleResult.data?.deposit_amount > 0) {
         return NextResponse.json({
           ok: true,
@@ -239,6 +237,18 @@ export async function POST(request, context) {
         .eq('id', quoteRequest.id)
 
       if (quoteUpdateError) throw quoteUpdateError
+
+      try {
+        await sendMailInReadyNotification({
+          supabase,
+          quoteRequestId: quoteRequest.id,
+          repairOrderId: createdOrder?.id || null,
+          estimateId: estimate.id,
+          orderNumber: createdOrder?.order_number || null,
+        })
+      } catch (notificationError) {
+        console.error('[estimate-review] failed to send mail-in-ready notification:', notificationError)
+      }
 
       return NextResponse.json({
         ok: true,
