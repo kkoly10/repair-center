@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
+import {
+  sendDepositPaidNotification,
+  sendMailInReadyNotification,
+} from '../../../../lib/notifications'
 
 export const runtime = 'nodejs'
 
@@ -59,42 +63,14 @@ export async function POST(request) {
   return NextResponse.json({ received: true })
 }
 
-export async function finalizeDepositPayment({ quoteRequestId, estimateId, depositAmount, paymentIntentId }) {
+export async function finalizeDepositPayment({
+  quoteRequestId,
+  estimateId,
+  depositAmount,
+  paymentIntentId,
+}) {
   const supabase = getSupabaseAdmin()
 
-  // Idempotency: skip if repair order already exists
-  const { data: existingOrder } = await supabase
-    .from('repair_orders')
-    .select('id, order_number')
-    .eq('quote_request_id', quoteRequestId)
-    .maybeSingle()
-
-  if (existingOrder) {
-    // Record payment if not already present
-    const { data: existingPayment } = await supabase
-      .from('payments')
-      .select('id')
-      .eq('provider_payment_intent_id', paymentIntentId)
-      .maybeSingle()
-
-    if (!existingPayment) {
-      await supabase.from('payments').insert({
-        repair_order_id: existingOrder.id,
-        quote_estimate_id: estimateId || null,
-        payment_kind: 'inspection_deposit',
-        provider: 'stripe',
-        provider_payment_intent_id: paymentIntentId,
-        amount: depositAmount,
-        currency: 'USD',
-        status: 'paid',
-        paid_at: new Date().toISOString(),
-      })
-    }
-
-    return { orderId: existingOrder.id, orderNumber: existingOrder.order_number, existing: true }
-  }
-
-  // Fetch quote request to build repair order
   const { data: quoteRequest, error: quoteError } = await supabase
     .from('quote_requests')
     .select('*')
@@ -104,57 +80,150 @@ export async function finalizeDepositPayment({ quoteRequestId, estimateId, depos
   if (quoteError) throw quoteError
   if (!quoteRequest) throw new Error(`Quote request not found: ${quoteRequestId}`)
 
-  const [modelResult, repairTypeResult] = await Promise.all([
-    quoteRequest.model_key
-      ? supabase.from('repair_catalog_models').select('id').eq('model_key', quoteRequest.model_key).maybeSingle()
-      : Promise.resolve({ data: null }),
-    quoteRequest.repair_type_key
-      ? supabase.from('repair_types').select('id').eq('repair_key', quoteRequest.repair_type_key).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ])
-
-  const { data: newOrder, error: orderError } = await supabase
+  const { data: existingOrder, error: existingOrderError } = await supabase
     .from('repair_orders')
-    .insert({
-      quote_request_id: quoteRequestId,
-      customer_id: quoteRequest.customer_id,
-      model_id: modelResult.data?.id || null,
-      repair_type_id: repairTypeResult.data?.id || null,
-      current_status: 'awaiting_mail_in',
-      inspection_deposit_required: depositAmount,
-      final_estimate_id: estimateId || null,
-    })
     .select('id, order_number')
-    .single()
+    .eq('quote_request_id', quoteRequestId)
+    .maybeSingle()
 
-  if (orderError) throw orderError
+  if (existingOrderError) throw existingOrderError
 
-  // Record the payment
-  await supabase.from('payments').insert({
-    repair_order_id: newOrder.id,
-    quote_estimate_id: estimateId || null,
-    payment_kind: 'inspection_deposit',
-    provider: 'stripe',
-    provider_payment_intent_id: paymentIntentId,
-    amount: depositAmount,
-    currency: 'USD',
-    status: 'paid',
-    paid_at: new Date().toISOString(),
-  })
+  let repairOrder = existingOrder
+  let paymentRecord = null
 
-  // Mark estimate as approved
+  if (repairOrder) {
+    const { data: existingPayment, error: existingPaymentError } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('provider_payment_intent_id', paymentIntentId)
+      .maybeSingle()
+
+    if (existingPaymentError) throw existingPaymentError
+
+    if (existingPayment) {
+      paymentRecord = existingPayment
+    } else {
+      const { data: insertedPayment, error: insertPaymentError } = await supabase
+        .from('payments')
+        .insert({
+          repair_order_id: repairOrder.id,
+          quote_estimate_id: estimateId || null,
+          payment_kind: 'inspection_deposit',
+          provider: 'stripe',
+          provider_payment_intent_id: paymentIntentId,
+          amount: depositAmount,
+          currency: 'USD',
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single()
+
+      if (insertPaymentError) throw insertPaymentError
+      paymentRecord = insertedPayment
+    }
+  } else {
+    const [modelResult, repairTypeResult] = await Promise.all([
+      quoteRequest.model_key
+        ? supabase
+            .from('repair_catalog_models')
+            .select('id')
+            .eq('model_key', quoteRequest.model_key)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      quoteRequest.repair_type_key
+        ? supabase
+            .from('repair_types')
+            .select('id')
+            .eq('repair_key', quoteRequest.repair_type_key)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ])
+
+    if (modelResult.error) throw modelResult.error
+    if (repairTypeResult.error) throw repairTypeResult.error
+
+    const { data: newOrder, error: orderError } = await supabase
+      .from('repair_orders')
+      .insert({
+        quote_request_id: quoteRequestId,
+        customer_id: quoteRequest.customer_id,
+        model_id: modelResult.data?.id || null,
+        repair_type_id: repairTypeResult.data?.id || null,
+        current_status: 'awaiting_mail_in',
+        inspection_deposit_required: depositAmount,
+        final_estimate_id: estimateId || null,
+      })
+      .select('id, order_number')
+      .single()
+
+    if (orderError) throw orderError
+    repairOrder = newOrder
+
+    const { data: insertedPayment, error: insertPaymentError } = await supabase
+      .from('payments')
+      .insert({
+        repair_order_id: newOrder.id,
+        quote_estimate_id: estimateId || null,
+        payment_kind: 'inspection_deposit',
+        provider: 'stripe',
+        provider_payment_intent_id: paymentIntentId,
+        amount: depositAmount,
+        currency: 'USD',
+        status: 'paid',
+        paid_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single()
+
+    if (insertPaymentError) throw insertPaymentError
+    paymentRecord = insertedPayment
+  }
+
   if (estimateId) {
-    await supabase
+    const { error: estimateUpdateError } = await supabase
       .from('quote_estimates')
       .update({ status: 'approved', approved_at: new Date().toISOString() })
       .eq('id', estimateId)
+
+    if (estimateUpdateError) throw estimateUpdateError
   }
 
-  // Update quote request status
-  await supabase
+  const { error: quoteUpdateError } = await supabase
     .from('quote_requests')
-    .update({ status: 'approved_for_mail_in', reviewed_at: new Date().toISOString() })
+    .update({
+      status: 'approved_for_mail_in',
+      reviewed_at: new Date().toISOString(),
+    })
     .eq('id', quoteRequestId)
 
-  return { orderId: newOrder.id, orderNumber: newOrder.order_number, existing: false }
+  if (quoteUpdateError) throw quoteUpdateError
+
+  try {
+    await sendDepositPaidNotification({
+      supabase,
+      quoteRequestId,
+      repairOrderId: repairOrder.id,
+      paymentId: paymentRecord?.id || null,
+      paymentIntentId,
+      depositAmount,
+      orderNumber: repairOrder.order_number || null,
+    })
+
+    await sendMailInReadyNotification({
+      supabase,
+      quoteRequestId,
+      repairOrderId: repairOrder.id,
+      estimateId: estimateId || null,
+      orderNumber: repairOrder.order_number || null,
+    })
+  } catch (notificationError) {
+    console.error('[payments] notification failure after deposit payment:', notificationError)
+  }
+
+  return {
+    orderId: repairOrder.id,
+    orderNumber: repairOrder.order_number,
+    existing: Boolean(existingOrder),
+  }
 }
