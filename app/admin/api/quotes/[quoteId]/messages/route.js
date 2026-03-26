@@ -33,18 +33,29 @@ export async function GET(request, context) {
 
     if (orderError) throw orderError
     if (!repairOrder) {
-      return NextResponse.json({ ok: true, messages: [] })
+      return NextResponse.json({ ok: true, messages: [], unreadCustomerCount: 0 })
     }
 
     const { data: messages, error: messagesError } = await supabase
       .from('repair_messages')
-      .select('id, sender_role, body, internal_only, created_at')
+      .select('id, sender_role, body, internal_only, created_at, staff_read_at, customer_read_at')
       .eq('repair_order_id', repairOrder.id)
       .order('created_at', { ascending: true })
 
     if (messagesError) throw messagesError
 
-    return NextResponse.json({ ok: true, messages: messages || [] })
+    const unreadCustomerCount = (messages || []).filter(
+      (message) =>
+        message.sender_role === 'customer' &&
+        message.internal_only === false &&
+        message.staff_read_at == null
+    ).length
+
+    return NextResponse.json({
+      ok: true,
+      messages: messages || [],
+      unreadCustomerCount,
+    })
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unable to load messages.' },
@@ -64,14 +75,6 @@ export async function POST(request, context) {
     if (!quoteId) {
       return NextResponse.json({ error: 'Missing quote ID.' }, { status: 400 })
     }
-
-    const messageBody = (body.body || '').toString().trim()
-    if (!messageBody) {
-      return NextResponse.json({ error: 'Message body is required.' }, { status: 400 })
-    }
-
-    const senderRole = ['admin', 'tech'].includes(body.senderRole) ? body.senderRole : 'admin'
-    const internalOnly = Boolean(body.internalOnly)
 
     const { data: quoteRequest, error: quoteError } = await supabase
       .from('quote_requests')
@@ -98,15 +101,44 @@ export async function POST(request, context) {
       )
     }
 
+    if (body.action === 'mark_customer_read') {
+      const now = new Date().toISOString()
+
+      const { error: markReadError } = await supabase
+        .from('repair_messages')
+        .update({ staff_read_at: now })
+        .eq('repair_order_id', repairOrder.id)
+        .eq('sender_role', 'customer')
+        .eq('internal_only', false)
+        .is('staff_read_at', null)
+
+      if (markReadError) throw markReadError
+
+      return NextResponse.json({ ok: true, unreadCustomerCount: 0 })
+    }
+
+    const messageBody = (body.body || '').toString().trim()
+    if (!messageBody) {
+      return NextResponse.json({ error: 'Message body is required.' }, { status: 400 })
+    }
+
+    const senderRole = ['admin', 'tech'].includes(body.senderRole) ? body.senderRole : 'admin'
+    const internalOnly = Boolean(body.internalOnly)
+    const now = new Date().toISOString()
+
+    const insertPayload = {
+      repair_order_id: repairOrder.id,
+      sender_role: senderRole,
+      body: messageBody,
+      internal_only: internalOnly,
+      staff_read_at: now,
+      customer_read_at: internalOnly ? now : null,
+    }
+
     const { data: message, error: insertError } = await supabase
       .from('repair_messages')
-      .insert({
-        repair_order_id: repairOrder.id,
-        sender_role: senderRole,
-        body: messageBody,
-        internal_only: internalOnly,
-      })
-      .select('id, sender_role, body, internal_only, created_at')
+      .insert(insertPayload)
+      .select('id, sender_role, body, internal_only, created_at, staff_read_at, customer_read_at')
       .single()
 
     if (insertError) throw insertError
