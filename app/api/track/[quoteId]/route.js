@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
+import { resolveTrackingIdentifier } from '../../../../lib/resolveTrackingIdentifier'
 
 export const runtime = 'nodejs'
 
@@ -8,24 +9,21 @@ export async function POST(request, context) {
 
   try {
     const params = await context.params
-    const quoteId = params?.quoteId
+    const identifier = params?.quoteId
     const body = await request.json()
     const email = (body?.email || '').toString().trim().toLowerCase()
 
-    if (!quoteId || !email) {
+    if (!identifier || !email) {
       return NextResponse.json(
-        { error: 'Quote ID and email are required.' },
+        { error: 'Tracking identifier and email are required.' },
         { status: 400 }
       )
     }
 
-    const { data: quoteRequest, error: quoteError } = await supabase
-      .from('quote_requests')
-      .select('*')
-      .eq('quote_id', quoteId)
-      .maybeSingle()
+    const resolved = await resolveTrackingIdentifier(identifier, { supabase })
+    const quoteRequest = resolved.quoteRequest
+    const repairOrder = resolved.repairOrder
 
-    if (quoteError) throw quoteError
     if (!quoteRequest) {
       return NextResponse.json(
         { error: 'Quote request not found.' },
@@ -33,7 +31,7 @@ export async function POST(request, context) {
       )
     }
 
-    const [customerResult, orderResult, estimateResult] = await Promise.all([
+    const [customerResult, estimateResult] = await Promise.all([
       quoteRequest.customer_id
         ? supabase
             .from('customers')
@@ -42,14 +40,9 @@ export async function POST(request, context) {
             .maybeSingle()
         : Promise.resolve({ data: null, error: null }),
       supabase
-        .from('repair_orders')
-        .select('*')
-        .eq('quote_request_id', quoteRequest.id)
-        .maybeSingle(),
-      supabase
         .from('quote_estimates')
         .select(
-          'id, estimate_kind, status, total_amount, turnaround_note, warranty_days, sent_at, approved_at'
+          'id, estimate_kind, status, total_amount, turnaround_note, warranty_days, sent_at, approved_at, declined_at'
         )
         .eq('quote_request_id', quoteRequest.id)
         .order('created_at', { ascending: false })
@@ -58,7 +51,6 @@ export async function POST(request, context) {
     ])
 
     if (customerResult.error) throw customerResult.error
-    if (orderResult.error) throw orderResult.error
     if (estimateResult.error) throw estimateResult.error
 
     const allowedEmails = [quoteRequest.guest_email, customerResult.data?.email]
@@ -74,15 +66,14 @@ export async function POST(request, context) {
 
     let statusHistory = []
     let shipments = []
+    let messages = []
 
-    if (orderResult.data?.id) {
-      const [historyResult, shipmentsResult] = await Promise.all([
+    if (repairOrder?.id) {
+      const [historyResult, shipmentsResult, messagesResult] = await Promise.all([
         supabase
           .from('repair_order_status_history')
-          .select(
-            'id, previous_status, new_status, customer_visible, note, created_at'
-          )
-          .eq('repair_order_id', orderResult.data.id)
+          .select('id, previous_status, new_status, customer_visible, note, created_at')
+          .eq('repair_order_id', repairOrder.id)
           .eq('customer_visible', true)
           .order('created_at', { ascending: true }),
         supabase
@@ -90,19 +81,45 @@ export async function POST(request, context) {
           .select(
             'id, shipment_type, carrier, service_level, tracking_number, tracking_url, status, shipped_at, delivered_at, note'
           )
-          .eq('repair_order_id', orderResult.data.id)
+          .eq('repair_order_id', repairOrder.id)
           .order('created_at', { ascending: false }),
+        supabase
+          .from('repair_messages')
+          .select('id, sender_role, body, internal_only, created_at, customer_read_at, staff_read_at')
+          .eq('repair_order_id', repairOrder.id)
+          .eq('internal_only', false)
+          .order('created_at', { ascending: true }),
       ])
 
       if (historyResult.error) throw historyResult.error
       if (shipmentsResult.error) throw shipmentsResult.error
+      if (messagesResult.error) throw messagesResult.error
 
       statusHistory = historyResult.data || []
       shipments = shipmentsResult.data || []
+      messages = messagesResult.data || []
+
+      const unreadVisibleStaffMessages = messages
+        .filter(
+          (message) =>
+            ['admin', 'tech', 'system'].includes(message.sender_role) &&
+            message.customer_read_at == null
+        )
+        .map((message) => message.id)
+
+      if (unreadVisibleStaffMessages.length) {
+        await supabase
+          .from('repair_messages')
+          .update({ customer_read_at: new Date().toISOString() })
+          .in('id', unreadVisibleStaffMessages)
+      }
     }
 
     return NextResponse.json({
       ok: true,
+      identifier: resolved.identifier,
+      canonicalQuoteId: resolved.canonicalQuoteId,
+      canonicalOrderNumber: resolved.canonicalOrderNumber,
       quote: {
         quote_id: quoteRequest.quote_id,
         status: quoteRequest.status,
@@ -124,31 +141,29 @@ export async function POST(request, context) {
         phone: customerResult.data?.phone || quoteRequest.guest_phone,
       },
       estimate: estimateResult.data,
-      order: orderResult.data
+      order: repairOrder
         ? {
-            id: orderResult.data.id,
-            order_number: orderResult.data.order_number,
-            current_status: orderResult.data.current_status,
-            inspection_deposit_required:
-              orderResult.data.inspection_deposit_required,
-            intake_received_at: orderResult.data.intake_received_at,
-            repair_started_at: orderResult.data.repair_started_at,
-            repair_completed_at: orderResult.data.repair_completed_at,
-            shipped_at: orderResult.data.shipped_at,
-            delivered_at: orderResult.data.delivered_at,
+            id: repairOrder.id,
+            order_number: repairOrder.order_number,
+            current_status: repairOrder.current_status,
+            inspection_deposit_required: repairOrder.inspection_deposit_required,
+            intake_received_at: repairOrder.intake_received_at,
+            repair_started_at: repairOrder.repair_started_at,
+            repair_completed_at: repairOrder.repair_completed_at,
+            shipped_at: repairOrder.shipped_at,
+            delivered_at: repairOrder.delivered_at,
           }
         : null,
       statusHistory,
       shipments,
+      messages,
       mailInPath:
-        (orderResult.data &&
-          ['awaiting_mail_in', 'in_transit_to_shop'].includes(
-            orderResult.data.current_status
-          )) ||
-        (!orderResult.data && quoteRequest.status === 'approved_for_mail_in')
-          ? `/mail-in/${quoteId}`
+        (repairOrder &&
+          ['awaiting_mail_in', 'in_transit_to_shop'].includes(repairOrder.current_status)) ||
+        (!repairOrder && quoteRequest.status === 'approved_for_mail_in')
+          ? `/mail-in/${quoteRequest.quote_id}`
           : null,
-      reviewPath: `/estimate-review/${quoteId}`,
+      reviewPath: `/estimate-review/${quoteRequest.quote_id}`,
     })
   } catch (error) {
     return NextResponse.json(
