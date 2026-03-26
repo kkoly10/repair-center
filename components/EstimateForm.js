@@ -81,10 +81,12 @@ export default function EstimateForm() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    const form = event.currentTarget
+
     clearSubmissionState()
     setIsSubmitting(true)
 
-    const formData = new FormData(event.currentTarget)
+    const formData = new FormData(form)
     formData.set('contactMethod', contactMethod)
     formData.set('powerState', powerState)
     formData.set('chargeState', chargeState)
@@ -105,7 +107,7 @@ export default function EstimateForm() {
       }
 
       setSubmissionResult(result)
-      event.currentTarget.reset()
+      form.reset()
       setSelectedFiles([])
     } catch (error) {
       setSubmissionError(error.message)
@@ -347,7 +349,10 @@ export default function EstimateForm() {
                   </span>
                 ) : null}
                 <span style={{ display: 'block', marginTop: 12 }}>
-                  <Link href='/track' style={{ color: 'var(--blue)', fontWeight: 700 }}>
+                  <Link
+                    href={`/track/${submissionResult.quoteId}`}
+                    style={{ color: 'var(--blue)', fontWeight: 700 }}
+                  >
                     Open tracking page
                   </Link>
                 </span>
