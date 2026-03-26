@@ -89,6 +89,8 @@ function AdminRepairOrderInner({ quoteId }) {
   const [messageInternalOnly, setMessageInternalOnly] = useState(false)
   const [messageSending, setMessageSending] = useState(false)
   const [messageError, setMessageError] = useState('')
+  const [unreadCustomerCount, setUnreadCustomerCount] = useState(0)
+  const [markingMessagesRead, setMarkingMessagesRead] = useState(false)
 
   useEffect(() => {
     let ignore = false
@@ -182,6 +184,7 @@ function AdminRepairOrderInner({ quoteId }) {
         const result = await response.json()
         if (!ignore && result.ok) {
           setMessages(result.messages || [])
+          setUnreadCustomerCount(result.unreadCustomerCount || 0)
         }
       } catch {
         // non-blocking
@@ -317,6 +320,38 @@ function AdminRepairOrderInner({ quoteId }) {
       setMessageError(err.message || 'Unable to send message.')
     } finally {
       setMessageSending(false)
+    }
+  }
+
+  const handleMarkCustomerRepliesRead = async () => {
+    setMarkingMessagesRead(true)
+    setMessageError('')
+
+    try {
+      const response = await fetch(`/admin/api/quotes/${quoteId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'mark_customer_read',
+        }),
+      })
+
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to mark messages as read.')
+
+      const now = new Date().toISOString()
+      setUnreadCustomerCount(0)
+      setMessages((current) =>
+        current.map((message) =>
+          message.sender_role === 'customer' && message.staff_read_at == null
+            ? { ...message, staff_read_at: now }
+            : message
+        )
+      )
+    } catch (err) {
+      setMessageError(err.message || 'Unable to mark messages as read.')
+    } finally {
+      setMarkingMessagesRead(false)
     }
   }
 
@@ -752,7 +787,10 @@ function AdminRepairOrderInner({ quoteId }) {
             {record.order?.id && (
               <div className='policy-card'>
                 <div className='kicker'>Messages</div>
-                <h3>Order communication log</h3>
+                <h3>
+                  Order communication log
+                  {unreadCustomerCount > 0 ? ` · ${unreadCustomerCount} unread customer repl${unreadCustomerCount === 1 ? 'y' : 'ies'}` : ''}
+                </h3>
                 <p style={{ marginBottom: 18 }}>
                   Staff notes and customer-facing messages. Mark internal-only to keep a note
                   visible only to staff.
@@ -783,6 +821,19 @@ function AdminRepairOrderInner({ quoteId }) {
                     </div>
                   )}
                 </div>
+
+                {unreadCustomerCount > 0 ? (
+                  <div className='inline-actions' style={{ marginTop: 14 }}>
+                    <button
+                      type='button'
+                      className='button button-secondary'
+                      onClick={handleMarkCustomerRepliesRead}
+                      disabled={markingMessagesRead}
+                    >
+                      {markingMessagesRead ? 'Marking…' : 'Mark Customer Replies Read'}
+                    </button>
+                  </div>
+                ) : null}
 
                 <form onSubmit={handleSendMessage} style={{ marginTop: 18 }}>
                   <div className='field'>
