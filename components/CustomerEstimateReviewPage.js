@@ -4,6 +4,12 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+function formatEstimateDecisionLabel(status) {
+  if (status === 'approved') return 'Estimate Accepted'
+  if (status === 'declined') return 'Estimate Declined'
+  return 'Decision'
+}
+
 export default function CustomerEstimateReviewPage({ quoteId }) {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -79,6 +85,8 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
         return
       }
 
+      const actionTimestamp = new Date().toISOString()
+
       if (action === 'approve') {
         if (result.nextAction === 'tracking') {
           setResultMessage('Estimate approved. Repair can now continue and your tracking page has been updated.')
@@ -107,6 +115,14 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
               estimate: {
                 ...current.estimate,
                 status: result.estimateStatus,
+                approved_at:
+                  action === 'approve'
+                    ? current.estimate.approved_at || actionTimestamp
+                    : current.estimate.approved_at,
+                declined_at:
+                  action === 'decline'
+                    ? current.estimate.declined_at || actionTimestamp
+                    : current.estimate.declined_at,
               },
             }
           : current
@@ -117,6 +133,16 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
       setSubmittingAction('')
     }
   }
+
+  const decisionLocked =
+    record?.estimate?.status === 'approved' || record?.estimate?.status === 'declined'
+
+  const decisionTimestamp =
+    record?.estimate?.status === 'approved'
+      ? record?.estimate?.approved_at
+      : record?.estimate?.status === 'declined'
+        ? record?.estimate?.declined_at
+        : null
 
   return (
     <main className='page-hero'>
@@ -265,46 +291,76 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
                 <div className='policy-card'>
                   <div className='kicker'>Decision</div>
                   <h3>Approve or decline</h3>
-                  <p>
-                    {record.estimate.estimate_kind !== 'preliminary'
-                      ? 'Approving this revised estimate authorizes the repair to continue. Declining will close this estimate path.'
-                      : 'Approving this estimate moves the repair to the next stage. Declining will close this estimate path.'}
-                  </p>
 
-                  <div className='inline-actions'>
-                    <button
-                      type='button'
-                      className='button button-primary'
-                      onClick={() => handleDecision('approve')}
-                      disabled={submittingAction !== '' || record.estimate.status === 'approved'}
-                    >
-                      {submittingAction === 'approve' ? 'Approving…' : 'Approve Estimate'}
-                    </button>
-                    <button
-                      type='button'
-                      className='button button-secondary'
-                      onClick={() => handleDecision('decline')}
-                      disabled={submittingAction !== '' || record.estimate.status === 'declined'}
-                    >
-                      {submittingAction === 'decline' ? 'Declining…' : 'Decline Estimate'}
-                    </button>
-                  </div>
+                  {decisionLocked ? (
+                    <>
+                      <div className='notice' style={{ marginTop: 18 }}>
+                        <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
+                          {formatEstimateDecisionLabel(record.estimate.status)}
+                        </strong>
+                        {decisionTimestamp
+                          ? `Recorded on ${new Date(decisionTimestamp).toLocaleString()}`
+                          : `This estimate has already been ${record.estimate.status}.`}
+                      </div>
 
-                  {mailInPath ? (
-                    <div className='inline-actions' style={{ marginTop: 14 }}>
-                      <Link href={mailInPath} className='button button-secondary'>
-                        View Mail-In Instructions
-                      </Link>
-                    </div>
-                  ) : null}
+                      <div className='inline-actions' style={{ marginTop: 14 }}>
+                        {mailInPath ? (
+                          <Link href={mailInPath} className='button button-secondary'>
+                            View Mail-In Instructions
+                          </Link>
+                        ) : null}
 
-                  {trackingPath ? (
-                    <div className='inline-actions' style={{ marginTop: 14 }}>
-                      <Link href={trackingPath} className='button button-secondary'>
-                        Open Tracking Page
-                      </Link>
-                    </div>
-                  ) : null}
+                        {trackingPath ? (
+                          <Link href={trackingPath} className='button button-secondary'>
+                            Open Tracking Page
+                          </Link>
+                        ) : null}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p>
+                        {record.estimate.estimate_kind !== 'preliminary'
+                          ? 'Approving this revised estimate authorizes the repair to continue. Declining will close this estimate path.'
+                          : 'Approving this estimate moves the repair to the next stage. Declining will close this estimate path.'}
+                      </p>
+
+                      <div className='inline-actions'>
+                        <button
+                          type='button'
+                          className='button button-primary'
+                          onClick={() => handleDecision('approve')}
+                          disabled={submittingAction !== ''}
+                        >
+                          {submittingAction === 'approve' ? 'Approving…' : 'Approve Estimate'}
+                        </button>
+                        <button
+                          type='button'
+                          className='button button-secondary'
+                          onClick={() => handleDecision('decline')}
+                          disabled={submittingAction !== ''}
+                        >
+                          {submittingAction === 'decline' ? 'Declining…' : 'Decline Estimate'}
+                        </button>
+                      </div>
+
+                      {mailInPath ? (
+                        <div className='inline-actions' style={{ marginTop: 14 }}>
+                          <Link href={mailInPath} className='button button-secondary'>
+                            View Mail-In Instructions
+                          </Link>
+                        </div>
+                      ) : null}
+
+                      {trackingPath ? (
+                        <div className='inline-actions' style={{ marginTop: 14 }}>
+                          <Link href={trackingPath} className='button button-secondary'>
+                            Open Tracking Page
+                          </Link>
+                        </div>
+                      ) : null}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
