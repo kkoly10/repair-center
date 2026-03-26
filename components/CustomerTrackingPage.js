@@ -22,11 +22,22 @@ const STATUS_LABELS = {
   returned_unrepaired: 'Returned Unrepaired',
 }
 
+function formatSender(senderRole) {
+  if (senderRole === 'admin') return 'Repair Center'
+  if (senderRole === 'tech') return 'Technician'
+  if (senderRole === 'customer') return 'You'
+  return 'System'
+}
+
 export default function CustomerTrackingPage({ quoteId }) {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [record, setRecord] = useState(null)
+  const [replyBody, setReplyBody] = useState('')
+  const [replySending, setReplySending] = useState(false)
+  const [replyError, setReplyError] = useState('')
+  const [replySuccess, setReplySuccess] = useState('')
 
   const currentStatusLabel = useMemo(() => {
     if (!record?.order?.current_status) return 'No repair order yet'
@@ -37,6 +48,8 @@ export default function CustomerTrackingPage({ quoteId }) {
     event.preventDefault()
     setLoading(true)
     setError('')
+    setReplyError('')
+    setReplySuccess('')
 
     try {
       const response = await fetch(`/api/track/${quoteId}`, {
@@ -59,6 +72,41 @@ export default function CustomerTrackingPage({ quoteId }) {
     }
   }
 
+  const handleReply = async (event) => {
+    event.preventDefault()
+    if (!replyBody.trim()) return
+
+    setReplySending(true)
+    setReplyError('')
+    setReplySuccess('')
+
+    try {
+      const response = await fetch(`/api/track/${quoteId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, body: replyBody }),
+      })
+
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to send your message.')
+
+      setRecord((current) =>
+        current
+          ? {
+              ...current,
+              messages: [...(current.messages || []), result.message],
+            }
+          : current
+      )
+      setReplyBody('')
+      setReplySuccess('Your message has been sent to the repair team.')
+    } catch (err) {
+      setReplyError(err.message || 'Unable to send your message.')
+    } finally {
+      setReplySending(false)
+    }
+  }
+
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
@@ -75,6 +123,10 @@ export default function CustomerTrackingPage({ quoteId }) {
           <form className='policy-card' onSubmit={handleVerify}>
             <div className='kicker'>Verify request</div>
             <h3>Enter your email</h3>
+            <p className='field-note' style={{ marginBottom: 18 }}>
+              You can open tracking using either your <strong>Quote ID (RCQ-...)</strong> or your{' '}
+              <strong>Order Number (RCO-...)</strong>.
+            </p>
             <div className='field' style={{ marginTop: 18 }}>
               <label htmlFor='track-email'>Email address</label>
               <input
@@ -116,6 +168,10 @@ export default function CustomerTrackingPage({ quoteId }) {
                 <span>3</span>
                 <span>Shipment and return tracking</span>
               </div>
+              <div className='preview-meta-row'>
+                <span>4</span>
+                <span>Messages from the repair team</span>
+              </div>
             </div>
           </div>
         </div>
@@ -156,9 +212,20 @@ export default function CustomerTrackingPage({ quoteId }) {
 
               <div className='quote-summary'>
                 <div className='quote-summary-card'>
-                  <strong>Order number</strong>
-                  <span>{record.order?.order_number || 'Not created yet'}</span>
+                  <strong>Quote ID</strong>
+                  <span>{record.canonicalQuoteId || record.quote.quote_id}</span>
                 </div>
+                <div className='quote-summary-card'>
+                  <strong>Order number</strong>
+                  <span>{record.canonicalOrderNumber || record.order?.order_number || 'Not created yet'}</span>
+                </div>
+                <div className='quote-summary-card'>
+                  <strong>Current stage</strong>
+                  <span>{currentStatusLabel}</span>
+                </div>
+              </div>
+
+              <div className='quote-summary' style={{ marginTop: 14 }}>
                 <div className='quote-summary-card'>
                   <strong>Estimate total</strong>
                   <span>
@@ -168,8 +235,15 @@ export default function CustomerTrackingPage({ quoteId }) {
                   </span>
                 </div>
                 <div className='quote-summary-card'>
-                  <strong>Current stage</strong>
-                  <span>{currentStatusLabel}</span>
+                  <strong>Tracking opened with</strong>
+                  <span>{record.identifier}</span>
+                </div>
+                <div className='quote-summary-card'>
+                  <strong>Accepted lookup IDs</strong>
+                  <span>
+                    {record.canonicalQuoteId}
+                    {record.canonicalOrderNumber ? ` / ${record.canonicalOrderNumber}` : ''}
+                  </span>
                 </div>
               </div>
             </div>
@@ -213,6 +287,57 @@ export default function CustomerTrackingPage({ quoteId }) {
                     ) : null}
                   </div>
                 </div>
+
+                <div className='policy-card'>
+                  <div className='kicker'>Messages</div>
+                  <h3>Repair team updates</h3>
+                  <div className='preview-meta' style={{ marginTop: 18 }}>
+                    {(record.messages || []).length ? (
+                      record.messages.map((message) => (
+                        <div key={message.id} className='preview-meta-row'>
+                          <span>
+                            <strong>{formatSender(message.sender_role)}:</strong> {message.body}
+                          </span>
+                          <span>{new Date(message.created_at).toLocaleString()}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className='preview-meta-row'>
+                        <span>No messages yet.</span>
+                        <span>—</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {record.order ? (
+                  <form className='policy-card' onSubmit={handleReply}>
+                    <div className='kicker'>Reply</div>
+                    <h3>Send a message to the repair team</h3>
+                    <div className='field' style={{ marginTop: 18 }}>
+                      <label htmlFor='customer-reply'>Message</label>
+                      <textarea
+                        id='customer-reply'
+                        value={replyBody}
+                        onChange={(event) => setReplyBody(event.target.value)}
+                        placeholder='Ask a question or send a note about your repair.'
+                      />
+                    </div>
+
+                    {replyError ? <div className='notice' style={{ marginTop: 14 }}>{replyError}</div> : null}
+                    {replySuccess ? <div className='notice' style={{ marginTop: 14 }}>{replySuccess}</div> : null}
+
+                    <div className='inline-actions'>
+                      <button
+                        type='submit'
+                        className='button button-primary'
+                        disabled={replySending || !replyBody.trim()}
+                      >
+                        {replySending ? 'Sending…' : 'Send Message'}
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
               </div>
 
               <div className='page-stack'>
