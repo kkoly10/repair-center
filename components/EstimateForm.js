@@ -32,6 +32,7 @@ export default function EstimateForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submissionResult, setSubmissionResult] = useState(null)
   const [submissionError, setSubmissionError] = useState(null)
+  const [phoneError, setPhoneError] = useState('')
 
   const brands = useMemo(() => getBrandsByCategory(category), [category])
 
@@ -82,9 +83,24 @@ export default function EstimateForm() {
     clearSubmissionState()
   }
 
+  const validatePhone = (value) => {
+    if (!value) return ''
+    const digits = value.replace(/\D/g, '')
+    if (digits.length < 10 || digits.length > 15) return 'Enter a valid phone number (at least 10 digits).'
+    return ''
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
     const form = event.currentTarget
+
+    const phoneValue = form.phone?.value || ''
+    const phoneValidation = validatePhone(phoneValue)
+    if (phoneValidation) {
+      setPhoneError(phoneValidation)
+      return
+    }
+    setPhoneError('')
 
     clearSubmissionState()
     setIsSubmitting(true)
@@ -126,26 +142,26 @@ export default function EstimateForm() {
           <div className='hero-copy' style={{ padding: 32 }}>
             <div className='eyebrow'>Free estimate</div>
             <h1 style={{ maxWidth: '12ch', fontSize: 'clamp(2.3rem, 5vw, 3.7rem)' }}>
-              Start with photos before you ship anything.
+              Tell us about your device and we&apos;ll quote it.
             </h1>
             <p>
-              This estimate flow is designed to keep the first step simple while still collecting
-              enough detail for a serious human review.
+              Upload a few photos, select your device, and describe the problem. We'll review
+              everything and send you a detailed estimate — usually within one business day.
             </p>
 
             <div className='trust-row'>
               <span className='badge'>No account required</span>
               <span className='badge'>Photos stored privately</span>
-              <span className='badge'>Human-reviewed quotes</span>
+              <span className='badge'>90-day warranty</span>
             </div>
           </div>
 
           <div className='panel panel-dark'>
-            <div className='kicker'>Workflow</div>
-            <h3>What happens after you submit</h3>
+            <div className='kicker'>What happens next</div>
+            <h3>We review it, you decide</h3>
             <p>
-              Your request is saved into the repair workflow, reviewed by staff, and moved into the
-              next step only after approval.
+              After you submit, we review your request and send an estimate. You approve or decline
+              before anything else happens.
             </p>
             <div style={{ marginTop: 18 }}>
               <StatusTracker steps={REPAIR_STATUS_STEPS} currentStep={0} />
@@ -153,28 +169,28 @@ export default function EstimateForm() {
           </div>
 
           <div className='policy-card'>
-            <div className='kicker'>Important to know</div>
-            <h3>Photo estimates are still preliminary</h3>
+            <div className='kicker'>Good to know</div>
+            <h3>Photo estimates are preliminary</h3>
             <p>
-              The preview helps set expectations, but final pricing can still change after in-hand
-              inspection if hidden damage, missing parts, or additional labor are discovered.
+              The price preview below is based on our catalog. Final pricing is confirmed after we
+              inspect the device in hand. If anything changes, you&apos;ll approve a revised estimate first.
             </p>
           </div>
         </div>
 
         <form className='form-shell form-shell-premium' onSubmit={handleSubmit}>
           <div className='kicker'>Start your estimate</div>
-          <h2 style={{ marginTop: 0, marginBottom: 8 }}>Tell us about the device and the problem</h2>
+          <h2 style={{ marginTop: 0, marginBottom: 8 }}>Tell us about your device</h2>
           <p className='muted' style={{ marginTop: 0 }}>
-            This request will create a real quote record, save any uploaded photos, and place the
-            job into your review queue.
+            Fill in your details, select your device, and describe the issue. We'll get back to you
+            with a quote.
           </p>
 
           <div className='form-premium-note'>
-            <strong>Best results</strong>
+            <strong>Tip</strong>
             <span>
-              Upload clear photos, describe the issue in plain language, and mention anything that
-              happened before the problem started.
+              Clear photos help us give a more accurate estimate. Include shots of the damage and
+              mention what happened before the problem started.
             </span>
           </div>
 
@@ -195,7 +211,14 @@ export default function EstimateForm() {
               </div>
               <div className='field'>
                 <label htmlFor='phone'>Phone number</label>
-                <input id='phone' name='phone' placeholder='(555) 555-5555' />
+                <input
+                  id='phone'
+                  name='phone'
+                  type='tel'
+                  placeholder='(555) 555-5555'
+                  onChange={() => { if (phoneError) setPhoneError('') }}
+                />
+                {phoneError ? <span style={{ color: '#dc2626', fontSize: '0.84rem', marginTop: 4, display: 'block' }}>{phoneError}</span> : null}
               </div>
               <div className='field' style={{ gridColumn: '1 / -1' }}>
                 <label>Preferred contact method</label>
@@ -315,15 +338,8 @@ export default function EstimateForm() {
           <div className='form-section'>
             <h3>Upload photos</h3>
             <p className='field-note'>
-              Up to 6 images. These uploads are saved into the private repair-uploads bucket for staff review.
+              Up to 6 images. Suggested shots: front, back, damage close-up, screen on, side/frame, charging port.
             </p>
-            <div className='upload-grid'>
-              {['Front', 'Back', 'Damage close-up', 'Screen on', 'Side / frame', 'Charging port'].map((label) => (
-                <div key={label} className='upload-tile'>
-                  {label}
-                </div>
-              ))}
-            </div>
             <div className='field' style={{ marginTop: 14 }}>
               <label htmlFor='photos'>Photo files</label>
               <input
@@ -333,19 +349,34 @@ export default function EstimateForm() {
                 accept='image/*'
                 multiple
                 onChange={(event) => {
-                  setSelectedFiles(Array.from(event.target.files || []))
+                  const files = Array.from(event.target.files || []).slice(0, 6)
+                  setSelectedFiles(files)
                   clearSubmissionState()
                 }}
               />
             </div>
             {selectedFiles.length ? (
-              <div className='notice' style={{ marginTop: 12 }}>
-                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
-                  Selected files
-                </strong>
-                {selectedFiles.map((file) => file.name).join(', ')}
+              <div className='upload-grid' style={{ marginTop: 12 }}>
+                {selectedFiles.map((file, index) => (
+                  <div key={`${file.name}-${index}`} className='upload-tile upload-tile-preview'>
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 10 }}
+                    />
+                    <span className='upload-tile-label'>{file.name}</span>
+                  </div>
+                ))}
               </div>
-            ) : null}
+            ) : (
+              <div className='upload-grid' style={{ marginTop: 12 }}>
+                {['Front', 'Back', 'Damage close-up', 'Screen on', 'Side / frame', 'Charging port'].map((label) => (
+                  <div key={label} className='upload-tile'>
+                    {label}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className='preview-card'>

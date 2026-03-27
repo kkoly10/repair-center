@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { REPAIR_CATALOG } from '../../lib/repairCatalog'
 
 const grouped = REPAIR_CATALOG.reduce((acc, item) => {
@@ -12,16 +13,21 @@ export default function DevicesPage() {
       <div className='site-shell page-stack'>
         <div className='info-card'>
           <div className='kicker'>Supported devices</div>
-          <h1>Browse supported models before you request an estimate</h1>
+          <h1>Devices we currently service</h1>
           <p>
-            The repair flow already uses a model-based catalog so customers can choose the right
-            device and repair path instead of submitting a vague generic request.
+            Choose your device below to see how many repair options are available,
+            then start a free estimate when you're ready.
           </p>
+          <div className='inline-actions'>
+            <Link href='/estimate' className='button button-primary button-compact'>
+              Get Free Estimate
+            </Link>
+          </div>
         </div>
 
         {Object.entries(grouped).map(([category, items]) => (
           <div key={category} className='list-card'>
-            <h3 style={{ textTransform: 'capitalize' }}>{category}</h3>
+            <h3 style={{ textTransform: 'capitalize' }}>{category}s</h3>
             <div className='grid-3' style={{ marginTop: 18 }}>
               {items.map((item) => (
                 <div key={item.modelKey} className='feature-card'>
@@ -29,8 +35,13 @@ export default function DevicesPage() {
                   <h3 style={{ marginTop: 14 }}>{item.model}</h3>
                   <p>
                     {item.repairs.length} supported repair
-                    {item.repairs.length === 1 ? '' : 's'} in the current catalog.
+                    {item.repairs.length === 1 ? '' : 's'}
                   </p>
+                  <div style={{ marginTop: 12 }}>
+                    <Link href='/estimate' className='button button-secondary button-compact'>
+                      Get Estimate
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>

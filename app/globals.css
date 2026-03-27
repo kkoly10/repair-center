@@ -1253,4 +1253,32 @@ main {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.upload-tile-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.upload-tile-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notice-warn {
+  background: #fef9ee;
+  border-color: #f59e0b;
 }
