@@ -20,6 +20,8 @@ const STATUS_LABELS = {
   cancelled: 'Cancelled',
   declined: 'Declined',
   returned_unrepaired: 'Returned Unrepaired',
+  beyond_economical_repair: 'Beyond Economical Repair',
+  no_fault_found: 'No Fault Found',
 }
 
 function formatSender(senderRole) {
@@ -112,10 +114,10 @@ export default function CustomerTrackingPage({ quoteId }) {
       <div className='site-shell page-stack'>
         <div className='info-card'>
           <div className='kicker'>Repair tracking</div>
-          <h1>Track your repair from approval to return shipment</h1>
+          <h1>Track your repair from estimate approval to return delivery</h1>
           <p>
-            Enter the email used for your quote to securely view order progress,
-            status history, shipment updates, and key repair milestones.
+            Enter the email used for your quote to securely view repair progress, shipment updates,
+            and messages from the repair team.
           </p>
         </div>
 
@@ -140,7 +142,7 @@ export default function CustomerTrackingPage({ quoteId }) {
             </div>
 
             {error ? (
-              <div className='notice' style={{ marginTop: 18 }}>
+              <div className='notice notice-warn' style={{ marginTop: 18 }}>
                 {error}
               </div>
             ) : null}
@@ -179,14 +181,12 @@ export default function CustomerTrackingPage({ quoteId }) {
         {record ? (
           <div className='page-stack'>
             {record.order?.current_status === 'awaiting_final_approval' ? (
-              <div className='info-card'>
-                <div className='kicker'>Action required</div>
-                <h2>A revised estimate needs your approval</h2>
-                <p>
-                  During inspection, new findings changed the scope of the repair. Please
-                  review the updated estimate and approve it before the repair can continue.
-                </p>
-                <div className='inline-actions'>
+              <div className='notice notice-warn'>
+                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
+                  Action required
+                </strong>
+                A revised estimate needs your approval before the repair can continue.
+                <div className='inline-actions' style={{ marginBottom: 0 }}>
                   <Link href={record.reviewPath} className='button button-primary'>
                     Review &amp; Approve Estimate
                   </Link>
@@ -199,33 +199,33 @@ export default function CustomerTrackingPage({ quoteId }) {
                 <div>
                   <div className='quote-id'>{record.quote.quote_id}</div>
                   <h2 className='quote-title'>
-                    {[record.quote.brand_name, record.quote.model_name]
-                      .filter(Boolean)
-                      .join(' ')}
+                    {[record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ')}
                   </h2>
-                  <p className='muted'>
-                    {record.quote.repair_type_key || 'Repair type not set'}
-                  </p>
+                  <p className='muted'>{record.quote.repair_type_key || 'Repair type not set'}</p>
                 </div>
                 <span className='price-chip'>{currentStatusLabel}</span>
               </div>
 
-              <div className='quote-summary'>
-                <div className='quote-summary-card'>
-                  <strong>Quote ID</strong>
-                  <span>{record.canonicalQuoteId || record.quote.quote_id}</span>
-                </div>
-                <div className='quote-summary-card'>
-                  <strong>Order number</strong>
-                  <span>{record.canonicalOrderNumber || record.order?.order_number || 'Not created yet'}</span>
-                </div>
-                <div className='quote-summary-card'>
-                  <strong>Current stage</strong>
-                  <span>{currentStatusLabel}</span>
+              <div className='identity-band'>
+                <div className='identity-band-grid'>
+                  <div className='identity-band-item'>
+                    <strong>Quote ID</strong>
+                    <span>{record.canonicalQuoteId || record.quote.quote_id}</span>
+                  </div>
+                  <div className='identity-band-item'>
+                    <strong>Order number</strong>
+                    <span>
+                      {record.canonicalOrderNumber || record.order?.order_number || 'Not created yet'}
+                    </span>
+                  </div>
+                  <div className='identity-band-item'>
+                    <strong>Tracking opened with</strong>
+                    <span>{record.identifier}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className='quote-summary' style={{ marginTop: 14 }}>
+              <div className='quote-summary'>
                 <div className='quote-summary-card'>
                   <strong>Estimate total</strong>
                   <span>
@@ -235,8 +235,8 @@ export default function CustomerTrackingPage({ quoteId }) {
                   </span>
                 </div>
                 <div className='quote-summary-card'>
-                  <strong>Tracking opened with</strong>
-                  <span>{record.identifier}</span>
+                  <strong>Current stage</strong>
+                  <span>{currentStatusLabel}</span>
                 </div>
                 <div className='quote-summary-card'>
                   <strong>Accepted lookup IDs</strong>
@@ -291,14 +291,20 @@ export default function CustomerTrackingPage({ quoteId }) {
                 <div className='policy-card'>
                   <div className='kicker'>Messages</div>
                   <h3>Repair team updates</h3>
-                  <div className='preview-meta' style={{ marginTop: 18 }}>
+                  <div className='message-thread'>
                     {(record.messages || []).length ? (
                       record.messages.map((message) => (
-                        <div key={message.id} className='preview-meta-row'>
-                          <span>
-                            <strong>{formatSender(message.sender_role)}:</strong> {message.body}
-                          </span>
-                          <span>{new Date(message.created_at).toLocaleString()}</span>
+                        <div
+                          key={message.id}
+                          className={`message-bubble ${
+                            message.sender_role === 'customer'
+                              ? 'message-bubble-customer'
+                              : 'message-bubble-staff'
+                          }`}
+                        >
+                          <strong>{formatSender(message.sender_role)}</strong>
+                          <span>{message.body}</span>
+                          <small>{new Date(message.created_at).toLocaleString()}</small>
                         </div>
                       ))
                     ) : (
@@ -324,8 +330,16 @@ export default function CustomerTrackingPage({ quoteId }) {
                       />
                     </div>
 
-                    {replyError ? <div className='notice' style={{ marginTop: 14 }}>{replyError}</div> : null}
-                    {replySuccess ? <div className='notice' style={{ marginTop: 14 }}>{replySuccess}</div> : null}
+                    {replyError ? (
+                      <div className='notice notice-warn' style={{ marginTop: 14 }}>
+                        {replyError}
+                      </div>
+                    ) : null}
+                    {replySuccess ? (
+                      <div className='notice notice-success' style={{ marginTop: 14 }}>
+                        {replySuccess}
+                      </div>
+                    ) : null}
 
                     <div className='inline-actions'>
                       <button
@@ -349,11 +363,8 @@ export default function CustomerTrackingPage({ quoteId }) {
                       record.shipments.map((shipment) => (
                         <div key={shipment.id} className='preview-meta-row'>
                           <span>
-                            {shipment.shipment_type} ·{' '}
-                            {shipment.carrier || 'Carrier pending'}
-                            {shipment.tracking_number
-                              ? ` · ${shipment.tracking_number}`
-                              : ''}
+                            {shipment.shipment_type} · {shipment.carrier || 'Carrier pending'}
+                            {shipment.tracking_number ? ` · ${shipment.tracking_number}` : ''}
                           </span>
                           <span>{shipment.status || 'Pending'}</span>
                         </div>
