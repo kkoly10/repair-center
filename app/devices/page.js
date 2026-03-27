@@ -11,11 +11,11 @@ export default function DevicesPage() {
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='info-card'>
-          <div className='kicker'>Devices</div>
-          <h1>Starter catalog by category, brand, and model</h1>
+          <div className='kicker'>Supported devices</div>
+          <h1>Browse supported models before you request an estimate</h1>
           <p>
-            This launch version already includes a seeded pricing catalog for a short list of supported models.
-            You can expand it over time without redesigning the customer flow.
+            The repair flow already uses a model-based catalog so customers can choose the right
+            device and repair path instead of submitting a vague generic request.
           </p>
         </div>
 
@@ -27,7 +27,10 @@ export default function DevicesPage() {
                 <div key={item.modelKey} className='feature-card'>
                   <span className='mini-chip'>{item.brand}</span>
                   <h3 style={{ marginTop: 14 }}>{item.model}</h3>
-                  <p>{item.repairs.length} repair types seeded in the starter catalog.</p>
+                  <p>
+                    {item.repairs.length} supported repair
+                    {item.repairs.length === 1 ? '' : 's'} in the current catalog.
+                  </p>
                 </div>
               ))}
             </div>
