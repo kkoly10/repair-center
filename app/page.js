@@ -5,19 +5,19 @@ import { REPAIR_STATUS_STEPS, REPAIR_CATALOG } from '../lib/repairCatalog'
 const deviceCards = [
   {
     title: 'Phones',
-    text: 'Screen damage, batteries, charging problems, cameras, speakers, and common hardware issues for supported models.',
+    text: 'Screen damage, battery service, charging issues, camera problems, speakers, and common hardware repairs for supported models.',
   },
   {
     title: 'Laptops',
-    text: 'Battery service, keyboard replacement, storage upgrades, software recovery, and selected hardware repairs that fit a practical mail-in workflow.',
+    text: 'Battery replacements, keyboard issues, storage upgrades, software recovery, and selected hardware jobs that fit a practical mail-in workflow.',
   },
   {
     title: 'Tablets',
-    text: 'Glass and screen repairs, battery service, charging issues, and common iPad and tablet repairs for supported models.',
+    text: 'Glass and screen repairs, batteries, charging ports, and common iPad or tablet issues for supported models.',
   },
   {
     title: 'Selective desktop jobs',
-    text: 'Handled through manual review only when the shipping risk and repair scope make sense for a mail-in service.',
+    text: 'Handled by manual review only when the shipping risk, device value, and repair scope make operational sense.',
   },
 ]
 
@@ -32,16 +32,16 @@ const commonRepairs = [
 
 const trustPoints = [
   {
-    title: 'Clear before you ship',
-    text: 'Customers start with photos and device details first. That keeps the process low-friction and helps filter unrealistic jobs before anything is mailed.',
+    title: 'Estimate first',
+    text: 'Customers upload photos and details before shipping anything. That lowers friction while protecting both sides from vague expectations.',
   },
   {
-    title: 'Approval before repair',
-    text: 'The repair flow is structured so work is not quietly pushed forward without a visible estimate, approval step, and tracked status updates.',
+    title: 'Approval before work',
+    text: 'The workflow is designed so the repair does not quietly move forward without a visible quote, approval point, and tracked status updates.',
   },
   {
     title: 'Built for real operations',
-    text: 'This system is designed around controlled intake, part-time technician capacity, inspection checkpoints, and return shipping visibility.',
+    text: 'This system is designed around controlled intake, inspection checkpoints, payment gates, and return shipping visibility.',
   },
 ]
 
@@ -58,11 +58,11 @@ export default function HomePage() {
       <section className='hero'>
         <div className='site-shell hero-grid'>
           <div className='hero-copy'>
-            <div className='eyebrow'>Mail-in phone, tablet, and laptop repair</div>
-            <h1>Repair your device without guessing what happens next.</h1>
+            <div className='eyebrow'>Premium mail-in device repair</div>
+            <h1>Repair your device with a process you can actually trust.</h1>
             <p>
-              Start with a free photo estimate, approve the repair before mailing anything in,
-              track each stage of the job, and follow return shipping from one place.
+              Start with a free photo estimate, approve before mailing anything in,
+              follow clear repair updates, and track the return shipment from one place.
             </p>
 
             <div className='hero-actions-row'>
@@ -83,31 +83,35 @@ export default function HomePage() {
           </div>
 
           <div className='hero-side'>
-            <div className='hero-card metric-grid'>
-              <div className='metric'>
-                <strong>Free</strong>
-                <span>photo estimate before shipping</span>
+            <div className='hero-visual'>
+              <div className='hero-visual-surface'>
+                <div className='hero-device-laptop' />
+                <div className='hero-device-tablet' />
+                <div className='hero-device-phone' />
               </div>
-              <div className='metric'>
-                <strong>Tracked</strong>
-                <span>from quote to return delivery</span>
-              </div>
-              <div className='metric'>
-                <strong>90-day</strong>
-                <span>limited warranty on supported repairs</span>
-              </div>
-              <div className='metric'>
-                <strong>Selective</strong>
-                <span>service menu built for practical mail-in work</span>
+
+              <div className='hero-visual-strip'>
+                <div className='hero-strip-item'>
+                  <strong>Free estimate</strong>
+                  <span>before shipping</span>
+                </div>
+                <div className='hero-strip-item'>
+                  <strong>Human review</strong>
+                  <span>before approval</span>
+                </div>
+                <div className='hero-strip-item'>
+                  <strong>Tracked return</strong>
+                  <span>after repair closes</span>
+                </div>
               </div>
             </div>
 
-            <div className='panel'>
+            <div className='panel panel-dark'>
               <div className='kicker'>Tracking preview</div>
               <h3>Repair progress with real checkpoints</h3>
               <p>
-                Customers can see where the repair stands instead of wondering whether the device
-                was received, inspected, approved, repaired, or shipped back.
+                Customers can see where the device stands instead of wondering whether
+                it was received, inspected, approved, repaired, or shipped back.
               </p>
               <div style={{ marginTop: 18 }}>
                 <StatusTracker steps={REPAIR_STATUS_STEPS} currentStep={2} />
@@ -132,10 +136,10 @@ export default function HomePage() {
 
           <div className='steps-grid'>
             {[
-              ['01', 'Submit your estimate', 'Upload photos, choose your device, and describe the problem.'],
-              ['02', 'Review the quote', 'We review the request and send a repair estimate or next-step guidance.'],
-              ['03', 'Approve before mail-in', 'You only move forward if you accept the estimate and next step.'],
-              ['04', 'Track repair progress', 'Follow intake, inspection, repair, payment, and return shipping from one place.'],
+              ['01', 'Submit your estimate', 'Upload photos, choose your device, and describe the issue.'],
+              ['02', 'Review the quote', 'We review the request and send estimate guidance or next steps.'],
+              ['03', 'Approve before mail-in', 'You only move forward if you accept the repair path.'],
+              ['04', 'Track each stage', 'Follow intake, inspection, repair, payment, and return shipping.'],
             ].map(([number, title, text]) => (
               <div key={number} className='step-card'>
                 <div className='step-number'>{number}</div>
@@ -152,11 +156,11 @@ export default function HomePage() {
           <div className='section-head'>
             <div>
               <div className='kicker'>What we work on</div>
-              <h2 className='section-title'>Focused on the devices people actually depend on</h2>
+              <h2 className='section-title'>Focused on the devices people actually rely on</h2>
             </div>
             <p className='section-copy'>
-              A tighter launch scope makes the business more trustworthy, easier to operate, and
-              more consistent than trying to promise every repair under the sun.
+              A tighter launch scope makes the service more trustworthy, easier to operate,
+              and more consistent than trying to promise every repair under the sun.
             </p>
           </div>
 
@@ -179,8 +183,8 @@ export default function HomePage() {
               <h2 className='section-title'>Built around repeatable repairs that fit mail-in operations</h2>
             </div>
             <p className='section-copy'>
-              The best early jobs are predictable repairs with practical shipping, realistic labor,
-              and parts that can be sourced with confidence.
+              The best early jobs are predictable repairs with practical shipping,
+              realistic labor, and parts that can be sourced with confidence.
             </p>
           </div>
 
@@ -190,8 +194,8 @@ export default function HomePage() {
                 <span className='price-chip'>Common request</span>
                 <h3 style={{ marginTop: 14 }}>{repair}</h3>
                 <p>
-                  Submitted through the estimate flow first, then confirmed through inspection and
-                  approval if the real condition changes the scope.
+                  Submitted through the estimate flow first, then confirmed through inspection
+                  and approval if the actual device condition changes the scope.
                 </p>
               </div>
             ))}
@@ -203,12 +207,12 @@ export default function HomePage() {
         <div className='site-shell'>
           <div className='section-head'>
             <div>
-              <div className='kicker'>Supported pricing foundation</div>
-              <h2 className='section-title'>Model-based catalog structure behind the estimate flow</h2>
+              <div className='kicker'>Pricing foundation</div>
+              <h2 className='section-title'>Model-based catalog logic already behind the estimate flow</h2>
             </div>
             <p className='section-copy'>
-              Customers can already choose a category, brand, model, and repair type. That gives
-              the site a real operational foundation instead of a fake quote form.
+              Customers can already choose a category, brand, model, and repair type.
+              That gives the site a real operational foundation instead of a fake quote form.
             </p>
           </div>
 
@@ -259,8 +263,8 @@ export default function HomePage() {
               <h2 className='section-title'>More transparent than the usual repair-shop experience</h2>
             </div>
             <p className='section-copy'>
-              The public site is designed to feel controlled, clear, and professional — not vague,
-              rushed, or generic.
+              The public site is designed to feel controlled, premium, and clear —
+              not vague, rushed, or template-driven.
             </p>
           </div>
 
