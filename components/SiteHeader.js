@@ -22,7 +22,7 @@ export default function SiteHeader() {
           <span className='brand-mark'>RC</span>
           <span>
             <strong>Repair Center</strong>
-            <small>Mail-In Device Repair</small>
+            <small>Premium mail-in device repair</small>
           </span>
         </Link>
 
