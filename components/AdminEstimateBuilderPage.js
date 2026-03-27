@@ -162,10 +162,18 @@ function AdminEstimateBuilderInner({ quoteId }) {
     )
   }
 
+  const [showConfirm, setShowConfirm] = useState(false)
+
   const handleSubmit = async (event) => {
     event.preventDefault()
     if (!record) return
 
+    if (!showConfirm) {
+      setShowConfirm(true)
+      return
+    }
+
+    setShowConfirm(false)
     setSaving(true)
     setError('')
     setSuccess('')
@@ -508,6 +516,23 @@ function AdminEstimateBuilderInner({ quoteId }) {
 
           {error ? <div className='notice'>{error}</div> : null}
           {success ? <div className='notice'>{success}</div> : null}
+
+          {showConfirm ? (
+            <div className='notice notice-warn'>
+              <strong style={{ display: 'block', marginBottom: 8 }}>Confirm: Send this estimate to the customer?</strong>
+              <p style={{ margin: '0 0 12px' }}>
+                This will email the estimate to {record.quote.guest_email || record.customerName} and change the quote status to estimate_sent.
+              </p>
+              <div className='inline-actions' style={{ margin: 0 }}>
+                <button type='submit' className='button button-primary button-compact' disabled={saving}>
+                  {saving ? 'Sending…' : 'Yes, send estimate'}
+                </button>
+                <button type='button' className='button button-ghost button-compact' onClick={() => setShowConfirm(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className='inline-actions'>
             <button type='submit' className='button button-primary' disabled={saving}>

@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 const repairBuckets = [
   {
     title: 'Phone repairs',
@@ -38,11 +40,19 @@ export default function RepairsPage() {
       <div className='site-shell page-stack'>
         <div className='info-card'>
           <div className='kicker'>Repair services</div>
-          <h1>Repairs built around jobs that make sense for a mail-in business</h1>
+          <h1>What we repair</h1>
           <p>
-            The service menu is intentionally focused. That helps keep turnaround realistic,
-            pricing cleaner, and customer expectations clearer.
+            We focus on the repairs that work well for a mail-in service — predictable scope,
+            reliable parts, and realistic turnaround times.
           </p>
+          <div className='inline-actions'>
+            <Link href='/estimate' className='button button-primary button-compact'>
+              Get Free Estimate
+            </Link>
+            <Link href='/devices' className='button button-secondary button-compact'>
+              View Supported Devices
+            </Link>
+          </div>
         </div>
 
         <div className='grid-3'>
@@ -54,17 +64,22 @@ export default function RepairsPage() {
                   <li key={item}>{item}</li>
                 ))}
               </ul>
+              <div style={{ marginTop: 14 }}>
+                <Link href='/estimate' className='button button-secondary button-compact'>
+                  Start an Estimate
+                </Link>
+              </div>
             </div>
           ))}
         </div>
 
         <div className='policy-card'>
           <div className='kicker'>Manual review only</div>
-          <h3>Some jobs stay quote-first until reviewed in hand</h3>
+          <h3>Some repairs require in-hand evaluation first</h3>
           <p>
-            Liquid damage, board-level no-power issues, bent housings, biometric failures,
-            and unusual desktop repairs should stay in manual review until the device has been
-            properly evaluated and the repair risk is understood.
+            Liquid damage, board-level failures, bent housings, biometric issues,
+            and complex desktop repairs are evaluated after inspection. Submit an estimate
+            and we&apos;ll let you know what&apos;s possible.
           </p>
         </div>
       </div>

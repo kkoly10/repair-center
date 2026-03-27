@@ -90,6 +90,9 @@ export async function POST(request, context) {
 
     if (supersededError) throw supersededError
 
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 14)
+
     const { data: estimate, error: estimateError } = await supabase
       .from('quote_estimates')
       .insert({
@@ -107,6 +110,7 @@ export async function POST(request, context) {
         customer_visible_notes: customerVisibleNotes || null,
         internal_notes: internalNotes || null,
         sent_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString(),
       })
       .select('id')
       .single()

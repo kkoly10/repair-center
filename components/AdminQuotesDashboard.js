@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AdminAuthGate from './AdminAuthGate'
 import QuoteStatusBadge from './QuoteStatusBadge'
@@ -18,6 +18,8 @@ const STATUS_OPTIONS = [
   { value: 'archived', label: 'Archived' },
 ]
 
+const PAGE_SIZE = 25
+
 export default function AdminQuotesDashboard() {
   return (
     <AdminAuthGate>
@@ -30,85 +32,107 @@ function AdminQuotesDashboardInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeStatus = searchParams.get('status') || 'all'
-  const [state, setState] = useState({ loading: true, error: '', items: [], stats: emptyStats() })
+  const [state, setState] = useState({ loading: true, error: '', items: [], stats: emptyStats(), totalCount: 0 })
+  const [page, setPage] = useState(0)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchInput, setSearchInput] = useState('')
 
-  useEffect(() => {
-    let ignore = false
+  const loadQuotes = useCallback(async (ignore = { current: false }) => {
+    setState((current) => ({ ...current, loading: true, error: '' }))
 
-    async function loadQuotes() {
-      setState((current) => ({ ...current, loading: true, error: '' }))
+    try {
+      const supabase = getSupabaseBrowser()
+      const from = page * PAGE_SIZE
+      const to = from + PAGE_SIZE - 1
 
-      try {
-        const supabase = getSupabaseBrowser()
+      let queueQuery = supabase
+        .from('quote_requests')
+        .select('id, quote_id, first_name, last_name, guest_email, guest_phone, device_category, brand_name, model_name, repair_type_key, status, preliminary_price_fixed, preliminary_price_min, preliminary_price_max, quote_summary, created_at, reviewed_at', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to)
 
-        let queueQuery = supabase
-          .from('quote_requests')
-          .select('id, quote_id, first_name, last_name, guest_email, guest_phone, device_category, brand_name, model_name, repair_type_key, status, preliminary_price_fixed, preliminary_price_min, preliminary_price_max, quote_summary, created_at, reviewed_at')
-          .order('created_at', { ascending: false })
-          .limit(100)
+      if (activeStatus !== 'all') {
+        queueQuery = queueQuery.eq('status', activeStatus)
+      }
 
-        if (activeStatus !== 'all') {
-          queueQuery = queueQuery.eq('status', activeStatus)
-        }
+      if (searchTerm) {
+        queueQuery = queueQuery.or(`quote_id.ilike.%${searchTerm}%,guest_email.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`)
+      }
 
-        const [{ data: items, error: itemsError }, { data: statuses, error: statusesError }] = await Promise.all([
-          queueQuery,
-          supabase.from('quote_requests').select('id, status'),
-        ])
+      const [{ data: items, error: itemsError, count }, { data: statuses, error: statusesError }] = await Promise.all([
+        queueQuery,
+        supabase.from('quote_requests').select('status').limit(5000),
+      ])
 
-        if (itemsError) throw itemsError
-        if (statusesError) throw statusesError
+      if (itemsError) throw itemsError
+      if (statusesError) throw statusesError
 
-        const requestIds = (items || []).map((item) => item.id)
-        let photoRows = []
+      const requestIds = (items || []).map((item) => item.id)
+      let photoRows = []
 
-        if (requestIds.length) {
-          const { data, error } = await supabase
-            .from('quote_request_photos')
-            .select('quote_request_id')
-            .in('quote_request_id', requestIds)
+      if (requestIds.length) {
+        const { data, error } = await supabase
+          .from('quote_request_photos')
+          .select('quote_request_id')
+          .in('quote_request_id', requestIds)
 
-          if (error) throw error
-          photoRows = data || []
-        }
+        if (error) throw error
+        photoRows = data || []
+      }
 
-        const photoCountByRequestId = photoRows.reduce((accumulator, row) => {
-          accumulator[row.quote_request_id] = (accumulator[row.quote_request_id] || 0) + 1
-          return accumulator
-        }, {})
+      const photoCountByRequestId = photoRows.reduce((accumulator, row) => {
+        accumulator[row.quote_request_id] = (accumulator[row.quote_request_id] || 0) + 1
+        return accumulator
+      }, {})
 
-        const stats = buildStats(statuses || [])
+      const stats = buildStats(statuses || [])
 
-        if (!ignore) {
-          setState({
-            loading: false,
-            error: '',
-            stats,
-            items: (items || []).map((item) => ({
-              ...item,
-              customer_name: [item.first_name, item.last_name].filter(Boolean).join(' ') || 'Guest customer',
-              price_display: formatPrice(item),
-              photo_count: photoCountByRequestId[item.id] || 0,
-            })),
-          })
-        }
-      } catch (error) {
-        if (!ignore) {
-          setState({ loading: false, error: error.message || 'Unable to load quotes.', items: [], stats: emptyStats() })
-        }
+      if (!ignore.current) {
+        setState({
+          loading: false,
+          error: '',
+          stats,
+          totalCount: count || 0,
+          items: (items || []).map((item) => ({
+            ...item,
+            customer_name: [item.first_name, item.last_name].filter(Boolean).join(' ') || 'Guest customer',
+            price_display: formatPrice(item),
+            photo_count: photoCountByRequestId[item.id] || 0,
+          })),
+        })
+      }
+    } catch (error) {
+      if (!ignore.current) {
+        setState({ loading: false, error: error.message || 'Unable to load quotes.', items: [], stats: emptyStats(), totalCount: 0 })
       }
     }
+  }, [activeStatus, page, searchTerm])
 
-    loadQuotes()
-    return () => {
-      ignore = true
-    }
-  }, [activeStatus])
+  useEffect(() => {
+    const ignore = { current: false }
+    loadQuotes(ignore)
+    return () => { ignore.current = true }
+  }, [loadQuotes])
 
   const activeLabel = useMemo(() => STATUS_OPTIONS.find((option) => option.value === activeStatus)?.label || 'All requests', [activeStatus])
 
+  const totalPages = Math.max(1, Math.ceil(state.totalCount / PAGE_SIZE))
+
   const handleFilter = (status) => {
+    setPage(0)
     router.replace(status === 'all' ? '/admin/quotes' : `/admin/quotes?status=${status}`)
+  }
+
+  const handleSearch = (event) => {
+    event.preventDefault()
+    setPage(0)
+    setSearchTerm(searchInput.trim())
+  }
+
+  const clearSearch = () => {
+    setSearchInput('')
+    setSearchTerm('')
+    setPage(0)
   }
 
   return (
@@ -121,6 +145,21 @@ function AdminQuotesDashboardInner() {
             Review incoming estimate requests, open each quote record, and move the customer toward estimate sent,
             approval, or decline.
           </p>
+
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginTop: 14, marginBottom: 14 }}>
+            <input
+              type='text'
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder='Search by Quote ID, email, or name…'
+              style={{ flex: 1 }}
+            />
+            <button type='submit' className='button button-primary button-compact'>Search</button>
+            {searchTerm ? (
+              <button type='button' className='button button-ghost button-compact' onClick={clearSearch}>Clear</button>
+            ) : null}
+          </form>
+
           <div className='inline-actions'>
             {STATUS_OPTIONS.map((option) => (
               <button
@@ -140,7 +179,6 @@ function AdminQuotesDashboardInner() {
             <div key={option.value} className='feature-card'>
               <div className='kicker'>{option.label}</div>
               <h3>{state.stats[option.value] || 0}</h3>
-              <p>Requests currently in this stage.</p>
             </div>
           ))}
         </div>
@@ -149,8 +187,13 @@ function AdminQuotesDashboardInner() {
           <div className='section-head' style={{ marginBottom: 0 }}>
             <div>
               <div className='kicker'>Queue</div>
-              <h3 style={{ marginBottom: 8 }}>{activeLabel}</h3>
-              <p className='muted'>Newest quote requests first.</p>
+              <h3 style={{ marginBottom: 8 }}>
+                {activeLabel}
+                {searchTerm ? ` matching "${searchTerm}"` : ''}
+              </h3>
+              <p className='muted'>
+                Showing {state.items.length} of {state.totalCount} results (page {page + 1} of {totalPages})
+              </p>
             </div>
           </div>
         </div>
@@ -159,7 +202,7 @@ function AdminQuotesDashboardInner() {
         {state.loading ? <div className='policy-card'>Loading quote requests…</div> : null}
 
         {!state.loading && !state.items.length ? (
-          <div className='policy-card'>No quote requests match this status yet.</div>
+          <div className='policy-card'>No quote requests match this filter{searchTerm ? ' and search' : ''}.</div>
         ) : null}
 
         {!state.loading && state.items.length ? (
@@ -205,6 +248,30 @@ function AdminQuotesDashboardInner() {
                 </div>
               </Link>
             ))}
+
+            {totalPages > 1 ? (
+              <div className='inline-actions' style={{ justifyContent: 'center' }}>
+                <button
+                  type='button'
+                  className='button button-secondary button-compact'
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                >
+                  Previous
+                </button>
+                <span style={{ display: 'inline-flex', alignItems: 'center', fontWeight: 700, fontSize: '0.92rem' }}>
+                  Page {page + 1} of {totalPages}
+                </span>
+                <button
+                  type='button'
+                  className='button button-secondary button-compact'
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
