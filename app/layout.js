@@ -3,7 +3,7 @@ import SiteHeader from '../components/SiteHeader'
 import SiteFooter from '../components/SiteFooter'
 
 export const metadata = {
-  title: 'Repair Center — Mail-In Phone, Tablet & Laptop Repair',
+  title: 'Repair Center — Premium Mail-In Phone, Tablet & Laptop Repair',
   description:
     'Mail-in repair for phones, tablets, and laptops with free photo estimates, human review, tracked progress, and secure return shipping.',
 }
