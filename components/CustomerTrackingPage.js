@@ -194,6 +194,34 @@ export default function CustomerTrackingPage({ quoteId }) {
               </div>
             ) : null}
 
+            {record.depositRequired && !record.depositPaid ? (
+              <div className='notice notice-warn'>
+                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
+                  Payment required
+                </strong>
+                An inspection deposit is required before we can begin work on your device.
+                <div className='inline-actions' style={{ marginBottom: 0 }}>
+                  <Link href={record.paymentPath} className='button button-primary'>
+                    Pay Inspection Deposit
+                  </Link>
+                </div>
+              </div>
+            ) : null}
+
+            {record.order?.current_status === 'awaiting_balance_payment' ? (
+              <div className='notice notice-warn'>
+                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
+                  Final payment required
+                </strong>
+                Your repair is complete. Please pay the remaining balance so we can ship your device back.
+                <div className='inline-actions' style={{ marginBottom: 0 }}>
+                  <Link href={record.balancePaymentPath} className='button button-primary'>
+                    Pay Final Balance
+                  </Link>
+                </div>
+              </div>
+            ) : null}
+
             <div className='quote-card'>
               <div className='quote-top'>
                 <div>
@@ -275,7 +303,7 @@ export default function CustomerTrackingPage({ quoteId }) {
 
                 <div className='policy-card'>
                   <div className='kicker'>Helpful links</div>
-                  <h3>Next pages</h3>
+                  <h3>Quick actions</h3>
                   <div className='inline-actions'>
                     <Link href={record.reviewPath} className='button button-secondary'>
                       Review Estimate
@@ -283,6 +311,16 @@ export default function CustomerTrackingPage({ quoteId }) {
                     {record.mailInPath ? (
                       <Link href={record.mailInPath} className='button button-secondary'>
                         Mail-In Instructions
+                      </Link>
+                    ) : null}
+                    {record.depositRequired && !record.depositPaid ? (
+                      <Link href={record.paymentPath} className='button button-primary'>
+                        Pay Deposit
+                      </Link>
+                    ) : null}
+                    {record.order?.current_status === 'awaiting_balance_payment' ? (
+                      <Link href={record.balancePaymentPath} className='button button-primary'>
+                        Pay Balance
                       </Link>
                     ) : null}
                   </div>
