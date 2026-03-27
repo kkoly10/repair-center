@@ -10,30 +10,30 @@ export default function SiteFooter() {
             <span className='brand-mark'>RC</span>
             <span>
               <strong>Repair Center</strong>
-              <small>Trust-first mail-in repair</small>
+              <small>Mail-In Device Repair</small>
             </span>
           </div>
           <p className='footer-copy'>
-            Premium mail-in repair for phones, tablets, and laptops with photo estimates,
-            human-reviewed quotes, tracked progress, and secure return shipping.
+            Mail-in repair for phones, tablets, and laptops with free estimates, human-reviewed
+            quotes, tracked repair progress, and secure return shipping.
           </p>
         </div>
 
         <div>
-          <h4>Explore</h4>
+          <h4>Start Here</h4>
           <div className='footer-links'>
             <Link href='/estimate'>Free Estimate</Link>
             <Link href='/how-it-works'>How It Works</Link>
-            <Link href='/repairs'>Repairs</Link>
-            <Link href='/devices'>Devices</Link>
+            <Link href='/track'>Track Repair</Link>
+            <Link href='/faq'>FAQ</Link>
           </div>
         </div>
 
         <div>
-          <h4>Support</h4>
+          <h4>Services</h4>
           <div className='footer-links'>
-            <Link href='/track'>Track Repair</Link>
-            <Link href='/faq'>FAQ</Link>
+            <Link href='/repairs'>Repair Services</Link>
+            <Link href='/devices'>Supported Devices</Link>
             <Link href='/privacy'>Privacy</Link>
             <Link href='/terms'>Terms</Link>
           </div>
