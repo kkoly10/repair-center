@@ -2,28 +2,28 @@ import Link from 'next/link'
 
 const steps = [
   {
-    title: 'Upload photos for a free estimate',
-    text: 'Customers start without an account. They choose the category, brand, model, repair type, and upload photos.',
+    title: 'Start with a free estimate',
+    text: 'The customer uploads photos, selects the device and repair type, and explains the issue before mailing anything in.',
   },
   {
-    title: 'Receive a human-reviewed preliminary quote',
-    text: 'The estimate gives them a pricing preview while protecting you with ranges and inspection-required paths when needed.',
+    title: 'Receive a real estimate review',
+    text: 'Each request is reviewed by a human so pricing, scope, and risk are checked before the job moves forward.',
   },
   {
-    title: 'Approve mail-in and pay the inspection deposit',
-    text: 'Only approved customers move forward into the shipping and intake process.',
+    title: 'Approve before shipping',
+    text: 'Nothing moves into the mail-in stage until the customer accepts the estimate and next-step instructions.',
   },
   {
-    title: 'Device intake and in-hand inspection',
-    text: 'You log condition, confirm the issue, and issue the final quote if the job still fits scope.',
+    title: 'Device intake and inspection',
+    text: 'Once the device arrives, intake condition is documented and the repair is inspected in hand.',
   },
   {
-    title: 'Repair, test, and request final payment',
-    text: 'The repair is completed on your schedule, then the customer receives status updates and payment instructions.',
+    title: 'Repair, test, and finalize payment',
+    text: 'The job is completed, tested, and moved into final payment only when the repair is ready to close out.',
   },
   {
-    title: 'Tracked return shipping',
-    text: 'The order closes only after payment and tracked return shipment is generated.',
+    title: 'Return shipping with tracking',
+    text: 'The repaired device is shipped back with tracked return delivery so the customer can follow the last stage too.',
   },
 ]
 
@@ -33,9 +33,10 @@ export default function HowItWorksPage() {
       <div className='site-shell page-stack'>
         <div className='info-card'>
           <div className='kicker'>How it works</div>
-          <h1>Built for a controlled mail-in workflow</h1>
+          <h1>A mail-in repair process built around clear approval steps</h1>
           <p>
-            The website is designed around trust, clear approval gates, and realistic part-time repair operations.
+            The goal is simple: customers should know what happens before shipping, during repair,
+            and before return delivery — without guessing.
           </p>
         </div>
 
@@ -49,13 +50,25 @@ export default function HowItWorksPage() {
           ))}
         </div>
 
+        <div className='policy-card'>
+          <div className='kicker'>Why this matters</div>
+          <h3>This is not a “mail it and hope for the best” model</h3>
+          <p>
+            The system is intentionally designed to reduce uncertainty. Customers get a free estimate,
+            approve before shipment, follow updates during repair, and receive tracked return shipping
+            after the job is complete.
+          </p>
+        </div>
+
         <div className='cta-strip'>
           <div>
-            <div className='kicker'>Next action</div>
-            <h3 className='card-title'>Move into the estimate page</h3>
-            <p className='muted'>That page is the core conversion flow of the whole business.</p>
+            <div className='kicker'>Ready to start?</div>
+            <h3 className='card-title'>Open the estimate page and submit the repair request.</h3>
+            <p className='muted'>That is the first real step in the customer journey.</p>
           </div>
-          <Link href='/estimate' className='button button-primary'>Open Estimate Page</Link>
+          <Link href='/estimate' className='button button-primary'>
+            Open Estimate Page
+          </Link>
         </div>
       </div>
     </main>
