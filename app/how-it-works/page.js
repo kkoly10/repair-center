@@ -2,42 +2,78 @@ import Link from 'next/link'
 
 const steps = [
   {
-    title: 'Submit a free estimate',
-    text: 'Upload photos of your device, select the model and repair type, and describe the problem. Takes about two minutes.',
+    title: 'Start with a free estimate',
+    text: 'Upload photos, choose the device, and describe the issue before mailing anything in.',
   },
   {
-    title: 'Get your quote',
-    text: 'We review your submission and send a detailed estimate with pricing, expected turnaround, and next steps.',
+    title: 'Receive a human review',
+    text: 'Each request is checked by a real person so pricing, scope, and repair risk are reviewed before the job moves forward.',
   },
   {
-    title: 'Approve and pay deposit',
-    text: 'Review the estimate at your own pace. If it looks right, approve it and pay the inspection deposit to get started.',
+    title: 'Approve before shipping',
+    text: 'Nothing should move into the mail-in stage until the customer accepts the estimate and the next-step instructions.',
   },
   {
-    title: 'Ship your device',
-    text: 'Follow the mail-in instructions with our shipping address and packing checklist. Use any tracked carrier.',
+    title: 'Intake and inspection',
+    text: 'When the device arrives, the intake condition is documented and the real repair condition is confirmed in hand.',
   },
   {
-    title: 'Inspection and repair',
-    text: 'We inspect the device, confirm or revise the estimate if needed, then complete the repair and test everything.',
+    title: 'Repair and testing',
+    text: 'The job is completed, tested, and updated through the workflow before it is closed out.',
   },
   {
-    title: 'Pay balance and receive',
-    text: 'Pay the remaining balance and we ship your repaired device back with tracking. Follow the return from your tracking page.',
+    title: 'Return shipping',
+    text: 'The repaired device is shipped back with tracking so the customer can follow the last stage too.',
   },
 ]
+
+const howItWorksImage =
+  'https://images.unsplash.com/photo-1750744788280-aa47aba79a57?auto=format&fit=crop&fm=jpg&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&ixlib=rb-4.1.0&q=80&w=2200'
 
 export default function HowItWorksPage() {
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
-        <div className='info-card'>
-          <div className='kicker'>How it works</div>
-          <h1>Six steps from estimate to delivery</h1>
-          <p>
-            You'll know exactly what's happening at every stage — no surprises, no guessing.
-          </p>
-        </div>
+        <section
+          className='quote-card'
+          style={{
+            overflow: 'hidden',
+            gridTemplateColumns: '1.05fr 0.95fr',
+            alignItems: 'stretch',
+          }}
+        >
+          <div style={{ padding: 28, display: 'grid', alignContent: 'center', gap: 16 }}>
+            <div className='kicker'>How it works</div>
+            <h1 style={{ margin: 0 }}>A mail-in repair process built around clear approval steps</h1>
+            <p className='muted' style={{ margin: 0, maxWidth: 56 + 'ch' }}>
+              This is designed to feel controlled from the first estimate all the way to the return
+              shipment. Customers should know what happens before shipping, during repair, and before
+              the device comes back.
+            </p>
+
+            <div className='inline-actions' style={{ marginBottom: 0 }}>
+              <Link href='/estimate' className='button button-primary'>
+                Start Free Estimate
+              </Link>
+              <Link href='/track' className='button button-secondary'>
+                Track a Repair
+              </Link>
+            </div>
+          </div>
+
+          <div style={{ minHeight: 360, position: 'relative' }}>
+            <img
+              src={howItWorksImage}
+              alt='Phones, tablets, and laptops arranged on a desk'
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+            />
+          </div>
+        </section>
 
         <div className='grid-3'>
           {steps.map((step, index) => (
@@ -49,16 +85,26 @@ export default function HowItWorksPage() {
           ))}
         </div>
 
-        <div className='cta-strip'>
+        <section className='policy-card'>
+          <div className='kicker'>Why this matters</div>
+          <h3>This is not a “mail it and hope for the best” model</h3>
+          <p>
+            The workflow is structured to reduce uncertainty. Customers get a free estimate, approve
+            before shipment, follow updates during repair, and receive tracked return shipping after
+            the job is complete.
+          </p>
+        </section>
+
+        <section className='cta-strip'>
           <div>
             <div className='kicker'>Ready to start?</div>
-            <h3 className='card-title'>Get your free estimate in two minutes.</h3>
-            <p className='muted'>No account needed. Just photos, device details, and a description of the issue.</p>
+            <h3 className='card-title'>Open the estimate page and submit the repair request.</h3>
+            <p className='muted'>That is the first real step in the customer journey.</p>
           </div>
           <Link href='/estimate' className='button button-primary'>
-            Get Free Estimate
+            Open Estimate Page
           </Link>
-        </div>
+        </section>
       </div>
     </main>
   )
