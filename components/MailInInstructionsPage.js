@@ -111,6 +111,20 @@ export default function MailInInstructionsPage({ quoteId }) {
                   <span>${Number(record.order.inspection_deposit_required || 0).toFixed(2)}</span>
                 </div>
               </div>
+
+              {Number(record.order.inspection_deposit_required || 0) > 0 && !record.order.inspection_deposit_paid_at ? (
+                <div className='notice notice-warn' style={{ marginTop: 14 }}>
+                  <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
+                    Deposit required before shipping
+                  </strong>
+                  Please pay the inspection deposit before mailing your device.
+                  <div className='inline-actions' style={{ marginBottom: 0 }}>
+                    <Link href={`/pay/${record.quote.quote_id}`} className='button button-primary'>
+                      Pay Inspection Deposit
+                    </Link>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className='grid-2'>

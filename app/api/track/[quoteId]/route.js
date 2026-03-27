@@ -67,9 +67,10 @@ export async function POST(request, context) {
     let statusHistory = []
     let shipments = []
     let messages = []
+    let depositPaid = false
 
     if (repairOrder?.id) {
-      const [historyResult, shipmentsResult, messagesResult] = await Promise.all([
+      const [historyResult, shipmentsResult, messagesResult, paymentsResult] = await Promise.all([
         supabase
           .from('repair_order_status_history')
           .select('id, previous_status, new_status, customer_visible, note, created_at')
@@ -89,15 +90,24 @@ export async function POST(request, context) {
           .eq('repair_order_id', repairOrder.id)
           .eq('internal_only', false)
           .order('created_at', { ascending: true }),
+        supabase
+          .from('payments')
+          .select('id, payment_kind, status')
+          .eq('repair_order_id', repairOrder.id)
+          .eq('payment_kind', 'inspection_deposit')
+          .eq('status', 'paid')
+          .limit(1),
       ])
 
       if (historyResult.error) throw historyResult.error
       if (shipmentsResult.error) throw shipmentsResult.error
       if (messagesResult.error) throw messagesResult.error
+      if (paymentsResult.error) throw paymentsResult.error
 
       statusHistory = historyResult.data || []
       shipments = shipmentsResult.data || []
       messages = messagesResult.data || []
+      depositPaid = (paymentsResult.data || []).length > 0
 
       const unreadVisibleStaffMessages = messages
         .filter(
@@ -157,6 +167,10 @@ export async function POST(request, context) {
       statusHistory,
       shipments,
       messages,
+      depositPaid,
+      depositRequired: repairOrder ? Number(repairOrder.inspection_deposit_required || 0) > 0 : false,
+      paymentPath: `/pay/${quoteRequest.quote_id}`,
+      balancePaymentPath: `/pay/${quoteRequest.quote_id}/balance`,
       mailInPath:
         (repairOrder &&
           ['awaiting_mail_in', 'in_transit_to_shop'].includes(repairOrder.current_status)) ||
