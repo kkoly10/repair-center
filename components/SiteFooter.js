@@ -10,12 +10,12 @@ export default function SiteFooter() {
             <span className='brand-mark'>RC</span>
             <span>
               <strong>Repair Center</strong>
-              <small>Mail-In Device Repair</small>
+              <small>Premium mail-in device repair</small>
             </span>
           </div>
           <p className='footer-copy'>
-            Mail-in repair for phones, tablets, and laptops with free estimates, human-reviewed
-            quotes, tracked repair progress, and secure return shipping.
+            Mail-in repair for phones, tablets, and laptops with free estimates,
+            human-reviewed quotes, tracked repair progress, and secure return shipping.
           </p>
         </div>
 
@@ -30,7 +30,7 @@ export default function SiteFooter() {
         </div>
 
         <div>
-          <h4>Services</h4>
+          <h4>Explore</h4>
           <div className='footer-links'>
             <Link href='/repairs'>Repair Services</Link>
             <Link href='/devices'>Supported Devices</Link>
