@@ -149,10 +149,10 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
       <div className='site-shell page-stack'>
         <div className='info-card'>
           <div className='kicker'>Estimate review</div>
-          <h1>Review your repair estimate</h1>
+          <h1>Review the repair estimate before anything moves forward</h1>
           <p>
-            Enter the same email used for the estimate request to securely view pricing, line items,
-            turnaround notes, and approve or decline the estimate.
+            Enter the same email used for the estimate request to securely view pricing, included
+            line items, turnaround notes, and the current decision status.
           </p>
         </div>
 
@@ -172,8 +172,12 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
               />
             </div>
 
-            {error ? <div className='notice' style={{ marginTop: 18 }}>{error}</div> : null}
-            {resultMessage ? <div className='notice' style={{ marginTop: 18 }}>{resultMessage}</div> : null}
+            {error ? <div className='notice notice-warn' style={{ marginTop: 18 }}>{error}</div> : null}
+            {resultMessage ? (
+              <div className='notice notice-success' style={{ marginTop: 18 }}>
+                {resultMessage}
+              </div>
+            ) : null}
 
             <div className='inline-actions'>
               <button type='submit' className='button button-primary' disabled={loading}>
@@ -183,17 +187,23 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
           </form>
 
           <div className='policy-card'>
-            <div className='kicker'>How it works</div>
-            <h3>What happens after approval</h3>
+            <div className='kicker'>What happens next</div>
+            <h3>Approval controls the next stage</h3>
             <div className='preview-meta' style={{ marginTop: 18 }}>
-              <div className='preview-meta-row'><span>1</span><span>Review the estimate and included line items.</span></div>
-              <div className='preview-meta-row'><span>2</span><span>Approve to continue into mail-in or final repair continuation.</span></div>
+              <div className='preview-meta-row'>
+                <span>1</span>
+                <span>Review the estimate and included line items.</span>
+              </div>
+              <div className='preview-meta-row'>
+                <span>2</span>
+                <span>Approve only if you want the repair flow to continue.</span>
+              </div>
               <div className='preview-meta-row'>
                 <span>3</span>
                 <span>
                   {record?.estimate?.estimate_kind != null && record.estimate.estimate_kind !== 'preliminary'
-                    ? 'Repair continues after approval.'
-                    : 'Follow the next-step page shown after approval.'}
+                    ? 'If this is revised or final, the repair continues only after your approval.'
+                    : 'After approval, follow the next-step page shown by the system.'}
                 </span>
               </div>
             </div>
@@ -203,20 +213,13 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
         {record ? (
           <div className='page-stack'>
             {record.estimate.estimate_kind !== 'preliminary' ? (
-              <div className='info-card'>
-                <div className='kicker'>
+              <div className='notice notice-warn'>
+                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
                   {record.estimate.estimate_kind === 'final' ? 'Final estimate' : 'Revised estimate'}
-                </div>
-                <h2>
-                  {record.estimate.estimate_kind === 'final'
-                    ? 'This is your final estimate'
-                    : 'Your repair scope has been updated'}
-                </h2>
-                <p>
-                  {record.estimate.estimate_kind === 'final'
-                    ? 'Inspection and diagnosis are complete. This final estimate reflects the full cost of the repair. Approving it authorizes the shop to proceed.'
-                    : 'New findings during inspection changed the repair scope. Please review the updated line items and cost before deciding whether to continue.'}
-                </p>
+                </strong>
+                {record.estimate.estimate_kind === 'final'
+                  ? 'Inspection and diagnosis are complete. This final estimate reflects the full cost of the repair. Approving it authorizes the shop to proceed.'
+                  : 'New findings during inspection changed the repair scope. Please review the updated line items and cost before deciding whether to continue.'}
               </div>
             ) : null}
 
@@ -227,9 +230,7 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
                   <h2 className='quote-title'>
                     {[record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ')}
                   </h2>
-                  <p className='muted'>
-                    {record.quote.repair_type_key || 'Repair type not set'}
-                  </p>
+                  <p className='muted'>{record.quote.repair_type_key || 'Repair type not set'}</p>
                 </div>
                 <span className='price-chip'>{record.estimate.status}</span>
               </div>
@@ -270,7 +271,11 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
                 <div className='policy-card'>
                   <div className='kicker'>Summary</div>
                   <h3>Repair notes</h3>
-                  <p>{record.estimate.customer_visible_notes || record.quote.quote_summary || 'No additional customer note provided.'}</p>
+                  <p>
+                    {record.estimate.customer_visible_notes ||
+                      record.quote.quote_summary ||
+                      'No additional customer note provided.'}
+                  </p>
                 </div>
               </div>
 
@@ -279,12 +284,30 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
                   <div className='kicker'>Estimate totals</div>
                   <h3>Breakdown</h3>
                   <div className='preview-meta' style={{ marginTop: 18 }}>
-                    <div className='preview-meta-row'><span>Subtotal</span><span>${Number(record.estimate.subtotal_amount || 0).toFixed(2)}</span></div>
-                    <div className='preview-meta-row'><span>Shipping</span><span>${Number(record.estimate.shipping_amount || 0).toFixed(2)}</span></div>
-                    <div className='preview-meta-row'><span>Tax</span><span>${Number(record.estimate.tax_amount || 0).toFixed(2)}</span></div>
-                    <div className='preview-meta-row'><span>Discount</span><span>-${Number(record.estimate.discount_amount || 0).toFixed(2)}</span></div>
-                    <div className='preview-meta-row'><span>Deposit credit</span><span>-${Number(record.estimate.deposit_credit_amount || 0).toFixed(2)}</span></div>
-                    <div className='preview-meta-row'><span>Total</span><span>{totalDisplay}</span></div>
+                    <div className='preview-meta-row'>
+                      <span>Subtotal</span>
+                      <span>${Number(record.estimate.subtotal_amount || 0).toFixed(2)}</span>
+                    </div>
+                    <div className='preview-meta-row'>
+                      <span>Shipping</span>
+                      <span>${Number(record.estimate.shipping_amount || 0).toFixed(2)}</span>
+                    </div>
+                    <div className='preview-meta-row'>
+                      <span>Tax</span>
+                      <span>${Number(record.estimate.tax_amount || 0).toFixed(2)}</span>
+                    </div>
+                    <div className='preview-meta-row'>
+                      <span>Discount</span>
+                      <span>-${Number(record.estimate.discount_amount || 0).toFixed(2)}</span>
+                    </div>
+                    <div className='preview-meta-row'>
+                      <span>Deposit credit</span>
+                      <span>-${Number(record.estimate.deposit_credit_amount || 0).toFixed(2)}</span>
+                    </div>
+                    <div className='preview-meta-row'>
+                      <span>Total</span>
+                      <span>{totalDisplay}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -293,17 +316,18 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
                   <h3>Approve or decline</h3>
 
                   {decisionLocked ? (
-                    <>
-                      <div className='notice' style={{ marginTop: 18 }}>
-                        <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
-                          {formatEstimateDecisionLabel(record.estimate.status)}
-                        </strong>
+                    <div className='decision-card-locked'>
+                      <div className='decision-state-pill'>
+                        {formatEstimateDecisionLabel(record.estimate.status)}
+                      </div>
+
+                      <div className='notice notice-success'>
                         {decisionTimestamp
                           ? `Recorded on ${new Date(decisionTimestamp).toLocaleString()}`
                           : `This estimate has already been ${record.estimate.status}.`}
                       </div>
 
-                      <div className='inline-actions' style={{ marginTop: 14 }}>
+                      <div className='inline-actions' style={{ marginTop: 0 }}>
                         {mailInPath ? (
                           <Link href={mailInPath} className='button button-secondary'>
                             View Mail-In Instructions
@@ -316,7 +340,7 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
                           </Link>
                         ) : null}
                       </div>
-                    </>
+                    </div>
                   ) : (
                     <>
                       <p>
