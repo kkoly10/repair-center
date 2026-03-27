@@ -6,10 +6,10 @@ import StaffAuthActions from './StaffAuthActions'
 
 const navItems = [
   { href: '/how-it-works', label: 'How It Works' },
-  { href: '/repairs', label: 'Repairs' },
-  { href: '/devices', label: 'Devices' },
+  { href: '/repairs', label: 'Repair Services' },
+  { href: '/devices', label: 'Supported Devices' },
   { href: '/track', label: 'Track Repair' },
-  { href: '/faq', label: 'Support' },
+  { href: '/faq', label: 'FAQ' },
 ]
 
 export default function SiteHeader() {
@@ -22,7 +22,7 @@ export default function SiteHeader() {
           <span className='brand-mark'>RC</span>
           <span>
             <strong>Repair Center</strong>
-            <small>Mail-In Tech Repair</small>
+            <small>Mail-In Device Repair</small>
           </span>
         </Link>
 
