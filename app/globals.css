@@ -35,8 +35,8 @@ html {
 
 body {
   margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    sans-serif;
+  font-family: var(--font-body), Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
   color: var(--text);
   background:
     radial-gradient(circle at top left, rgba(45, 107, 255, 0.08), transparent 28%),
@@ -51,6 +51,18 @@ a {
 img {
   max-width: 100%;
   display: block;
+}
+
+h1,
+h2,
+h3,
+h4,
+.section-title,
+.card-title,
+.quote-title,
+.hero-copy h1,
+.hero-full-copy h1 {
+  font-family: var(--font-display), Manrope, Inter, system-ui, sans-serif;
 }
 
 .site-shell {
@@ -115,7 +127,9 @@ main {
   display: flex;
   align-items: center;
   gap: 28px;
-  font-size: 0.94rem;
+  font-size: 0.96rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: rgba(255, 255, 255, 0.74);
 }
 
@@ -195,6 +209,16 @@ main {
   background: rgba(17, 25, 39, 0.03);
 }
 
+.button-outline {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.button-outline:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .site-header .button-secondary,
 .mobile-panel .button-secondary,
 .site-footer .button-secondary {
@@ -256,201 +280,6 @@ main {
   color: rgba(255, 255, 255, 0.84);
 }
 
-/* ── Design A: Full-width hero ── */
-
-.hero-full {
-  padding: 80px 0 0;
-  background:
-    radial-gradient(ellipse at 20% 50%, rgba(45, 107, 255, 0.15), transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(45, 107, 255, 0.08), transparent 40%),
-    linear-gradient(180deg, #0d1522 0%, #111927 60%, #162030 100%);
-  overflow: hidden;
-}
-
-.hero-full-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  align-items: center;
-  min-height: 520px;
-}
-
-.hero-full-copy {
-  padding: 20px 0;
-}
-
-.hero-full-copy h1 {
-  color: #ffffff;
-  font-size: clamp(2.6rem, 5.5vw, 4.2rem);
-  line-height: 1.06;
-  letter-spacing: -0.04em;
-  margin: 0 0 20px;
-  max-width: 14ch;
-}
-
-.hero-full-copy p {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 1.1rem;
-  line-height: 1.7;
-  max-width: 42ch;
-  margin: 0;
-}
-
-.hero-full .hero-actions-row {
-  margin: 32px 0 0;
-}
-
-.button-outline {
-  background: transparent;
-  color: #ffffff;
-  border: 1.5px solid rgba(255, 255, 255, 0.4);
-  box-shadow: none;
-}
-
-.button-outline:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.6);
-}
-
-.hero-full-devices {
-  position: relative;
-  min-height: 480px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.hero-device-img {
-  position: absolute;
-  overflow: hidden;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
-  transition: transform 0.4s ease;
-}
-
-.hero-device-img img {
-  display: block;
-}
-
-.hero-device-img-laptop {
-  right: 0;
-  bottom: 0;
-  z-index: 1;
-  border-radius: 14px;
-}
-
-.hero-device-img-tablet {
-  left: 10%;
-  bottom: 12%;
-  z-index: 2;
-  border-radius: 18px;
-}
-
-.hero-device-img-phone {
-  left: 34%;
-  bottom: 4%;
-  z-index: 3;
-  border-radius: 24px;
-}
-
-/* ── Process Steps Bar ── */
-
-.process-bar {
-  background: linear-gradient(180deg, #1a2a42 0%, #152236 100%);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 0;
-}
-
-.process-bar-inner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 32px;
-  padding: 28px 0;
-}
-
-.process-step {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.process-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  display: grid;
-  place-items: center;
-  background: rgba(45, 107, 255, 0.12);
-  border: 1px solid rgba(45, 107, 255, 0.2);
-  color: #93b4ff;
-}
-
-.process-step span {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #ffffff;
-}
-
-.process-arrow {
-  color: rgba(255, 255, 255, 0.3);
-  display: flex;
-  align-items: center;
-}
-
-/* ── Device cards with images ── */
-
-.device-card-img {
-  padding: 0;
-  overflow: hidden;
-}
-
-.device-card-thumb {
-  width: 100%;
-  height: 180px;
-  overflow: hidden;
-  background: #111927;
-}
-
-.device-card-img h3,
-.device-card-img p {
-  padding: 0 20px;
-}
-
-.device-card-img h3 {
-  padding-top: 18px;
-}
-
-.device-card-img p {
-  padding-bottom: 20px;
-}
-
-/* ── Dark background section ── */
-
-.section-dark-bg {
-  background:
-    radial-gradient(ellipse at 30% 50%, rgba(45, 107, 255, 0.1), transparent 50%),
-    linear-gradient(180deg, #111927 0%, #0d1522 100%);
-  padding: 56px 0;
-  margin: 20px 0;
-}
-
-.repair-card-dark {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.08);
-  backdrop-filter: none;
-}
-
-.repair-card-dark h3 {
-  color: #ffffff;
-}
-
-.repair-card-dark p {
-  color: rgba(255, 255, 255, 0.65);
-}
-
-/* ── Legacy hero (kept for other pages) ── */
-
 .hero {
   padding: 72px 0 48px;
 }
@@ -507,7 +336,6 @@ main {
 }
 
 .hero h1,
-.hero-full h1,
 .page-hero h1,
 .section-title,
 .card-title {
@@ -528,7 +356,6 @@ main {
 }
 
 .hero p,
-.hero-full p,
 .page-hero p,
 .section-copy,
 .muted {
@@ -813,7 +640,10 @@ main {
 }
 
 .section-title {
-  font-size: clamp(1.9rem, 4vw, 2.8rem);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
 }
 
 .section-copy {
@@ -867,7 +697,10 @@ main {
 .faq-card h3,
 .policy-card h3 {
   margin: 0 0 10px;
-  font-size: 1.12rem;
+  font-size: 1.18rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .kicker {
@@ -970,7 +803,9 @@ main {
 
 .form-section h3 {
   margin: 0 0 14px;
-  font-size: 1.05rem;
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .form-grid {
@@ -1288,8 +1123,9 @@ main {
 .list-card p,
 .faq-card p,
 .policy-card p {
-  color: var(--muted);
-  line-height: 1.7;
+  color: #556274;
+  line-height: 1.72;
+  font-size: 0.98rem;
   margin: 0;
 }
 
@@ -1350,48 +1186,212 @@ main {
   padding: 28px;
 }
 
+/* Homepage redesign typography + visual polish */
+
+.hero-full {
+  position: relative;
+  padding: 44px 0 0;
+  background:
+    radial-gradient(circle at left center, rgba(45, 107, 255, 0.18), transparent 30%),
+    linear-gradient(180deg, #0f1b2d 0%, #13233c 54%, #10203a 100%);
+}
+
+.hero-full-grid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 32px;
+  align-items: center;
+  min-height: 520px;
+}
+
+.hero-full-copy {
+  position: relative;
+  z-index: 2;
+  max-width: 520px;
+  padding: 12px 0 32px;
+}
+
+.hero-full-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  margin-bottom: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cfe0ff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-full-copy h1 {
+  margin: 0;
+  font-size: clamp(3rem, 6vw, 5rem);
+  font-weight: 800;
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+  color: rgba(255, 255, 255, 0.98);
+  max-width: 8.5ch;
+  text-wrap: balance;
+}
+
+.hero-full-copy p {
+  margin: 18px 0 0;
+  font-size: 1.05rem;
+  line-height: 1.72;
+  color: rgba(255, 255, 255, 0.78);
+  max-width: 46ch;
+}
+
+.hero-full-devices {
+  position: relative;
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-device-img {
+  position: absolute;
+  overflow: hidden;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
+}
+
+.hero-device-img-phone {
+  z-index: 3;
+  top: 12px;
+  left: 18%;
+  border-radius: 26px;
+}
+
+.hero-device-img-tablet {
+  z-index: 2;
+  top: 96px;
+  right: 18%;
+  border-radius: 22px;
+}
+
+.hero-device-img-laptop {
+  z-index: 1;
+  bottom: 8px;
+  right: 6%;
+  border-radius: 18px;
+}
+
+.process-bar {
+  position: relative;
+  z-index: 3;
+  margin-top: -24px;
+}
+
+.process-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 18px 24px;
+  border-radius: 24px 24px 0 0;
+  background:
+    linear-gradient(180deg, rgba(19, 35, 60, 0.98) 0%, rgba(17, 31, 52, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 20px 60px rgba(12, 24, 44, 0.2);
+}
+
+.process-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.process-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #8fb7ff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.process-arrow {
+  color: rgba(255, 255, 255, 0.34);
+  display: inline-flex;
+  align-items: center;
+}
+
+.device-card-img {
+  overflow: hidden;
+}
+
+.device-card-thumb {
+  height: 172px;
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: #dfe6ee;
+}
+
+.section-dark-bg {
+  background:
+    radial-gradient(circle at left center, rgba(45, 107, 255, 0.14), transparent 32%),
+    linear-gradient(180deg, #101827 0%, #0f1b2d 100%);
+}
+
+.kicker-dark-section {
+  color: #95b7ff;
+}
+
+.section-title-light {
+  color: #ffffff;
+}
+
+.repair-card-dark {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 253, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.repair-card-dark h3 {
+  color: var(--text);
+}
+
+.repair-card-dark p {
+  color: #566375;
+}
+
 @media (max-width: 1100px) {
   .grid-4,
   .steps-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .hero-full-grid,
   .hero-grid,
   .page-hero-grid,
   .footer-grid,
   .grid-3,
   .grid-2,
-  .identity-band-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .hero-full {
-    padding: 56px 0 0;
-  }
-
+  .identity-band-grid,
   .hero-full-grid {
-    min-height: auto;
-  }
-
-  .hero-full-copy h1 {
-    max-width: none;
-  }
-
-  .hero-full-devices {
-    min-height: 360px;
-    margin: 0 auto;
-    max-width: 520px;
-  }
-
-  .process-bar-inner {
-    gap: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
+    grid-template-columns: 1fr;
   }
 
   .quote-summary {
     grid-template-columns: 1fr;
+  }
+
+  .hero-full-copy {
+    max-width: none;
+  }
+
+  .hero-full-copy h1 {
+    max-width: 10ch;
   }
 }
 
@@ -1409,54 +1409,12 @@ main {
     width: min(var(--max), calc(100% - 26px));
   }
 
-  .hero-full {
-    padding: 40px 0 0;
-  }
-
-  .hero-full-copy h1 {
-    font-size: 2.2rem;
-  }
-
-  .hero-full-devices {
-    min-height: 280px;
-    max-width: 360px;
-  }
-
-  .hero-device-img-laptop img {
-    width: 300px !important;
-    height: 200px !important;
-  }
-
-  .hero-device-img-phone img {
-    width: 140px !important;
-    height: 260px !important;
-  }
-
-  .hero-device-img-tablet img {
-    width: 200px !important;
-    height: 150px !important;
-  }
-
-  .process-bar-inner {
-    flex-direction: column;
-    gap: 16px;
-    padding: 24px 0;
-  }
-
-  .process-arrow {
-    transform: rotate(90deg);
-  }
-
-  .device-card-thumb {
-    height: 140px;
-  }
-
   .hero-copy,
   .hero-visual,
   .panel-dark,
   .form-shell,
   .feature-card,
-  .device-card:not(.device-card-img),
+  .device-card,
   .repair-card,
   .testimonial,
   .info-card,
@@ -1518,31 +1476,50 @@ main {
     align-items: flex-start;
   }
 
-  .grid-3 {
-    grid-template-columns: 1fr;
+  .hero-full {
+    padding-top: 28px;
   }
 
-  .grid-2 {
-    grid-template-columns: 1fr;
+  .hero-full-grid {
+    min-height: auto;
+    gap: 18px;
   }
-}
 
-.upload-tile-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  overflow: hidden;
-}
+  .hero-full-copy h1 {
+    font-size: clamp(2.5rem, 10vw, 3.6rem);
+    max-width: 9ch;
+  }
 
-.upload-tile-label {
-  font-size: 0.78rem;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .hero-full-copy p {
+    font-size: 0.98rem;
+  }
 
-.notice-warn {
-  background: #fef9ee;
-  border-color: #f59e0b;
+  .hero-full-devices {
+    min-height: 280px;
+  }
+
+  .hero-device-img-phone {
+    left: 8%;
+    top: 0;
+  }
+
+  .hero-device-img-tablet {
+    right: 10%;
+    top: 64px;
+  }
+
+  .hero-device-img-laptop {
+    right: 0;
+    bottom: 0;
+  }
+
+  .process-bar-inner {
+    justify-content: flex-start;
+    gap: 12px;
+    border-radius: 22px;
+  }
+
+  .process-arrow {
+    display: none;
+  }
 }
