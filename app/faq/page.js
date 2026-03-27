@@ -1,19 +1,33 @@
 const faqs = [
   {
-    question: 'Do customers need an account to request an estimate?',
-    answer: 'No. The site is intentionally built around a low-friction guest estimate flow.',
+    question: 'Do I need an account to request an estimate?',
+    answer:
+      'No. You can submit a free estimate request without creating an account. The flow is designed to keep the first step simple.',
   },
   {
-    question: 'Will the photo estimate always be final?',
-    answer: 'No. The site clearly positions it as a preliminary estimate. Final pricing happens after inspection when needed.',
+    question: 'Is the photo estimate always the final price?',
+    answer:
+      'No. Photo estimates are preliminary unless clearly marked otherwise. Final pricing may change after in-hand inspection if hidden damage or added parts are involved.',
   },
   {
-    question: 'Can this later support AI?',
-    answer: 'Yes. The structure supports future AI FAQ, intake guidance, and photo-triage layers without changing the overall flow.',
+    question: 'When do I ship my device?',
+    answer:
+      'You only move into the mail-in stage after reviewing and approving the estimate or next step shown in your repair flow.',
   },
   {
-    question: 'Does this already connect to payments and a database?',
-    answer: 'Not yet. This first build is a polished Next.js front end designed to be extended with storage, auth, payments, and an admin dashboard later.',
+    question: 'Can I track the repair after approval?',
+    answer:
+      'Yes. Once your repair request moves forward, you can follow status updates, shipment changes, and repair messages from the tracking page.',
+  },
+  {
+    question: 'What if the inspection changes the repair scope?',
+    answer:
+      'If inspection reveals more damage or different repair needs, a revised estimate can be issued before work continues.',
+  },
+  {
+    question: 'What should I do before mailing my device?',
+    answer:
+      'Back up your data, remove any SIM or memory cards if appropriate, and follow the mail-in instructions shown after approval.',
   },
 ]
 
@@ -22,10 +36,11 @@ export default function FaqPage() {
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='info-card'>
-          <div className='kicker'>Support and FAQ</div>
-          <h1>Questions the site should answer clearly</h1>
+          <div className='kicker'>FAQ</div>
+          <h1>Questions customers usually have before mailing in a device</h1>
           <p>
-            For a mail-in repair brand, clarity matters almost as much as the repair itself. These pages reduce friction before a customer leaves.
+            For a mail-in repair service, clarity is part of the product. Customers should understand
+            the process before they ever package a device.
           </p>
         </div>
 
