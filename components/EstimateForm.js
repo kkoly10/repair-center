@@ -41,7 +41,10 @@ export default function EstimateForm() {
   }, [category, brand, brands])
 
   const repairs = useMemo(() => getRepairsByModel(modelKey), [modelKey])
-  const selectedRepair = useMemo(() => getPricingForSelection(modelKey, repairKey), [modelKey, repairKey])
+  const selectedRepair = useMemo(
+    () => getPricingForSelection(modelKey, repairKey),
+    [modelKey, repairKey]
+  )
   const entry = useMemo(() => getCatalogEntry(modelKey), [modelKey])
 
   const clearSubmissionState = () => {
@@ -120,40 +123,60 @@ export default function EstimateForm() {
     <div className='page-hero'>
       <div className='site-shell page-hero-grid'>
         <div className='page-stack'>
-          <div className='info-card'>
-            <div className='kicker'>Free estimate</div>
-            <h1>Get a free repair estimate</h1>
+          <div className='hero-copy' style={{ padding: 32 }}>
+            <div className='eyebrow'>Free estimate</div>
+            <h1 style={{ maxWidth: '12ch', fontSize: 'clamp(2.3rem, 5vw, 3.7rem)' }}>
+              Start with photos before you ship anything.
+            </h1>
             <p>
-              Upload photos and device details, save the request to Supabase, and preview the pricing rule
-              that best matches the selected model and repair.
+              This estimate flow is designed to keep the first step simple while still collecting
+              enough detail for a serious human review.
             </p>
-            <div className='inline-badges' style={{ marginTop: 18 }}>
+
+            <div className='trust-row'>
               <span className='badge'>No account required</span>
-              <span className='badge'>Photos saved privately</span>
+              <span className='badge'>Photos stored privately</span>
               <span className='badge'>Human-reviewed quotes</span>
             </div>
           </div>
 
-          <div className='list-card'>
+          <div className='panel panel-dark'>
             <div className='kicker'>Workflow</div>
-            <h3>What happens after submit</h3>
-            <StatusTracker steps={REPAIR_STATUS_STEPS} currentStep={0} />
+            <h3>What happens after you submit</h3>
+            <p>
+              Your request is saved into the repair workflow, reviewed by staff, and moved into the
+              next step only after approval.
+            </p>
+            <div style={{ marginTop: 18 }}>
+              <StatusTracker steps={REPAIR_STATUS_STEPS} currentStep={0} />
+            </div>
           </div>
 
           <div className='policy-card'>
-            <h3>Important to know</h3>
+            <div className='kicker'>Important to know</div>
+            <h3>Photo estimates are still preliminary</h3>
             <p>
-              The estimate preview is still preliminary. The backend now stores the customer, quote request,
-              selected pricing rule, and uploaded photos so staff can review it properly later.
+              The preview helps set expectations, but final pricing can still change after in-hand
+              inspection if hidden damage, missing parts, or additional labor are discovered.
             </p>
           </div>
         </div>
 
-        <form className='form-shell' onSubmit={handleSubmit}>
+        <form className='form-shell form-shell-premium' onSubmit={handleSubmit}>
           <div className='kicker'>Start your estimate</div>
+          <h2 style={{ marginTop: 0, marginBottom: 8 }}>Tell us about the device and the problem</h2>
           <p className='muted' style={{ marginTop: 0 }}>
-            This page now saves into the long-term backend structure instead of only simulating the flow.
+            This request will create a real quote record, save any uploaded photos, and place the
+            job into your review queue.
           </p>
+
+          <div className='form-premium-note'>
+            <strong>Best results</strong>
+            <span>
+              Upload clear photos, describe the issue in plain language, and mention anything that
+              happened before the problem started.
+            </span>
+          </div>
 
           <div className='form-section'>
             <h3>Your contact details</h3>
@@ -200,7 +223,12 @@ export default function EstimateForm() {
             <div className='form-grid'>
               <div className='field'>
                 <label htmlFor='category'>Device category</label>
-                <select id='category' name='category' value={category} onChange={(event) => onCategoryChange(event.target.value)}>
+                <select
+                  id='category'
+                  name='category'
+                  value={category}
+                  onChange={(event) => onCategoryChange(event.target.value)}
+                >
                   {CATEGORY_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -210,7 +238,12 @@ export default function EstimateForm() {
               </div>
               <div className='field'>
                 <label htmlFor='brand'>Brand</label>
-                <select id='brand' name='brand' value={brand} onChange={(event) => onBrandChange(event.target.value)}>
+                <select
+                  id='brand'
+                  name='brand'
+                  value={brand}
+                  onChange={(event) => onBrandChange(event.target.value)}
+                >
                   {brands.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -220,7 +253,12 @@ export default function EstimateForm() {
               </div>
               <div className='field'>
                 <label htmlFor='modelKey'>Model</label>
-                <select id='modelKey' name='modelKey' value={modelKey} onChange={(event) => onModelChange(event.target.value)}>
+                <select
+                  id='modelKey'
+                  name='modelKey'
+                  value={modelKey}
+                  onChange={(event) => onModelChange(event.target.value)}
+                >
                   {models.map((option) => (
                     <option key={option.modelKey} value={option.modelKey}>
                       {option.model}
@@ -265,17 +303,25 @@ export default function EstimateForm() {
               <QuestionPills label='Does it power on?' value={powerState} setValue={setPowerState} />
               <QuestionPills label='Does it charge?' value={chargeState} setValue={setChargeState} />
               <QuestionPills label='Any liquid exposure?' value={liquidState} setValue={setLiquidState} />
-              <QuestionPills label='Has it been repaired before?' value={priorRepairState} setValue={setPriorRepairState} />
+              <QuestionPills
+                label='Has it been repaired before?'
+                value={priorRepairState}
+                setValue={setPriorRepairState}
+              />
               <QuestionPills label='Do you need data preserved?' value={dataState} setValue={setDataState} />
             </div>
           </div>
 
           <div className='form-section'>
             <h3>Upload photos</h3>
-            <p className='field-note'>Up to 6 images. These uploads are saved into the private repair-uploads bucket for staff review.</p>
+            <p className='field-note'>
+              Up to 6 images. These uploads are saved into the private repair-uploads bucket for staff review.
+            </p>
             <div className='upload-grid'>
               {['Front', 'Back', 'Damage close-up', 'Screen on', 'Side / frame', 'Charging port'].map((label) => (
-                <div key={label} className='upload-tile'>{label}</div>
+                <div key={label} className='upload-tile'>
+                  {label}
+                </div>
               ))}
             </div>
             <div className='field' style={{ marginTop: 14 }}>
@@ -294,7 +340,9 @@ export default function EstimateForm() {
             </div>
             {selectedFiles.length ? (
               <div className='notice' style={{ marginTop: 12 }}>
-                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>Selected files</strong>
+                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
+                  Selected files
+                </strong>
                 {selectedFiles.map((file) => file.name).join(', ')}
               </div>
             ) : null}
@@ -333,15 +381,19 @@ export default function EstimateForm() {
             </div>
 
             {submissionError ? (
-              <div className='notice' style={{ marginTop: 16, borderColor: 'rgba(245, 158, 11, 0.35)' }}>
-                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>Submission error</strong>
+              <div className='notice notice-warn' style={{ marginTop: 16 }}>
+                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
+                  Submission error
+                </strong>
                 {submissionError}
               </div>
             ) : null}
 
             {submissionResult ? (
-              <div className='notice' style={{ marginTop: 16 }}>
-                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>Estimate request saved</strong>
+              <div className='notice notice-success' style={{ marginTop: 16 }}>
+                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
+                  Estimate request saved
+                </strong>
                 Quote ID <strong>{submissionResult.quoteId}</strong> has been created and the request is now in your backend review queue.
                 {submissionResult.photoWarnings?.length ? (
                   <span style={{ display: 'block', marginTop: 10 }}>
