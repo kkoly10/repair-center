@@ -4,7 +4,7 @@ const faqs = [
   {
     question: 'Do I need an account to request an estimate?',
     answer:
-      'No. You can submit a free estimate request without creating an account. The first step is designed to stay simple.',
+      'No. You can submit a free estimate request without creating an account.',
   },
   {
     question: 'Is the photo estimate always the final price?',
@@ -14,17 +14,17 @@ const faqs = [
   {
     question: 'When do I ship my device?',
     answer:
-      'You only move into the mail-in stage after reviewing and approving the estimate or next step shown in your repair flow.',
+      'You only ship your device after reviewing and approving the estimate or next step shown in your repair flow.',
   },
   {
     question: 'Can I track the repair after approval?',
     answer:
-      'Yes. Once your repair request moves forward, you can follow status updates, shipment changes, and repair messages from the tracking page.',
+      'Yes. Once your repair moves forward, you can follow status updates, shipment changes, and repair messages from the tracking page.',
   },
   {
     question: 'What if inspection changes the repair scope?',
     answer:
-      'If inspection reveals more damage or different repair needs, a revised estimate can be issued before work continues.',
+      'If inspection reveals more damage or different repair needs, a revised estimate can be sent before work continues.',
   },
   {
     question: 'What should I do before mailing my device?',
@@ -34,12 +34,12 @@ const faqs = [
   {
     question: 'Will I approve the repair before work starts?',
     answer:
-      'Yes. The workflow is structured around visible approval points so the repair does not quietly move forward without your decision.',
+      'Yes. The repair should not move forward without your approval of the applicable estimate.',
   },
   {
-    question: 'Do you work on every device?',
+    question: 'Do you repair every kind of device?',
     answer:
-      'No. The launch service menu is intentionally focused on phones, tablets, laptops, and selected jobs that fit a practical mail-in workflow.',
+      'No. We focus on phones, tablets, laptops, and selected jobs that fit a practical mail-in repair process.',
   },
 ]
 
@@ -57,10 +57,12 @@ export default function FaqPage() {
         >
           <div style={{ padding: 28, display: 'grid', alignContent: 'center', gap: 16 }}>
             <div className='kicker'>FAQ</div>
-            <h1 style={{ margin: 0 }}>Answers to the questions customers usually have before mailing in a device</h1>
+            <h1 style={{ margin: 0 }}>
+              Answers to the questions customers usually have before mailing in a device
+            </h1>
             <p className='muted' style={{ margin: 0, maxWidth: 58 + 'ch' }}>
-              For a mail-in repair service, clarity is part of the product. Customers should understand
-              the process before they package an expensive device and send it out.
+              We want the process to feel clear from the start, so you know what to expect before,
+              during, and after the repair.
             </p>
 
             <div className='inline-actions' style={{ marginBottom: 0 }}>
@@ -97,11 +99,11 @@ export default function FaqPage() {
         </div>
 
         <section className='policy-card'>
-          <div className='kicker'>Still unsure?</div>
-          <h3>Start with the estimate first</h3>
+          <div className='kicker'>Still not sure?</div>
+          <h3>Start with the estimate</h3>
           <p>
-            The estimate request is the best first step because it lets the repair workflow collect
-            your device details, photos, and issue summary before anything is shipped.
+            The estimate request is the best first step because it lets us review your device
+            details, photos, and issue description before anything is shipped.
           </p>
         </section>
       </div>
