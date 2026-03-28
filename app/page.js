@@ -5,22 +5,22 @@ import { REPAIR_CATALOG } from '../lib/repairCatalog'
 const deviceCards = [
   {
     title: 'Phones',
-    text: 'Screen replacements, battery swaps, charging port repairs, camera fixes, and more.',
+    text: 'Screen repairs, batteries, charging ports, cameras, and common hardware issues.',
     image: '/images/phone-repair.jpg',
   },
   {
     title: 'Laptops',
-    text: 'Batteries, keyboards, SSD upgrades, software recovery, and select hardware repairs.',
+    text: 'Battery service, keyboards, storage upgrades, software recovery, and select hardware repairs.',
     image: '/images/laptop-open.jpg',
   },
   {
     title: 'Tablets',
-    text: 'Glass and screen repairs, batteries, charging ports, and button replacements.',
+    text: 'Glass and screen repairs, batteries, charging ports, and other common tablet repairs.',
     image: '/images/tablet-product.jpg',
   },
   {
-    title: 'Desktops',
-    text: 'Select repairs handled case-by-case when shipping logistics and repair scope allow.',
+    title: 'Select desktops',
+    text: 'Handled case by case when the repair and shipping make sense for a mail-in service.',
     image: '/images/circuit-dark.jpg',
   },
 ]
@@ -28,27 +28,27 @@ const deviceCards = [
 const commonRepairs = [
   {
     title: 'Screen replacement',
-    text: 'Cracked glass, dead pixels, or unresponsive touch — restored with quality replacement parts.',
+    text: 'Cracked glass, dead pixels, or touch issues repaired with quality replacement parts.',
   },
   {
     title: 'Battery replacement',
-    text: 'Swollen, degraded, or fast-draining batteries replaced to restore full-day battery life.',
+    text: 'Weak, swollen, or fast-draining batteries replaced to restore reliable daily use.',
   },
   {
     title: 'Charging port repair',
-    text: 'Loose connections, lint buildup, or damaged ports fixed so your device charges reliably.',
+    text: 'Loose, damaged, or inconsistent charging ports repaired so your device powers properly again.',
   },
   {
     title: 'Keyboard repair',
-    text: 'Stuck, unresponsive, or damaged laptop keys replaced with OEM-compatible parts.',
+    text: 'Stuck, damaged, or unresponsive laptop keys repaired with compatible replacement parts.',
   },
   {
     title: 'SSD upgrade',
-    text: 'Upgrade your storage for faster boot times and more space, with data migration included.',
+    text: 'Upgrade storage for faster performance, more space, and smoother everyday use.',
   },
   {
     title: 'Software recovery',
-    text: 'OS reinstalls, virus removal, and data recovery for devices that will not boot or run slowly.',
+    text: 'Help for devices that will not boot, run poorly, or need a clean operating system reinstall.',
   },
 ]
 
@@ -68,17 +68,16 @@ export default function HomePage() {
             <div className='hero-full-eyebrow'>Premium mail-in device repair</div>
             <h1>Mail-in device repair you can trust.</h1>
             <p>
-              Expert repair for phones, tablets, and laptops.
-              <br />
-              Professional service. Fast turnaround.
+              Repair for phones, tablets, and laptops with a simple estimate process,
+              clear approval steps, and tracked return shipping.
             </p>
 
             <div className='hero-actions-row'>
               <Link href='/estimate' className='button button-primary'>
-                Get an Estimate
+                Get a Free Estimate
               </Link>
               <Link href='/repairs' className='button button-outline'>
-                See Our Services
+                See Repair Services
               </Link>
             </div>
           </div>
@@ -251,7 +250,7 @@ export default function HomePage() {
           <div className='section-head'>
             <div>
               <div className='kicker kicker-dark-section'>Common repairs</div>
-              <h2 className='section-title section-title-light'>Our most requested services</h2>
+              <h2 className='section-title section-title-light'>Popular repair services</h2>
             </div>
           </div>
 
@@ -271,7 +270,7 @@ export default function HomePage() {
           <div className='section-head'>
             <div>
               <div className='kicker'>Sample pricing</div>
-              <h2 className='section-title'>Real prices from our repair catalog</h2>
+              <h2 className='section-title'>Examples from supported repairs</h2>
             </div>
           </div>
 
@@ -297,9 +296,9 @@ export default function HomePage() {
           <div className='cta-strip'>
             <div>
               <div className='kicker'>Ready to start?</div>
-              <h3 className='card-title'>Get your free estimate in two minutes.</h3>
+              <h3 className='card-title'>Get your free estimate in a few minutes.</h3>
               <p className='muted'>
-                No account needed. Upload photos of your device and we&apos;ll send you a detailed quote.
+                Upload photos of your device and we&apos;ll review the repair request with you.
               </p>
             </div>
             <div className='inline-actions'>
