@@ -23,10 +23,10 @@ export default function DevicesPage() {
         >
           <div style={{ padding: 28, display: 'grid', alignContent: 'center', gap: 16 }}>
             <div className='kicker'>Supported devices</div>
-            <h1 style={{ margin: 0 }}>Browse supported models before you request an estimate</h1>
+            <h1 style={{ margin: 0 }}>Browse supported models before requesting an estimate</h1>
             <p className='muted' style={{ margin: 0, maxWidth: 56 + 'ch' }}>
-              The repair flow already uses a model-based catalog so customers can choose the right
-              device and repair path instead of submitting a vague generic request.
+              Choose the device that matches yours so the estimate request starts with the right
+              repair options and pricing path.
             </p>
           </div>
 
@@ -50,7 +50,7 @@ export default function DevicesPage() {
               {category}
             </div>
             <h3 style={{ marginTop: 0 }}>
-              {category.charAt(0).toUpperCase() + category.slice(1)} models in the current catalog
+              {category.charAt(0).toUpperCase() + category.slice(1)} models
             </h3>
 
             <div className='grid-3' style={{ marginTop: 18 }}>
@@ -60,7 +60,7 @@ export default function DevicesPage() {
                   <h3 style={{ marginTop: 14 }}>{item.model}</h3>
                   <p>
                     {item.repairs.length} supported repair
-                    {item.repairs.length === 1 ? '' : 's'} in the current catalog.
+                    {item.repairs.length === 1 ? '' : 's'} available for this model.
                   </p>
                 </div>
               ))}
