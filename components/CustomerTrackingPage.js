@@ -160,11 +160,11 @@ export default function CustomerTrackingPage({ quoteId }) {
             <div className='preview-meta' style={{ marginTop: 18 }}>
               <div className='preview-meta-row'>
                 <span>1</span>
-                <span>Quote and estimate status</span>
+                <span>Estimate and repair status</span>
               </div>
               <div className='preview-meta-row'>
                 <span>2</span>
-                <span>Repair order milestones</span>
+                <span>Progress updates</span>
               </div>
               <div className='preview-meta-row'>
                 <span>3</span>
@@ -247,7 +247,7 @@ export default function CustomerTrackingPage({ quoteId }) {
                     </span>
                   </div>
                   <div className='identity-band-item'>
-                    <strong>Tracking opened with</strong>
+                    <strong>You entered</strong>
                     <span>{record.identifier}</span>
                   </div>
                 </div>
@@ -267,10 +267,13 @@ export default function CustomerTrackingPage({ quoteId }) {
                   <span>{currentStatusLabel}</span>
                 </div>
                 <div className='quote-summary-card'>
-                  <strong>Accepted lookup IDs</strong>
+                  <strong>Other ID you can use</strong>
                   <span>
-                    {record.canonicalQuoteId}
-                    {record.canonicalOrderNumber ? ` / ${record.canonicalOrderNumber}` : ''}
+                    {record.canonicalOrderNumber
+                      ? record.identifier === record.canonicalOrderNumber
+                        ? record.canonicalQuoteId
+                        : record.canonicalOrderNumber
+                      : record.canonicalQuoteId}
                   </span>
                 </div>
               </div>
@@ -294,7 +297,7 @@ export default function CustomerTrackingPage({ quoteId }) {
                       ))
                     ) : (
                       <div className='preview-meta-row'>
-                        <span>No customer-visible status history yet.</span>
+                        <span>No updates yet.</span>
                         <span>—</span>
                       </div>
                     )}
