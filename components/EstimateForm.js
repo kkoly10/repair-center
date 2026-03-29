@@ -86,7 +86,9 @@ export default function EstimateForm() {
   const validatePhone = (value) => {
     if (!value) return ''
     const digits = value.replace(/\D/g, '')
-    if (digits.length < 10 || digits.length > 15) return 'Enter a valid phone number (at least 10 digits).'
+    if (digits.length < 10 || digits.length > 15) {
+      return 'Enter a valid phone number with at least 10 digits.'
+    }
     return ''
   }
 
@@ -145,8 +147,8 @@ export default function EstimateForm() {
               Tell us about your device and we&apos;ll quote it.
             </h1>
             <p>
-              Upload a few photos, select your device, and describe the problem. We'll review
-              everything and send you a detailed estimate — usually within one business day.
+              Upload a few photos, select your device, and describe the problem. We&apos;ll review
+              everything and send you a detailed estimate, usually within one business day.
             </p>
 
             <div className='trust-row'>
@@ -172,8 +174,9 @@ export default function EstimateForm() {
             <div className='kicker'>Good to know</div>
             <h3>Photo estimates are preliminary</h3>
             <p>
-              The price preview below is based on our catalog. Final pricing is confirmed after we
-              inspect the device in hand. If anything changes, you&apos;ll approve a revised estimate first.
+              The preview below is based on the selected device and repair type. Final pricing is
+              confirmed after we inspect the device in hand. If anything changes, you&apos;ll approve
+              the updated estimate first.
             </p>
           </div>
         </div>
@@ -182,8 +185,8 @@ export default function EstimateForm() {
           <div className='kicker'>Start your estimate</div>
           <h2 style={{ marginTop: 0, marginBottom: 8 }}>Tell us about your device</h2>
           <p className='muted' style={{ marginTop: 0 }}>
-            Fill in your details, select your device, and describe the issue. We'll get back to you
-            with a quote.
+            Fill in your details, choose the device, and describe the issue. We&apos;ll review the
+            request and send the next step.
           </p>
 
           <div className='form-premium-note'>
@@ -216,9 +219,22 @@ export default function EstimateForm() {
                   name='phone'
                   type='tel'
                   placeholder='(555) 555-5555'
-                  onChange={() => { if (phoneError) setPhoneError('') }}
+                  onChange={() => {
+                    if (phoneError) setPhoneError('')
+                  }}
                 />
-                {phoneError ? <span style={{ color: '#dc2626', fontSize: '0.84rem', marginTop: 4, display: 'block' }}>{phoneError}</span> : null}
+                {phoneError ? (
+                  <span
+                    style={{
+                      color: '#dc2626',
+                      fontSize: '0.84rem',
+                      marginTop: 4,
+                      display: 'block',
+                    }}
+                  >
+                    {phoneError}
+                  </span>
+                ) : null}
               </div>
               <div className='field' style={{ gridColumn: '1 / -1' }}>
                 <label>Preferred contact method</label>
@@ -311,7 +327,7 @@ export default function EstimateForm() {
           </div>
 
           <div className='form-section'>
-            <h3>Tell us what’s going on</h3>
+            <h3>Tell us what&apos;s going on</h3>
             <div className='field'>
               <label htmlFor='issueDescription'>Describe the issue</label>
               <textarea
@@ -338,7 +354,8 @@ export default function EstimateForm() {
           <div className='form-section'>
             <h3>Upload photos</h3>
             <p className='field-note'>
-              Up to 6 images. Suggested shots: front, back, damage close-up, screen on, side/frame, charging port.
+              Up to 6 images. Suggested shots: front, back, damage close-up, screen on, side/frame,
+              and charging port.
             </p>
             <div className='field' style={{ marginTop: 14 }}>
               <label htmlFor='photos'>Photo files</label>
@@ -355,6 +372,7 @@ export default function EstimateForm() {
                 }}
               />
             </div>
+
             {selectedFiles.length ? (
               <div className='upload-grid' style={{ marginTop: 12 }}>
                 {selectedFiles.map((file, index) => (
@@ -362,7 +380,12 @@ export default function EstimateForm() {
                     <img
                       src={URL.createObjectURL(file)}
                       alt={file.name}
-                      style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 10 }}
+                      style={{
+                        width: '100%',
+                        height: 120,
+                        objectFit: 'cover',
+                        borderRadius: 10,
+                      }}
                     />
                     <span className='upload-tile-label'>{file.name}</span>
                   </div>
@@ -370,11 +393,13 @@ export default function EstimateForm() {
               </div>
             ) : (
               <div className='upload-grid' style={{ marginTop: 12 }}>
-                {['Front', 'Back', 'Damage close-up', 'Screen on', 'Side / frame', 'Charging port'].map((label) => (
-                  <div key={label} className='upload-tile'>
-                    {label}
-                  </div>
-                ))}
+                {['Front', 'Back', 'Damage close-up', 'Screen on', 'Side / frame', 'Charging port'].map(
+                  (label) => (
+                    <div key={label} className='upload-tile'>
+                      {label}
+                    </div>
+                  )
+                )}
               </div>
             )}
           </div>
@@ -423,9 +448,10 @@ export default function EstimateForm() {
             {submissionResult ? (
               <div className='notice notice-success' style={{ marginTop: 16 }}>
                 <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
-                  Estimate request saved
+                  Estimate request received
                 </strong>
-                Quote ID <strong>{submissionResult.quoteId}</strong> has been created and the request is now in your backend review queue.
+                Your request has been saved. Quote ID <strong>{submissionResult.quoteId}</strong>.
+                We&apos;ll review it and send the next step shortly.
                 {submissionResult.photoWarnings?.length ? (
                   <span style={{ display: 'block', marginTop: 10 }}>
                     Photo upload warnings: {submissionResult.photoWarnings.join(' · ')}
