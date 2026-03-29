@@ -62,10 +62,10 @@ export default function RepairsPage() {
 
           <div style={{ padding: 28, display: 'grid', alignContent: 'center', gap: 16 }}>
             <div className='kicker'>Repair services</div>
-            <h1 style={{ margin: 0 }}>Repairs built around jobs that make sense for a mail-in business</h1>
+            <h1 style={{ margin: 0 }}>Common repairs for the devices people use every day</h1>
             <p className='muted' style={{ margin: 0, maxWidth: 58 + 'ch' }}>
-              The service menu is intentionally focused. That helps keep turnaround realistic,
-              pricing cleaner, and customer expectations clearer.
+              We focus on repair categories that are practical for a mail-in service and easy for
+              customers to start with through the estimate process.
             </p>
           </div>
         </section>
@@ -84,12 +84,11 @@ export default function RepairsPage() {
         </div>
 
         <section className='policy-card'>
-          <div className='kicker'>Manual review only</div>
-          <h3>Some jobs should stay quote-first until reviewed in hand</h3>
+          <div className='kicker'>Before you send it in</div>
+          <h3>Some repairs need inspection before final approval</h3>
           <p>
-            Liquid damage, board-level no-power issues, bent housings, biometric failures, and
-            unusual desktop repairs should stay in manual review until the device has been properly
-            evaluated and the repair risk is understood.
+            Certain issues, especially liquid damage, no-power problems, or hidden internal damage,
+            may need in-hand inspection before the repair can be fully confirmed.
           </p>
         </section>
       </div>
