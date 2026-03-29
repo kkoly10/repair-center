@@ -3,27 +3,27 @@ import Link from 'next/link'
 const steps = [
   {
     title: 'Start with a free estimate',
-    text: 'Upload photos, choose the device, and describe the issue before mailing anything in.',
+    text: 'Upload photos, choose your device, and describe the issue before mailing anything in.',
   },
   {
-    title: 'Receive a human review',
-    text: 'Each request is checked by a real person so pricing, scope, and repair risk are reviewed before the job moves forward.',
+    title: 'Receive your quote',
+    text: 'We review the request and send the next step based on the repair details you provided.',
   },
   {
     title: 'Approve before shipping',
-    text: 'Nothing should move into the mail-in stage until the customer accepts the estimate and the next-step instructions.',
+    text: 'You only move forward when you are ready to continue with the repair process.',
   },
   {
-    title: 'Intake and inspection',
-    text: 'When the device arrives, the intake condition is documented and the real repair condition is confirmed in hand.',
+    title: 'Device intake and inspection',
+    text: 'Once your device arrives, it is checked in and inspected before the repair moves forward.',
   },
   {
     title: 'Repair and testing',
-    text: 'The job is completed, tested, and updated through the workflow before it is closed out.',
+    text: 'Your device is repaired, tested, and prepared for return once the work is complete.',
   },
   {
     title: 'Return shipping',
-    text: 'The repaired device is shipped back with tracking so the customer can follow the last stage too.',
+    text: 'Your repaired device is shipped back with tracking so you can follow the final step too.',
   },
 ]
 
@@ -44,11 +44,10 @@ export default function HowItWorksPage() {
         >
           <div style={{ padding: 28, display: 'grid', alignContent: 'center', gap: 16 }}>
             <div className='kicker'>How it works</div>
-            <h1 style={{ margin: 0 }}>A mail-in repair process built around clear approval steps</h1>
+            <h1 style={{ margin: 0 }}>A simple mail-in repair process from estimate to return delivery</h1>
             <p className='muted' style={{ margin: 0, maxWidth: 56 + 'ch' }}>
-              This is designed to feel controlled from the first estimate all the way to the return
-              shipment. Customers should know what happens before shipping, during repair, and before
-              the device comes back.
+              The process is designed to stay clear and easy to follow from the moment you request
+              an estimate to the day your device is shipped back.
             </p>
 
             <div className='inline-actions' style={{ marginBottom: 0 }}>
@@ -86,20 +85,19 @@ export default function HowItWorksPage() {
         </div>
 
         <section className='policy-card'>
-          <div className='kicker'>Why this matters</div>
-          <h3>This is not a “mail it and hope for the best” model</h3>
+          <div className='kicker'>What to expect</div>
+          <h3>Clear steps before, during, and after the repair</h3>
           <p>
-            The workflow is structured to reduce uncertainty. Customers get a free estimate, approve
-            before shipment, follow updates during repair, and receive tracked return shipping after
-            the job is complete.
+            You start with an estimate, approve the next step before shipping, follow progress while
+            the repair is underway, and receive tracking when the device is on the way back.
           </p>
         </section>
 
         <section className='cta-strip'>
           <div>
-            <div className='kicker'>Ready to start?</div>
-            <h3 className='card-title'>Open the estimate page and submit the repair request.</h3>
-            <p className='muted'>That is the first real step in the customer journey.</p>
+            <div className='kicker'>Ready to begin?</div>
+            <h3 className='card-title'>Start with the estimate request.</h3>
+            <p className='muted'>That is the first step before anything is mailed in.</p>
           </div>
           <Link href='/estimate' className='button button-primary'>
             Open Estimate Page
