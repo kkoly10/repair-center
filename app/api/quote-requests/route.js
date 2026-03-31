@@ -10,7 +10,7 @@ export async function POST(request) {
     request.headers.get('x-real-ip') ||
     'unknown'
 
-  const { allowed } = checkRateLimit(ip, { maxRequests: 5, windowMs: 60 * 60 * 1000 })
+  const { allowed } = await checkRateLimit(ip, { maxRequests: 5, windowMs: 60 * 60 * 1000 })
   if (!allowed) {
     return NextResponse.json(
       { error: 'Too many requests. Please wait a while before submitting again.' },

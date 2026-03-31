@@ -145,6 +145,11 @@ function AdminQuotesDashboardInner() {
             Review incoming estimate requests, open each quote record, and move the customer toward estimate sent,
             approval, or decline.
           </p>
+          <div style={{ marginTop: 8 }}>
+            <Link href='/admin/analytics' className='button button-secondary button-compact'>
+              View Analytics Dashboard
+            </Link>
+          </div>
 
           <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginTop: 14, marginBottom: 14 }}>
             <input
