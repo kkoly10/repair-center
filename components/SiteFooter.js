@@ -34,8 +34,18 @@ export default function SiteFooter() {
           <div className='footer-links'>
             <Link href='/repairs'>Repair Services</Link>
             <Link href='/devices'>Supported Devices</Link>
-            <Link href='/privacy'>Privacy</Link>
-            <Link href='/terms'>Terms</Link>
+            <Link href='/instant-estimate'>Instant Estimate</Link>
+            <Link href='/my-repairs'>My Repairs</Link>
+          </div>
+        </div>
+
+        <div>
+          <h4>Policies</h4>
+          <div className='footer-links'>
+            <Link href='/privacy'>Privacy Policy</Link>
+            <Link href='/data-privacy'>Your Privacy Choices</Link>
+            <Link href='/terms'>Terms of Service</Link>
+            <Link href='/returns'>Returns & Refunds</Link>
           </div>
         </div>
 
