@@ -73,8 +73,11 @@ export default function HomePage() {
             </p>
 
             <div className='hero-actions-row'>
-              <Link href='/estimate' className='button button-primary'>
-                Get a Free Estimate
+              <Link href='/instant-estimate' className='button button-primary'>
+                Instant Estimate
+              </Link>
+              <Link href='/estimate' className='button button-outline'>
+                Full Estimate Form
               </Link>
               <Link href='/repairs' className='button button-outline'>
                 See Repair Services
@@ -296,14 +299,17 @@ export default function HomePage() {
           <div className='cta-strip'>
             <div>
               <div className='kicker'>Ready to start?</div>
-              <h3 className='card-title'>Get your free estimate in a few minutes.</h3>
+              <h3 className='card-title'>Get your repair price in seconds.</h3>
               <p className='muted'>
-                Upload photos of your device and we&apos;ll review the repair request with you.
+                Use our instant estimator to see pricing right away, or submit a full estimate with photos.
               </p>
             </div>
             <div className='inline-actions'>
-              <Link href='/estimate' className='button button-primary'>
-                Get Free Estimate
+              <Link href='/instant-estimate' className='button button-primary'>
+                Instant Estimate
+              </Link>
+              <Link href='/estimate' className='button button-secondary'>
+                Full Estimate Form
               </Link>
               <Link href='/track' className='button button-secondary'>
                 Track a Repair

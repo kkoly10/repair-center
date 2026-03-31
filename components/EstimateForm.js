@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import {
   CATEGORY_OPTIONS,
@@ -18,10 +19,11 @@ const contactOptions = ['Email', 'Text', 'Either']
 const yesNoMaybe = ['Yes', 'No', 'Not sure']
 
 export default function EstimateForm() {
-  const [category, setCategory] = useState('phone')
-  const [brand, setBrand] = useState('Apple')
-  const [modelKey, setModelKey] = useState('iphone-13')
-  const [repairKey, setRepairKey] = useState('screen')
+  const searchParams = useSearchParams()
+  const [category, setCategory] = useState(searchParams.get('category') || 'phone')
+  const [brand, setBrand] = useState(searchParams.get('brand') || 'Apple')
+  const [modelKey, setModelKey] = useState(searchParams.get('modelKey') || 'iphone-13')
+  const [repairKey, setRepairKey] = useState(searchParams.get('repairKey') || 'screen')
   const [contactMethod, setContactMethod] = useState('Either')
   const [powerState, setPowerState] = useState('Yes')
   const [chargeState, setChargeState] = useState('Yes')
