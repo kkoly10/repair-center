@@ -28,10 +28,7 @@ export async function POST(request, context) {
 
     if (quoteError) throw quoteError
     if (!quoteRequest) {
-      return NextResponse.json(
-        { error: 'Quote request not found.' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Quote request not found.' }, { status: 404 })
     }
 
     const [customerResult, orderResult, estimateResult] = await Promise.all([
@@ -71,14 +68,31 @@ export async function POST(request, context) {
       )
     }
 
-    if (
-      quoteRequest.status !== 'approved_for_mail_in' &&
-      !orderResult.data?.order_number
-    ) {
+    if (quoteRequest.status !== 'approved_for_mail_in' && !orderResult.data?.order_number) {
       return NextResponse.json(
         { error: 'Mail-in instructions are not available until the estimate is approved.' },
         { status: 403 }
       )
+    }
+
+    let depositPaid = false
+    let inspectionDepositPaidAt = null
+
+    if (orderResult.data?.id) {
+      const { data: payment, error: paymentError } = await supabase
+        .from('payments')
+        .select('id, paid_at')
+        .eq('repair_order_id', orderResult.data.id)
+        .eq('payment_kind', 'inspection_deposit')
+        .eq('status', 'paid')
+        .order('paid_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (paymentError) throw paymentError
+
+      depositPaid = !!payment?.id
+      inspectionDepositPaidAt = payment?.paid_at || null
     }
 
     return NextResponse.json({
@@ -103,8 +117,9 @@ export async function POST(request, context) {
       order: {
         order_number: orderResult.data?.order_number || null,
         current_status: orderResult.data?.current_status || 'awaiting_mail_in',
-        inspection_deposit_required:
-          orderResult.data?.inspection_deposit_required || 0,
+        inspection_deposit_required: orderResult.data?.inspection_deposit_required || 0,
+        deposit_paid: depositPaid,
+        inspection_deposit_paid_at: inspectionDepositPaidAt,
       },
       estimate: {
         total_amount: estimateResult.data?.total_amount || 0,

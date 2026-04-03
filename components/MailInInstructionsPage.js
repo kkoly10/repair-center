@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 
 export default function MailInInstructionsPage({ quoteId }) {
@@ -41,8 +42,8 @@ export default function MailInInstructionsPage({ quoteId }) {
           <div className='kicker'>Mail-in instructions</div>
           <h1>Prepare and ship your device</h1>
           <p>
-            Once your estimate is approved, use this page to confirm your order,
-            review packaging guidance, and ship the device safely.
+            Once your estimate is approved, use this page to confirm your order, review packaging
+            guidance, and ship the device safely.
           </p>
         </div>
 
@@ -62,7 +63,11 @@ export default function MailInInstructionsPage({ quoteId }) {
               />
             </div>
 
-            {error ? <div className='notice' style={{ marginTop: 18 }}>{error}</div> : null}
+            {error ? (
+              <div className='notice notice-warn' style={{ marginTop: 18 }}>
+                {error}
+              </div>
+            ) : null}
 
             <div className='inline-actions'>
               <button type='submit' className='button button-primary' disabled={loading}>
@@ -75,8 +80,8 @@ export default function MailInInstructionsPage({ quoteId }) {
             <div className='kicker'>Before you ship</div>
             <h3>What to expect</h3>
             <p>
-              After the device arrives, it will be checked into intake, inspected,
-              and moved through the tracked repair workflow in your order record.
+              After the device arrives, it will be checked into intake, inspected, and moved
+              through the tracked repair workflow in your order record.
             </p>
           </div>
         </div>
@@ -92,9 +97,7 @@ export default function MailInInstructionsPage({ quoteId }) {
                   </h2>
                   <p className='muted'>{record.quote.repair_type_key || 'Repair type not set'}</p>
                 </div>
-                <span className='price-chip'>
-                  {record.order.order_number || 'Awaiting intake'}
-                </span>
+                <span className='price-chip'>{record.order.order_number || 'Awaiting intake'}</span>
               </div>
 
               <div className='quote-summary'>
@@ -112,7 +115,7 @@ export default function MailInInstructionsPage({ quoteId }) {
                 </div>
               </div>
 
-              {Number(record.order.inspection_deposit_required || 0) > 0 && !record.order.inspection_deposit_paid_at ? (
+              {Number(record.order.inspection_deposit_required || 0) > 0 && !record.order.deposit_paid ? (
                 <div className='notice notice-warn' style={{ marginTop: 14 }}>
                   <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
                     Deposit required before shipping
