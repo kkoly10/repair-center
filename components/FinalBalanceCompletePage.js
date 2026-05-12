@@ -14,6 +14,7 @@ export default function FinalBalanceCompletePage({ quoteId }) {
     const redirectStatus = searchParams.get('redirect_status')
 
     if (!paymentIntentId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState('error')
       setErrorMessage('Missing payment information. Please contact support.')
       return
