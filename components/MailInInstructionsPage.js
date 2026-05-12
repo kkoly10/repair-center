@@ -1,8 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 
-export default function MailInInstructionsPage({ quoteId }) {
+export default function MailInInstructionsPage({ quoteId, orgSlug }) {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -19,7 +20,7 @@ export default function MailInInstructionsPage({ quoteId }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, ...(orgSlug ? { orgSlug } : {}) }),
       })
 
       const result = await response.json()
@@ -117,12 +118,29 @@ export default function MailInInstructionsPage({ quoteId }) {
                   <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
                     Deposit required before shipping
                   </strong>
-                  Please pay the inspection deposit before mailing your device.
-                  <div className='inline-actions' style={{ marginBottom: 0 }}>
-                    <Link href={`/pay/${record.quote.quote_id}`} className='button button-primary'>
-                      Pay Inspection Deposit
-                    </Link>
-                  </div>
+                  {record.paymentMode === 'manual' ? (
+                    <>
+                      <span style={{ display: 'block', marginBottom: 8 }}>
+                        Inspection deposit: <strong>${Number(record.order.inspection_deposit_required).toFixed(2)}</strong>
+                      </span>
+                      {record.manualPaymentInstructions ? (
+                        <span style={{ display: 'block', whiteSpace: 'pre-line' }}>
+                          {record.manualPaymentInstructions}
+                        </span>
+                      ) : (
+                        <span>Please contact the shop to arrange payment.</span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      Please pay the inspection deposit before mailing your device.
+                      <div className='inline-actions' style={{ marginBottom: 0 }}>
+                        <Link href={`/pay/${record.quote.quote_id}`} className='button button-primary'>
+                          Pay Inspection Deposit
+                        </Link>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : null}
             </div>

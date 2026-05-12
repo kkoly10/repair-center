@@ -13,6 +13,7 @@ export async function POST(request, context) {
     const body = await request.json()
     const email = (body?.email || '').toString().trim().toLowerCase()
     const messageBody = (body?.body || '').toString().trim()
+    const orgSlug = (body?.orgSlug || '').toString().trim()
 
     if (!identifier || !email || !messageBody) {
       return NextResponse.json(
@@ -21,7 +22,18 @@ export async function POST(request, context) {
       )
     }
 
-    const resolved = await resolveTrackingIdentifier(identifier, { supabase })
+    let orgId = null
+    if (orgSlug) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('slug', orgSlug)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (org) orgId = org.id
+    }
+
+    const resolved = await resolveTrackingIdentifier(identifier, { supabase, orgId })
     const quoteRequest = resolved.quoteRequest
     const repairOrder = resolved.repairOrder
 
@@ -70,6 +82,7 @@ export async function POST(request, context) {
     const { data: message, error: insertError } = await supabase
       .from('repair_messages')
       .insert({
+        organization_id: quoteRequest.organization_id,
         repair_order_id: ensuredOrderResult.data.id,
         sender_customer_id: customerResult.data?.id || null,
         sender_role: 'customer',

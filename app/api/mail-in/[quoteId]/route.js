@@ -12,6 +12,7 @@ export async function POST(request, context) {
     const quoteId = params?.quoteId
     const body = await request.json()
     const email = (body?.email || '').toString().trim().toLowerCase()
+    const orgSlug = (body?.orgSlug || '').toString().trim()
 
     if (!quoteId || !email) {
       return NextResponse.json(
@@ -20,11 +21,21 @@ export async function POST(request, context) {
       )
     }
 
-    const { data: quoteRequest, error: quoteError } = await supabase
-      .from('quote_requests')
-      .select('*')
-      .eq('quote_id', quoteId)
-      .maybeSingle()
+    // Resolve org from slug when provided for defense-in-depth scoping
+    let orgFilter = null
+    if (orgSlug) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('slug', orgSlug)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (org) orgFilter = org.id
+    }
+
+    let quoteQuery = supabase.from('quote_requests').select('*').eq('quote_id', quoteId)
+    if (orgFilter) quoteQuery = quoteQuery.eq('organization_id', orgFilter)
+    const { data: quoteRequest, error: quoteError } = await quoteQuery.maybeSingle()
 
     if (quoteError) throw quoteError
     if (!quoteRequest) {
@@ -34,7 +45,7 @@ export async function POST(request, context) {
       )
     }
 
-    const [customerResult, orderResult, estimateResult] = await Promise.all([
+    const [customerResult, orderResult, estimateResult, paymentSettingsResult] = await Promise.all([
       quoteRequest.customer_id
         ? supabase
             .from('customers')
@@ -44,7 +55,7 @@ export async function POST(request, context) {
         : Promise.resolve({ data: null, error: null }),
       supabase
         .from('repair_orders')
-        .select('id, order_number, current_status, inspection_deposit_required')
+        .select('id, order_number, current_status, inspection_deposit_required, inspection_deposit_paid_at')
         .eq('quote_request_id', quoteRequest.id)
         .maybeSingle(),
       supabase
@@ -53,6 +64,11 @@ export async function POST(request, context) {
         .eq('quote_request_id', quoteRequest.id)
         .order('created_at', { ascending: false })
         .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('organization_payment_settings')
+        .select('payment_mode, manual_instructions')
+        .eq('organization_id', quoteRequest.organization_id)
         .maybeSingle(),
     ])
 
@@ -81,6 +97,9 @@ export async function POST(request, context) {
       )
     }
 
+    const paymentMode = paymentSettingsResult.data?.payment_mode || 'manual'
+    const manualPaymentInstructions = paymentSettingsResult.data?.manual_instructions || ''
+
     return NextResponse.json({
       ok: true,
       quote: {
@@ -103,8 +122,8 @@ export async function POST(request, context) {
       order: {
         order_number: orderResult.data?.order_number || null,
         current_status: orderResult.data?.current_status || 'awaiting_mail_in',
-        inspection_deposit_required:
-          orderResult.data?.inspection_deposit_required || 0,
+        inspection_deposit_required: orderResult.data?.inspection_deposit_required || 0,
+        inspection_deposit_paid_at: orderResult.data?.inspection_deposit_paid_at || null,
       },
       estimate: {
         total_amount: estimateResult.data?.total_amount || 0,
@@ -112,6 +131,8 @@ export async function POST(request, context) {
         warranty_days: estimateResult.data?.warranty_days || null,
         status: estimateResult.data?.status || null,
       },
+      paymentMode,
+      manualPaymentInstructions,
       instructions: await getMailInConfig(quoteRequest.organization_id),
     })
   } catch (error) {

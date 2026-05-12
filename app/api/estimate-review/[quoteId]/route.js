@@ -13,6 +13,7 @@ export async function POST(request, context) {
     const body = await request.json()
     const email = (body?.email || '').toString().trim().toLowerCase()
     const action = (body?.action || 'view').toString().trim()
+    const orgSlug = (body?.orgSlug || '').toString().trim()
 
     if (!quoteId || !email) {
       return NextResponse.json(
@@ -21,11 +22,23 @@ export async function POST(request, context) {
       )
     }
 
-    const { data: quoteRequest, error: quoteError } = await supabase
-      .from('quote_requests')
-      .select('*')
-      .eq('quote_id', quoteId)
-      .maybeSingle()
+    // Resolve org from slug for defense-in-depth quote scoping
+    let orgFilter = null
+    if (orgSlug) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('slug', orgSlug)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (org) orgFilter = org.id
+    }
+
+    const pathPrefix = orgSlug ? `/shop/${orgSlug}` : ''
+
+    let quoteQuery = supabase.from('quote_requests').select('*').eq('quote_id', quoteId)
+    if (orgFilter) quoteQuery = quoteQuery.eq('organization_id', orgFilter)
+    const { data: quoteRequest, error: quoteError } = await quoteQuery.maybeSingle()
 
     if (quoteError) throw quoteError
     if (!quoteRequest) {
@@ -91,14 +104,14 @@ export async function POST(request, context) {
 
     if (itemsError) throw itemsError
 
-    const reviewPath = `/estimate-review/${quoteId}`
-    const trackingPath = repairOrder ? `/track/${quoteId}` : null
+    const reviewPath = `${pathPrefix}/estimate-review/${quoteId}`
+    const trackingPath = repairOrder ? `${pathPrefix}/track/${quoteId}` : null
     const mailInPath =
       repairOrder &&
       ['awaiting_mail_in', 'in_transit_to_shop'].includes(repairOrder.current_status)
-        ? `/mail-in/${quoteId}`
+        ? `${pathPrefix}/mail-in/${quoteId}`
         : !repairOrder && quoteRequest.status === 'approved_for_mail_in'
-          ? `/mail-in/${quoteId}`
+          ? `${pathPrefix}/mail-in/${quoteId}`
           : null
 
     if (action === 'approve') {
@@ -145,15 +158,16 @@ export async function POST(request, context) {
           quoteStatus: quoteRequest.status,
           estimateStatus: 'approved',
           reviewPath,
-          trackingPath: `/track/${quoteId}`,
+          trackingPath: `${pathPrefix}/track/${quoteId}`,
           mailInPath:
             nextOrderStatus === 'awaiting_mail_in' || nextOrderStatus === 'in_transit_to_shop'
-              ? `/mail-in/${quoteId}`
+              ? `${pathPrefix}/mail-in/${quoteId}`
               : null,
         })
       }
 
-      const [modelResult, repairTypeResult, pricingRuleResult, existingOrderResult] =
+      // No existing repair order — look up model, repair type, pricing rule, and payment settings
+      const [modelResult, repairTypeResult, pricingRuleResult, existingOrderResult, paymentSettingsResult] =
         await Promise.all([
           quoteRequest.model_key
             ? supabase
@@ -181,6 +195,11 @@ export async function POST(request, context) {
             .select('id, order_number')
             .eq('quote_request_id', quoteRequest.id)
             .maybeSingle(),
+          supabase
+            .from('organization_payment_settings')
+            .select('payment_mode, manual_instructions')
+            .eq('organization_id', quoteRequest.organization_id)
+            .maybeSingle(),
         ])
 
       if (modelResult.error) throw modelResult.error
@@ -189,12 +208,16 @@ export async function POST(request, context) {
       if (existingOrderResult.error) throw existingOrderResult.error
 
       let createdOrder = existingOrderResult.data
+      const depositAmount = pricingRuleResult.data?.deposit_amount || 0
+      const paymentMode = paymentSettingsResult.data?.payment_mode || 'manual'
+      const manualInstructions = paymentSettingsResult.data?.manual_instructions || ''
 
-      if (!createdOrder && pricingRuleResult.data?.deposit_amount > 0) {
+      // For Stripe-based payment modes, redirect to checkout before creating the order
+      if (!createdOrder && depositAmount > 0 && paymentMode !== 'manual') {
         return NextResponse.json({
           ok: true,
           requiresPayment: true,
-          depositAmount: pricingRuleResult.data.deposit_amount,
+          depositAmount,
           checkoutPath: `/pay/${quoteId}`,
         })
       }
@@ -209,7 +232,7 @@ export async function POST(request, context) {
             model_id: modelResult.data?.id || null,
             repair_type_id: repairTypeResult.data?.id || null,
             current_status: 'awaiting_mail_in',
-            inspection_deposit_required: pricingRuleResult.data?.deposit_amount || 0,
+            inspection_deposit_required: depositAmount,
             final_estimate_id: estimate.id,
           })
           .select('id, order_number')
@@ -261,8 +284,14 @@ export async function POST(request, context) {
         quoteStatus: 'approved_for_mail_in',
         estimateStatus: 'approved',
         reviewPath,
-        trackingPath: `/track/${quoteId}`,
-        mailInPath: `/mail-in/${quoteId}`,
+        trackingPath: `${pathPrefix}/track/${quoteId}`,
+        mailInPath: `${pathPrefix}/mail-in/${quoteId}`,
+        // Manual payment fields — only populated when deposit > 0 and payment is manual
+        ...(depositAmount > 0 && paymentMode === 'manual' && {
+          manualPaymentMode: true,
+          manualInstructions,
+          depositAmount,
+        }),
       })
     }
 
@@ -307,7 +336,7 @@ export async function POST(request, context) {
         quoteStatus: 'declined',
         estimateStatus: 'declined',
         reviewPath,
-        trackingPath: repairOrder ? `/track/${quoteId}` : null,
+        trackingPath: repairOrder ? `${pathPrefix}/track/${quoteId}` : null,
         mailInPath: null,
       })
     }

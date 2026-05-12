@@ -4,6 +4,17 @@ import { resolveTrackingIdentifier } from '../../../../lib/resolveTrackingIdenti
 
 export const runtime = 'nodejs'
 
+async function resolveOrgId(supabase, orgSlug) {
+  if (!orgSlug) return null
+  const { data } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('slug', orgSlug)
+    .eq('status', 'active')
+    .maybeSingle()
+  return data?.id || null
+}
+
 export async function POST(request, context) {
   const supabase = getSupabaseAdmin()
 
@@ -12,6 +23,7 @@ export async function POST(request, context) {
     const identifier = params?.quoteId
     const body = await request.json()
     const email = (body?.email || '').toString().trim().toLowerCase()
+    const orgSlug = (body?.orgSlug || '').toString().trim()
 
     if (!identifier || !email) {
       return NextResponse.json(
@@ -20,7 +32,10 @@ export async function POST(request, context) {
       )
     }
 
-    const resolved = await resolveTrackingIdentifier(identifier, { supabase })
+    const orgId = await resolveOrgId(supabase, orgSlug)
+    const pathPrefix = orgSlug ? `/shop/${orgSlug}` : ''
+
+    const resolved = await resolveTrackingIdentifier(identifier, { supabase, orgId })
     const quoteRequest = resolved.quoteRequest
     const repairOrder = resolved.repairOrder
 
@@ -175,9 +190,9 @@ export async function POST(request, context) {
         (repairOrder &&
           ['awaiting_mail_in', 'in_transit_to_shop'].includes(repairOrder.current_status)) ||
         (!repairOrder && quoteRequest.status === 'approved_for_mail_in')
-          ? `/mail-in/${quoteRequest.quote_id}`
+          ? `${pathPrefix}/mail-in/${quoteRequest.quote_id}`
           : null,
-      reviewPath: `/estimate-review/${quoteRequest.quote_id}`,
+      reviewPath: `${pathPrefix}/estimate-review/${quoteRequest.quote_id}`,
     })
   } catch (error) {
     return NextResponse.json(

@@ -29,7 +29,7 @@ export async function GET(request, context) {
     const { data: rules, error: rulesError } = await supabase
       .from('pricing_rules')
       .select(
-        'id, model_id, repair_type_id, public_price_fixed, public_price_min, public_price_max, deposit_amount'
+        'id, model_id, repair_type_id, public_price_fixed, public_price_min, public_price_max, deposit_amount, repair_catalog_models(model_key), repair_types(repair_key)'
       )
       .eq('organization_id', org.id)
       .eq('active', true)
