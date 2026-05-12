@@ -71,8 +71,8 @@ Includes everything in Starter, plus:
 | SLA tracking (due date / overdue view) | **Available now** |
 | Basic repair analytics (volume, revenue) | **Available now** |
 | Staff performance dashboard | **Available now** |
-| Customer history (repeat customers) | **Coming soon** |
-| Invoices / receipts (PDF) | **Coming soon** |
+| Customer history (repeat customers) | **Available now** |
+| Invoices / receipts (PDF) | **Available now** |
 | Inventory & parts | **Not included — Pro+** |
 | Staff performance reports | **Available now** |
 | Multi-location | **Not included — Advanced** |
@@ -91,8 +91,8 @@ Includes everything in Growth, plus:
 | Parts used per repair (cost tracking) | **Coming soon** |
 | Staff performance reports | **Coming soon** |
 | Advanced revenue / margin reports | **Coming soon** |
-| Customer history + lifetime value | **Coming soon** |
-| Invoices / receipts (PDF) | **Coming soon** |
+| Customer history + lifetime value | **Available now** |
+| Invoices / receipts (PDF) | **Available now** |
 | Priority support | **Coming soon** |
 | Multi-location | **Not included — Advanced** |
 | Stripe Connect (marketplace payouts) | **Not included — Advanced** |
@@ -155,17 +155,19 @@ Includes everything in Pro, plus:
 - Low-stock alerts
 - Supplier / vendor records
 
-### Phase 5 — Invoices, Receipts & Customer History 🔜 Coming Soon
-- PDF invoice generation
-- Printable / emailable receipts
-- Customer profile: full repair + payment history
-- Repeat customer detection
+### Phase 5 — Invoices, Receipts & Customer History ✅ Complete (Sprint 10)
+- Printable HTML invoice page (`/admin/quotes/[id]/invoice`) with browser print-to-PDF
+- Email receipt via Resend (`POST /admin/api/quotes/[id]/send-invoice`) — "Send Receipt" button on repair order page
+- Customer list page (`/admin/customers`) — order count, completed count, last order date, repeat badge
+- Customer profile page (`/admin/customers/[id]`) — full repair history, lifetime value, repeat customer flag
+- `GET /admin/api/customers` + `GET /admin/api/customers/[customerId]` — both org-scoped
 
-### Phase 6 — Reporting & Analytics 🔜 Coming Soon
-- Revenue by date range, repair type, technician
-- Average repair time
+### Phase 6 — Reporting & Analytics ✅ Complete (Sprint 11)
+- Revenue by date range (7d / 30d / 90d / 12m / all) with previous-period trend
+- Revenue by repair type and by technician (bar charts)
+- Average repair time (intake → shipped)
 - Deposit vs. balance collection rates
-- Churn / repeat rate
+- Repeat customer rate
 
 ### Phase 7 — Stripe Connect 🔜 Deferred
 - Direct payouts to shop Stripe accounts
@@ -220,4 +222,4 @@ Includes everything in Pro, plus:
 | **9.3 / 10** | Bigger shop operations | Inventory, parts tracking, PDF invoices, staff reports, and advanced analytics in place. Pro tier shops have meaningful operational control. |
 | **9.5 / 10** | Competitor-close SaaS | Subscription billing live, Stripe Connect available, multi-location support usable. Positioned to compete directly with RepairDesk, RepairShopr, and similar platforms. |
 
-**Current status: targeting 9.3 (bigger shop operations).** Sprints 1–9 complete. Phases 1–3 done. Phase 4 (inventory) deferred. Phase 5 (invoices + customer history) is next.
+**Current status: 9.3 reached (bigger shop operations).** Sprints 1–11 complete. Phases 1–3, 5, and 6 done. Phase 4 (inventory) deferred. Next target: 9.5 (competitor-close SaaS) — subscription billing, Stripe Connect, multi-location.
