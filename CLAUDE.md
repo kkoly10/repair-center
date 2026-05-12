@@ -107,6 +107,40 @@ Converting the app from a single-shop platform to multi-tenant. Work is organize
 
 ---
 
+## Sprint 4 — Customer-facing tenant behavior ✅ COMPLETE
+
+### What was done
+- **`app/api/pricing/[shopSlug]/route.js`** — Updated SELECT to join `repair_catalog_models(model_key)` and `repair_types(repair_key)` so EstimateForm can build a lookup by modelKey+repairKey
+- **`lib/resolveTrackingIdentifier.js`** — Accepts optional `options.orgId`; adds `.eq('organization_id', orgId)` to all quote/order lookups across all three resolution paths (RCQ-, RCO-, generic fallback)
+- **`app/api/track/[quoteId]/route.js`** — Accepts `orgSlug` in POST body; resolves orgId; passes orgId to `resolveTrackingIdentifier`; returns org-prefixed navigation paths (`/shop/{slug}/...`); payment paths remain at `/pay/[quoteId]` (not shop-prefixed)
+- **`app/api/mail-in/[quoteId]/route.js`** — Accepts `orgSlug`; fetches `organization_payment_settings` in parallel; response now includes `paymentMode` and `manualPaymentInstructions`
+- **`app/api/estimate-review/[quoteId]/route.js`** — Accepts `orgSlug`; all returned paths use pathPrefix; manual payment mode: when `payment_mode = 'manual'` and deposit > 0, order is created immediately and response includes `manualPaymentMode: true`, `manualInstructions`, `depositAmount` instead of redirecting to Stripe
+- **`app/api/track/[quoteId]/messages/route.js`** — Accepts `orgSlug`, resolves orgId, passes to `resolveTrackingIdentifier`; also adds `organization_id` to `repair_messages` INSERT
+- **`components/CustomerTrackingPage.js`** — Accepts `orgSlug` prop; sends in both track and messages API POST bodies
+- **`components/CustomerEstimateReviewPage.js`** — Accepts `orgSlug` prop; sends in all API POST bodies; handles `result.manualPaymentMode` by displaying manual payment instructions panel instead of Stripe redirect
+- **`components/MailInInstructionsPage.js`** — Added missing `Link` import; accepts `orgSlug` prop; sends in API POST body; deposit section shows manual instructions when `paymentMode === 'manual'`, Stripe link otherwise
+- **`components/EstimateForm.js`** — When `resolvedOrgSlug` present, fetches `/api/pricing/[orgSlug]` on mount, builds `{ modelKey:repairKey → rule }` lookup, merges DB prices (fixed, min, max, deposit) into selectedRepair while preserving static label/turnaround; tracking link after submission uses shop-prefixed URL
+- **`app/shop/[orgSlug]/page.js`** (NEW) — Server component; fetches org + branding from Supabase admin client; renders branded landing page with estimate and track links; 404 if slug not found
+- **`app/shop/[orgSlug]/track/page.js`** (NEW) — Shop-scoped track lookup page; redirects to `/shop/{slug}/track/{id}`
+- **`app/shop/[orgSlug]/track/[quoteId]/page.js`** (NEW) — Wrapper: `<CustomerTrackingPage quoteId orgSlug />`
+- **`app/shop/[orgSlug]/estimate-review/[quoteId]/page.js`** (NEW) — Wrapper: `<CustomerEstimateReviewPage quoteId orgSlug />`
+- **`app/shop/[orgSlug]/mail-in/[quoteId]/page.js`** (NEW) — Wrapper: `<MailInInstructionsPage quoteId orgSlug />`
+
+### Route inventory (public, per-shop)
+| URL | Description |
+|-----|-------------|
+| `/shop/[slug]` | Branded landing page |
+| `/shop/[slug]/estimate` | Estimate form (exists from Sprint 3b) |
+| `/shop/[slug]/track` | Track lookup (enter ID) |
+| `/shop/[slug]/track/[id]` | Live tracking + messages |
+| `/shop/[slug]/estimate-review/[id]` | Estimate approval |
+| `/shop/[slug]/mail-in/[id]` | Mail-in instructions |
+
+### Original single-shop routes preserved (fallback)
+`/track/[id]`, `/estimate-review/[id]`, `/mail-in/[id]` — unchanged, no orgSlug sent
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)

@@ -10,7 +10,7 @@ function formatEstimateDecisionLabel(status) {
   return 'Decision'
 }
 
-export default function CustomerEstimateReviewPage({ quoteId }) {
+export default function CustomerEstimateReviewPage({ quoteId, orgSlug }) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,6 +20,7 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
   const [resultMessage, setResultMessage] = useState('')
   const [mailInPath, setMailInPath] = useState('')
   const [trackingPath, setTrackingPath] = useState('')
+  const [manualPaymentInfo, setManualPaymentInfo] = useState(null)
 
   const totalDisplay = useMemo(() => {
     if (!record?.estimate?.total_amount && record?.estimate?.total_amount !== 0) return '—'
@@ -31,6 +32,7 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
     setLoading(true)
     setError('')
     setResultMessage('')
+    setManualPaymentInfo(null)
 
     try {
       const response = await fetch(`/api/estimate-review/${quoteId}`, {
@@ -41,6 +43,7 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
         body: JSON.stringify({
           email,
           action: 'view',
+          ...(orgSlug ? { orgSlug } : {}),
         }),
       })
 
@@ -74,6 +77,7 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
         body: JSON.stringify({
           email,
           action,
+          ...(orgSlug ? { orgSlug } : {}),
         }),
       })
 
@@ -83,6 +87,13 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
       if (action === 'approve' && result.requiresPayment) {
         router.push(result.checkoutPath)
         return
+      }
+
+      if (action === 'approve' && result.manualPaymentMode) {
+        setManualPaymentInfo({
+          instructions: result.manualInstructions || '',
+          depositAmount: result.depositAmount || 0,
+        })
       }
 
       const actionTimestamp = new Date().toISOString()
@@ -176,6 +187,26 @@ export default function CustomerEstimateReviewPage({ quoteId }) {
             {resultMessage ? (
               <div className='notice notice-success' style={{ marginTop: 18 }}>
                 {resultMessage}
+              </div>
+            ) : null}
+
+            {manualPaymentInfo ? (
+              <div className='notice notice-warn' style={{ marginTop: 18 }}>
+                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
+                  Deposit payment instructions
+                </strong>
+                {manualPaymentInfo.depositAmount > 0 ? (
+                  <span style={{ display: 'block', marginBottom: 8 }}>
+                    Inspection deposit due: <strong>${Number(manualPaymentInfo.depositAmount).toFixed(2)}</strong>
+                  </span>
+                ) : null}
+                {manualPaymentInfo.instructions ? (
+                  <span style={{ display: 'block', whiteSpace: 'pre-line' }}>
+                    {manualPaymentInfo.instructions}
+                  </span>
+                ) : (
+                  <span>Please contact the shop for payment details.</span>
+                )}
               </div>
             ) : null}
 

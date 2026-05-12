@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   CATEGORY_OPTIONS,
   REPAIR_STATUS_STEPS,
@@ -36,6 +36,24 @@ export default function EstimateForm({ orgSlug }) {
   const [submissionResult, setSubmissionResult] = useState(null)
   const [submissionError, setSubmissionError] = useState(null)
   const [phoneError, setPhoneError] = useState('')
+  const [dbPricingLookup, setDbPricingLookup] = useState({})
+
+  useEffect(() => {
+    if (!resolvedOrgSlug) return
+    fetch(`/api/pricing/${resolvedOrgSlug}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data?.rules) return
+        const lookup = {}
+        for (const rule of data.rules) {
+          const mk = rule.repair_catalog_models?.model_key
+          const rk = rule.repair_types?.repair_key
+          if (mk && rk) lookup[`${mk}:${rk}`] = rule
+        }
+        setDbPricingLookup(lookup)
+      })
+      .catch(() => {})
+  }, [resolvedOrgSlug])
 
   const brands = useMemo(() => getBrandsByCategory(category), [category])
 
@@ -45,10 +63,18 @@ export default function EstimateForm({ orgSlug }) {
   }, [category, brand, brands])
 
   const repairs = useMemo(() => getRepairsByModel(modelKey), [modelKey])
-  const selectedRepair = useMemo(
-    () => getPricingForSelection(modelKey, repairKey),
-    [modelKey, repairKey]
-  )
+  const selectedRepair = useMemo(() => {
+    const staticRepair = getPricingForSelection(modelKey, repairKey)
+    const dbRule = dbPricingLookup[`${modelKey}:${repairKey}`]
+    if (!dbRule) return staticRepair
+    return {
+      ...staticRepair,
+      price: dbRule.public_price_fixed ?? staticRepair?.price ?? null,
+      min: dbRule.public_price_min ?? staticRepair?.min ?? null,
+      max: dbRule.public_price_max ?? staticRepair?.max ?? null,
+      deposit: dbRule.deposit_amount ?? staticRepair?.deposit ?? null,
+    }
+  }, [modelKey, repairKey, dbPricingLookup])
   const entry = useMemo(() => getCatalogEntry(modelKey), [modelKey])
 
   const clearSubmissionState = () => {
@@ -463,7 +489,7 @@ export default function EstimateForm({ orgSlug }) {
                 ) : null}
                 <span style={{ display: 'block', marginTop: 12 }}>
                   <Link
-                    href={`/track/${submissionResult.quoteId}`}
+                    href={resolvedOrgSlug ? `/shop/${resolvedOrgSlug}/track/${submissionResult.quoteId}` : `/track/${submissionResult.quoteId}`}
                     style={{ color: 'var(--blue)', fontWeight: 700 }}
                   >
                     Open tracking page
