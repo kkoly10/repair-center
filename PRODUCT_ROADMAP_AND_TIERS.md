@@ -69,11 +69,12 @@ Includes everything in Starter, plus:
 | Team management (invite, role, remove) | **Available now** |
 | Repair queue + status workflow | **Available now** |
 | SLA tracking (due date / overdue view) | **Available now** |
-| Basic repair analytics (volume, revenue) | **Coming soon** |
+| Basic repair analytics (volume, revenue) | **Available now** |
+| Staff performance dashboard | **Available now** |
 | Customer history (repeat customers) | **Coming soon** |
 | Invoices / receipts (PDF) | **Coming soon** |
 | Inventory & parts | **Not included — Pro+** |
-| Staff performance reports | **Not included — Pro+** |
+| Staff performance reports | **Available now** |
 | Multi-location | **Not included — Advanced** |
 | Custom domain | **Not included — Advanced** |
 
@@ -142,11 +143,11 @@ Includes everything in Pro, plus:
 - Intake form, device condition photos (existing, per-quote repair order page)
 - SLA tracking (due_at overdue view is the first SLA indicator)
 
-### Phase 3 — Staff & Team Management 🔜 Coming Soon
-- Staff roles (owner, admin, technician)
-- Per-staff repair assignment views
-- Activity log / audit trail
-- Staff performance metrics
+### Phase 3 — Staff & Team Management ✅ Complete (Sprint 9)
+- Staff roles (owner, admin, technician) — done in Sprint 3b
+- Per-staff repair assignment views — `/admin/orders?tech={id}` filter in repair queue
+- Activity log / audit trail — unified timeline on repair order page (status history + audit log merged)
+- Staff performance metrics — `/admin/staff`: active orders, completed in 30d, avg turnaround per tech
 
 ### Phase 4 — Inventory & Parts 🔜 Coming Soon
 - Parts catalog (name, SKU, cost, quantity)
@@ -219,4 +220,4 @@ Includes everything in Pro, plus:
 | **9.3 / 10** | Bigger shop operations | Inventory, parts tracking, PDF invoices, staff reports, and advanced analytics in place. Pro tier shops have meaningful operational control. |
 | **9.5 / 10** | Competitor-close SaaS | Subscription billing live, Stripe Connect available, multi-location support usable. Positioned to compete directly with RepairDesk, RepairShopr, and similar platforms. |
 
-**Current status: targeting 9.0 (strong shop workflow).** Sprints 1–8 complete. Phase 1 and Phase 2 are done. Phase 3 (staff performance metrics) is next.
+**Current status: targeting 9.3 (bigger shop operations).** Sprints 1–9 complete. Phases 1–3 done. Phase 4 (inventory) deferred. Phase 5 (invoices + customer history) is next.

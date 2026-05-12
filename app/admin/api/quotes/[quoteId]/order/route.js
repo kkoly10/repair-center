@@ -87,9 +87,10 @@ export async function GET(request, context) {
 
     let history = []
     let shipments = []
+    let auditLog = []
 
     if (orderResult.data?.id) {
-      const [historyResult, shipmentsResult] = await Promise.all([
+      const [historyResult, shipmentsResult, auditLogResult] = await Promise.all([
         supabase
           .from('repair_order_status_history')
           .select('id, repair_order_id, previous_status, new_status, customer_visible, note, created_at')
@@ -100,13 +101,20 @@ export async function GET(request, context) {
           .select('*')
           .eq('repair_order_id', orderResult.data.id)
           .order('created_at', { ascending: false }),
+        supabase
+          .from('repair_order_audit_log')
+          .select('id, event_type, old_value, new_value, actor_user_id, created_at')
+          .eq('repair_order_id', orderResult.data.id)
+          .order('created_at', { ascending: true }),
       ])
 
       if (historyResult.error) throw historyResult.error
       if (shipmentsResult.error) throw shipmentsResult.error
+      if (auditLogResult.error) throw auditLogResult.error
 
       history = historyResult.data || []
       shipments = shipmentsResult.data || []
+      auditLog = auditLogResult.data || []
     }
 
     return NextResponse.json({
@@ -133,6 +141,7 @@ export async function GET(request, context) {
       },
       order: orderResult.data,
       history,
+      auditLog,
       shipments,
       technicians: (techniciansResult.data || []).map((m) => ({
         id: m.profiles?.id || m.user_id,
