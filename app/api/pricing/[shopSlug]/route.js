@@ -3,8 +3,6 @@ import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
 
 export const runtime = 'nodejs'
 
-// Public endpoint — returns active pricing rules for the given shop slug.
-// Uses service role internally so no anon-key RLS dependency.
 export async function GET(request, context) {
   const supabase = getSupabaseAdmin()
 
