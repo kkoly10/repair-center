@@ -249,6 +249,38 @@ All data comes from existing tables: `customers`, `repair_orders`, `quote_reques
 
 ---
 
+## Sprint 11 — Reporting & Analytics ✅ COMPLETE (Phase 6)
+
+### No migration needed
+All data comes from existing tables: `payments`, `repair_orders`, `quote_requests`, `organization_members`, `customers`.
+
+### What was done
+- **`GET /admin/api/analytics`** — complete rewrite:
+  - Fixed column name bugs from original build: `payment_kind` → `kind`, `paid_at` → `created_at`, `repair_completed_at` → `shipped_at`
+  - Added `?range=` query param (7d / 30d / 90d / 12m / all); defaults to 30d
+  - Previous period comparison: same-duration window ending at `rangeStart`, returned as `revenue.prev`
+  - Reduced from 10 parallel queries to 7 by computing turnaround from the already-fetched `repair_orders` dataset (no separate turnaround query)
+  - **Revenue by repair type**: joins paid payments → repair_orders → quote_requests, groups by `repair_type_key`
+  - **Revenue by technician**: joins paid payments → repair_orders → organization_members/profiles, groups by tech name
+  - **Collection rates**: `depositRate` = % of all orders with a paid deposit; `balanceRate` = % with a paid final balance
+  - **Repeat customer rate**: computed from repair_orders grouped by `customer_id`; `customers.repeatRate`, `.repeatCustomers`, `.total`
+  - Response shape: `revenue.{total,prev,deposits,balances,totalPayments,depositRate,balanceRate}`, `revenueByType[]`, `revenueByTech[]`, `funnel`, `repairs`, `devicePopularity`, `repairTypeDemand`, `recentQuotes`, `customers`
+- **`components/AdminAnalyticsDashboard.js`** — complete rewrite:
+  - Date range selector tabs (7d / 30d / 90d / 12m / All) at top; fetches with `?range=` on change
+  - KPI card: Repeat Customer Rate replaces the old Active Repairs card (moved to repair metrics section)
+  - Revenue breakdown section now shows deposit/balance rates alongside amounts
+  - New section: **Revenue by Repair Type** — horizontal bar chart, purple bars, sorted by revenue
+  - New section: **Revenue by Technician** — horizontal bar chart, cyan bars; hidden when no assigned tech data
+  - Repair metrics row: Active Repairs + Avg Turnaround + top 2 status counts
+  - Removed Recent Payments table (redundant with Revenue sections)
+  - Updated all field name references to new response shape
+- **`__tests__/api/analytics.test.js`** (new) — 9 tests: 401, org filter, total revenue, deposit/balance split (verifies `kind` not `payment_kind`), revenue by repair type join, revenue by tech join, repeat rate, range in response, `created_at` range filter (verifies not `paid_at`)
+
+### Test suite after Sprint 11
+65 tests across 9 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)

@@ -162,11 +162,12 @@ Includes everything in Pro, plus:
 - Customer profile page (`/admin/customers/[id]`) — full repair history, lifetime value, repeat customer flag
 - `GET /admin/api/customers` + `GET /admin/api/customers/[customerId]` — both org-scoped
 
-### Phase 6 — Reporting & Analytics 🔜 Coming Soon
-- Revenue by date range, repair type, technician
-- Average repair time
+### Phase 6 — Reporting & Analytics ✅ Complete (Sprint 11)
+- Revenue by date range (7d / 30d / 90d / 12m / all) with previous-period trend
+- Revenue by repair type and by technician (bar charts)
+- Average repair time (intake → shipped)
 - Deposit vs. balance collection rates
-- Churn / repeat rate
+- Repeat customer rate
 
 ### Phase 7 — Stripe Connect 🔜 Deferred
 - Direct payouts to shop Stripe accounts
@@ -221,4 +222,4 @@ Includes everything in Pro, plus:
 | **9.3 / 10** | Bigger shop operations | Inventory, parts tracking, PDF invoices, staff reports, and advanced analytics in place. Pro tier shops have meaningful operational control. |
 | **9.5 / 10** | Competitor-close SaaS | Subscription billing live, Stripe Connect available, multi-location support usable. Positioned to compete directly with RepairDesk, RepairShopr, and similar platforms. |
 
-**Current status: targeting 9.3 (bigger shop operations).** Sprints 1–10 complete. Phases 1–3 and 5 done. Phase 4 (inventory) deferred. Phase 6 (reporting + analytics) is next.
+**Current status: 9.3 reached (bigger shop operations).** Sprints 1–11 complete. Phases 1–3, 5, and 6 done. Phase 4 (inventory) deferred. Next target: 9.5 (competitor-close SaaS) — subscription billing, Stripe Connect, multi-location.

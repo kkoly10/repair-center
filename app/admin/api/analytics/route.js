@@ -4,7 +4,16 @@ import { getSessionOrgId } from '../../../../lib/admin/getSessionOrgId'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+function rangeToIso(range) {
+  const now = Date.now()
+  if (range === '7d') return new Date(now - 7 * 86400000).toISOString()
+  if (range === '30d') return new Date(now - 30 * 86400000).toISOString()
+  if (range === '90d') return new Date(now - 90 * 86400000).toISOString()
+  if (range === '12m') return new Date(now - 365 * 86400000).toISOString()
+  return null // 'all'
+}
+
+export async function GET(request) {
   let orgId
   try {
     orgId = await getSessionOrgId()
@@ -14,165 +23,197 @@ export async function GET() {
 
   try {
     const supabase = getSupabaseAdmin()
+    const { searchParams } = new URL(request.url)
+    const range = searchParams.get('range') || '30d'
+    const rangeStart = rangeToIso(range)
 
-    const now = new Date()
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
-    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString()
+    // Previous period: same duration ending at rangeStart (for trend comparison)
+    const prevStart = rangeStart
+      ? new Date(new Date(rangeStart).getTime() - (Date.now() - new Date(rangeStart).getTime())).toISOString()
+      : null
 
     const [
-      paymentsResult,
-      recentPaymentsResult,
-      currentPeriodResult,
-      previousPeriodResult,
-      quoteStatusesResult,
-      repairOrdersResult,
-      devicePopularityResult,
-      repairTypesResult,
-      recentQuotesResult,
-      turnaroundResult,
+      paidResult,
+      prevResult,
+      ordersResult,
+      quotesResult,
+      recentResult,
+      membersResult,
+      customersResult,
     ] = await Promise.all([
-      // All paid payments
-      supabase
-        .from('payments')
-        .select('id, amount, payment_kind, paid_at')
-        .eq('organization_id', orgId)
-        .eq('status', 'paid'),
+      // Paid payments in selected range
+      (() => {
+        let q = supabase
+          .from('payments')
+          .select('id, kind, amount, repair_order_id')
+          .eq('organization_id', orgId)
+          .eq('status', 'paid')
+        if (rangeStart) q = q.gte('created_at', rangeStart)
+        return q.order('created_at', { ascending: false })
+      })(),
 
-      // Recent 10 payments
-      supabase
-        .from('payments')
-        .select('id, amount, payment_kind, status, paid_at, currency')
-        .eq('organization_id', orgId)
-        .eq('status', 'paid')
-        .order('paid_at', { ascending: false })
-        .limit(10),
+      // Previous period payments (for trend — amount only)
+      prevStart
+        ? supabase
+            .from('payments')
+            .select('amount')
+            .eq('organization_id', orgId)
+            .eq('status', 'paid')
+            .gte('created_at', prevStart)
+            .lt('created_at', rangeStart)
+            .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
 
-      // Current 30-day revenue
-      supabase
-        .from('payments')
-        .select('amount')
-        .eq('organization_id', orgId)
-        .eq('status', 'paid')
-        .gte('paid_at', thirtyDaysAgo),
-
-      // Previous 30-day revenue
-      supabase
-        .from('payments')
-        .select('amount')
-        .eq('organization_id', orgId)
-        .eq('status', 'paid')
-        .gte('paid_at', sixtyDaysAgo)
-        .lt('paid_at', thirtyDaysAgo),
-
-      // Quote statuses
-      supabase
-        .from('quote_requests')
-        .select('status')
-        .eq('organization_id', orgId)
-        .limit(10000),
-
-      // Repair orders
+      // All repair orders (active count, turnaround, collection rates, repeat rate)
       supabase
         .from('repair_orders')
-        .select('id, current_status, intake_received_at, repair_completed_at')
+        .select('id, current_status, customer_id, assigned_technician_id, quote_request_id, intake_received_at, shipped_at')
         .eq('organization_id', orgId)
-        .limit(10000),
+        .limit(5000)
+        .order('created_at', { ascending: false }),
 
-      // Device popularity
+      // Quote requests — all fields for funnel + device popularity + repair type demand + join
       supabase
         .from('quote_requests')
-        .select('device_category, brand_name, model_name')
+        .select('id, status, device_category, brand_name, model_name, repair_type_key')
         .eq('organization_id', orgId)
-        .limit(10000),
+        .limit(10000)
+        .order('created_at', { ascending: false }),
 
-      // Repair types
+      // Recent 10 quotes for activity feed
       supabase
         .from('quote_requests')
-        .select('repair_type_key')
+        .select('id, quote_id, first_name, last_name, device_category, brand_name, model_name, repair_type_key, status, created_at')
         .eq('organization_id', orgId)
-        .limit(10000),
+        .limit(10)
+        .order('created_at', { ascending: false }),
 
-      // Recent 10 quotes
+      // Org members for technician name lookup
       supabase
-        .from('quote_requests')
-        .select('id, quote_id, first_name, last_name, guest_email, device_category, brand_name, model_name, repair_type_key, status, created_at')
+        .from('organization_members')
+        .select('user_id, profiles(full_name)')
         .eq('organization_id', orgId)
-        .order('created_at', { ascending: false })
-        .limit(10),
+        .order('user_id', { ascending: true }),
 
-      // Turnaround - completed repairs with both dates
+      // Customers for repeat rate
       supabase
-        .from('repair_orders')
-        .select('intake_received_at, repair_completed_at')
+        .from('customers')
+        .select('id')
         .eq('organization_id', orgId)
-        .not('intake_received_at', 'is', null)
-        .not('repair_completed_at', 'is', null),
+        .order('created_at', { ascending: false }),
     ])
 
-    // --- Revenue Metrics ---
-    const payments = paymentsResult.data || []
-    const totalRevenue = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0)
-    const depositRevenue = payments
-      .filter((p) => p.payment_kind === 'inspection_deposit')
-      .reduce((sum, p) => sum + Number(p.amount || 0), 0)
-    const balanceRevenue = payments
-      .filter((p) => p.payment_kind === 'final_balance')
-      .reduce((sum, p) => sum + Number(p.amount || 0), 0)
-    const totalPayments = payments.length
+    if (paidResult.error) throw paidResult.error
+    if (prevResult.error) throw prevResult.error
+    if (ordersResult.error) throw ordersResult.error
+    if (quotesResult.error) throw quotesResult.error
+    if (recentResult.error) throw recentResult.error
+    if (membersResult.error) throw membersResult.error
+    if (customersResult.error) throw customersResult.error
 
-    const currentPeriodRevenue = (currentPeriodResult.data || []).reduce(
-      (sum, p) => sum + Number(p.amount || 0),
-      0
+    const paidPayments = paidResult.data || []
+    const repairOrders = ordersResult.data || []
+    const quotes = quotesResult.data || []
+
+    // Build lookup maps for join operations
+    const orderById = Object.fromEntries(repairOrders.map((o) => [o.id, o]))
+    const repairTypeById = Object.fromEntries(quotes.map((q) => [q.id, q.repair_type_key]))
+    const techNameById = Object.fromEntries(
+      (membersResult.data || [])
+        .filter((m) => m.profiles?.full_name)
+        .map((m) => [m.user_id, m.profiles.full_name])
     )
-    const previousPeriodRevenue = (previousPeriodResult.data || []).reduce(
-      (sum, p) => sum + Number(p.amount || 0),
-      0
+
+    // --- Revenue Metrics ---
+    const totalRevenue = paidPayments.reduce((s, p) => s + Number(p.amount || 0), 0)
+    const depositRevenue = paidPayments
+      .filter((p) => p.kind === 'inspection_deposit')
+      .reduce((s, p) => s + Number(p.amount || 0), 0)
+    const balanceRevenue = paidPayments
+      .filter((p) => p.kind === 'final_balance')
+      .reduce((s, p) => s + Number(p.amount || 0), 0)
+    const prevRevenue = (prevResult.data || []).reduce((s, p) => s + Number(p.amount || 0), 0)
+
+    // --- Revenue by Repair Type ---
+    const byTypeMap = {}
+    for (const p of paidPayments) {
+      if (!p.repair_order_id) continue
+      const order = orderById[p.repair_order_id]
+      if (!order) continue
+      const type = repairTypeById[order.quote_request_id] || 'unknown'
+      byTypeMap[type] = (byTypeMap[type] || 0) + Number(p.amount || 0)
+    }
+    const revenueByType = Object.entries(byTypeMap)
+      .map(([repairType, amount]) => ({ repairType, amount }))
+      .sort((a, b) => b.amount - a.amount)
+
+    // --- Revenue by Technician ---
+    const byTechMap = {}
+    for (const p of paidPayments) {
+      if (!p.repair_order_id) continue
+      const order = orderById[p.repair_order_id]
+      if (!order?.assigned_technician_id) continue
+      const name = techNameById[order.assigned_technician_id] || 'Unassigned'
+      byTechMap[name] = (byTechMap[name] || 0) + Number(p.amount || 0)
+    }
+    const revenueByTech = Object.entries(byTechMap)
+      .map(([tech, amount]) => ({ tech, amount }))
+      .sort((a, b) => b.amount - a.amount)
+
+    // --- Collection Rates (deposits and balances vs all orders) ---
+    const depositOrderIds = new Set(
+      paidPayments
+        .filter((p) => p.kind === 'inspection_deposit' && p.repair_order_id)
+        .map((p) => p.repair_order_id)
     )
+    const balanceOrderIds = new Set(
+      paidPayments
+        .filter((p) => p.kind === 'final_balance' && p.repair_order_id)
+        .map((p) => p.repair_order_id)
+    )
+    const totalOrders = repairOrders.length
+    const depositRate = totalOrders > 0 ? Math.round((depositOrderIds.size / totalOrders) * 1000) / 10 : 0
+    const balanceRate = totalOrders > 0 ? Math.round((balanceOrderIds.size / totalOrders) * 1000) / 10 : 0
 
     // --- Conversion Funnel ---
-    const quoteStatuses = quoteStatusesResult.data || []
-    const totalQuotes = quoteStatuses.length
+    const totalQuotes = quotes.length
     const statusCounts = {}
-    for (const row of quoteStatuses) {
-      statusCounts[row.status] = (statusCounts[row.status] || 0) + 1
+    for (const q of quotes) {
+      statusCounts[q.status] = (statusCounts[q.status] || 0) + 1
     }
-
-    const estimatesSent = (statusCounts['estimate_sent'] || 0) +
-      (statusCounts['awaiting_customer'] || 0) +
-      (statusCounts['approved_for_mail_in'] || 0) +
-      (statusCounts['declined'] || 0) +
-      (statusCounts['archived'] || 0)
-    const approved = statusCounts['approved_for_mail_in'] || 0
-    const declined = statusCounts['declined'] || 0
+    const estimatesSent = (statusCounts.estimate_sent || 0)
+      + (statusCounts.awaiting_customer || 0)
+      + (statusCounts.approved_for_mail_in || 0)
+      + (statusCounts.declined || 0)
+      + (statusCounts.archived || 0)
 
     // --- Repair Metrics ---
-    const repairOrders = repairOrdersResult.data || []
+    const TERMINAL = new Set([
+      'shipped', 'delivered', 'cancelled', 'declined',
+      'returned_unrepaired', 'beyond_economical_repair', 'no_fault_found',
+    ])
     const repairStatusCounts = {}
     let activeRepairs = 0
-    for (const order of repairOrders) {
-      repairStatusCounts[order.current_status] = (repairStatusCounts[order.current_status] || 0) + 1
-      if (order.current_status !== 'completed' && order.current_status !== 'cancelled') {
-        activeRepairs++
-      }
+    for (const o of repairOrders) {
+      repairStatusCounts[o.current_status] = (repairStatusCounts[o.current_status] || 0) + 1
+      if (!TERMINAL.has(o.current_status)) activeRepairs++
     }
 
-    // Average turnaround
-    const completedWithDates = turnaroundResult.data || []
+    // Average turnaround: intake → shipped (computed from fetched orders)
+    const withDates = repairOrders.filter((o) => o.intake_received_at && o.shipped_at)
     let avgTurnaroundDays = null
-    if (completedWithDates.length > 0) {
-      const totalDays = completedWithDates.reduce((sum, order) => {
-        const intake = new Date(order.intake_received_at)
-        const completed = new Date(order.repair_completed_at)
-        return sum + (completed - intake) / (1000 * 60 * 60 * 24)
-      }, 0)
-      avgTurnaroundDays = Math.round((totalDays / completedWithDates.length) * 10) / 10
+    if (withDates.length > 0) {
+      const totalDays = withDates.reduce(
+        (s, o) => s + (new Date(o.shipped_at) - new Date(o.intake_received_at)) / 86400000,
+        0
+      )
+      avgTurnaroundDays = Math.round((totalDays / withDates.length) * 10) / 10
     }
 
     // --- Device Popularity ---
-    const deviceRows = devicePopularityResult.data || []
     const deviceMap = {}
-    for (const row of deviceRows) {
-      const key = [row.device_category, row.brand_name, row.model_name].filter(Boolean).join(' | ')
+    for (const q of quotes) {
+      const key = [q.brand_name, q.model_name].filter(Boolean).join(' ') || q.device_category || 'Unknown'
       deviceMap[key] = (deviceMap[key] || 0) + 1
     }
     const devicePopularity = Object.entries(deviceMap)
@@ -180,19 +221,28 @@ export async function GET() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10)
 
-    // --- Repair Type Demand ---
-    const repairTypeRows = repairTypesResult.data || []
+    // --- Repair Type Demand (quote volume, all-time) ---
     const repairTypeMap = {}
-    for (const row of repairTypeRows) {
-      const key = row.repair_type_key || 'unknown'
+    for (const q of quotes) {
+      const key = q.repair_type_key || 'unknown'
       repairTypeMap[key] = (repairTypeMap[key] || 0) + 1
     }
     const repairTypeDemand = Object.entries(repairTypeMap)
       .map(([repairType, count]) => ({ repairType, count }))
       .sort((a, b) => b.count - a.count)
 
-    // --- Recent Activity ---
-    const recentQuotes = (recentQuotesResult.data || []).map((q) => ({
+    // --- Repeat Customer Rate ---
+    const totalCustomers = (customersResult.data || []).length
+    const ordersByCustomer = {}
+    for (const o of repairOrders) {
+      if (!o.customer_id) continue
+      ordersByCustomer[o.customer_id] = (ordersByCustomer[o.customer_id] || 0) + 1
+    }
+    const repeatCustomerCount = Object.values(ordersByCustomer).filter((n) => n > 1).length
+    const repeatRate = totalCustomers > 0 ? Math.round((repeatCustomerCount / totalCustomers) * 1000) / 10 : 0
+
+    // --- Recent Quotes ---
+    const recentQuotes = (recentResult.data || []).map((q) => ({
       quote_id: q.quote_id,
       customer: [q.first_name, q.last_name].filter(Boolean).join(' ') || 'Guest',
       device: [q.brand_name, q.model_name].filter(Boolean).join(' ') || q.device_category || 'Unknown',
@@ -201,40 +251,36 @@ export async function GET() {
       created_at: q.created_at,
     }))
 
-    const recentPayments = (recentPaymentsResult.data || []).map((p) => ({
-      id: p.id,
-      amount: Number(p.amount || 0),
-      kind: p.payment_kind,
-      paid_at: p.paid_at,
-    }))
-
     return NextResponse.json({
       ok: true,
+      range,
       revenue: {
-        totalRevenue,
-        depositRevenue,
-        balanceRevenue,
-        totalPayments,
-        currentPeriodRevenue,
-        previousPeriodRevenue,
+        total: totalRevenue,
+        prev: prevRevenue,
+        deposits: depositRevenue,
+        balances: balanceRevenue,
+        totalPayments: paidPayments.length,
+        depositRate,
+        balanceRate,
       },
+      revenueByType,
+      revenueByTech,
       funnel: {
         totalQuotes,
         estimatesSent,
-        approved,
-        declined,
-        statusCounts,
+        approved: statusCounts.approved_for_mail_in || 0,
+        declined: statusCounts.declined || 0,
       },
       repairs: {
         avgTurnaroundDays,
         activeRepairs,
-        totalOrders: repairOrders.length,
+        totalOrders,
         statusCounts: repairStatusCounts,
       },
       devicePopularity,
       repairTypeDemand,
       recentQuotes,
-      recentPayments,
+      customers: { total: totalCustomers, repeatCustomers: repeatCustomerCount, repeatRate },
     })
   } catch (error) {
     return NextResponse.json(

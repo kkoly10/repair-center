@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 
 export default function AdminAnalyticsDashboard() {
@@ -12,39 +12,67 @@ export default function AdminAnalyticsDashboard() {
   )
 }
 
+const RANGE_OPTIONS = [
+  { value: '7d', label: '7 days' },
+  { value: '30d', label: '30 days' },
+  { value: '90d', label: '90 days' },
+  { value: '12m', label: '12 months' },
+  { value: 'all', label: 'All time' },
+]
+
 function AdminAnalyticsDashboardInner() {
+  const [range, setRange] = useState('30d')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    let cancelled = false
-
-    async function fetchAnalytics() {
-      try {
-        const response = await fetch('/admin/api/analytics')
-        if (!response.ok) throw new Error('Failed to load analytics data.')
-        const json = await response.json()
-        if (!cancelled) {
-          setData(json)
-          setLoading(false)
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err.message || 'Unable to load analytics.')
-          setLoading(false)
-        }
-      }
+  const fetchAnalytics = useCallback(async (selectedRange) => {
+    setLoading(true)
+    setError('')
+    try {
+      const response = await fetch(`/admin/api/analytics?range=${selectedRange}`)
+      if (!response.ok) throw new Error('Failed to load analytics data.')
+      const json = await response.json()
+      setData(json)
+    } catch (err) {
+      setError(err.message || 'Unable to load analytics.')
+    } finally {
+      setLoading(false)
     }
-
-    fetchAnalytics()
-    return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    fetchAnalytics(range)
+  }, [range, fetchAnalytics])
+
+  const handleRangeChange = (newRange) => {
+    setRange(newRange)
+  }
+
+  const rangeSelector = (
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      {RANGE_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => handleRangeChange(opt.value)}
+          className={range === opt.value ? 'button button-compact' : 'button button-secondary button-compact'}
+          style={{ minWidth: 80 }}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  )
 
   if (loading) {
     return (
       <main className='page-hero'>
         <div className='site-shell page-stack'>
+          <div className='info-card'>
+            <div className='kicker'>Admin workspace</div>
+            <h1>Analytics Dashboard</h1>
+            {rangeSelector}
+          </div>
           <div className='policy-card'>Loading analytics...</div>
         </div>
       </main>
@@ -55,26 +83,30 @@ function AdminAnalyticsDashboardInner() {
     return (
       <main className='page-hero'>
         <div className='site-shell page-stack'>
+          <div className='info-card'>
+            <div className='kicker'>Admin workspace</div>
+            <h1>Analytics Dashboard</h1>
+            {rangeSelector}
+          </div>
           <div className='notice'>{error}</div>
         </div>
       </main>
     )
   }
 
-  const { revenue, funnel, repairs, devicePopularity, repairTypeDemand, recentQuotes, recentPayments } = data
+  const { revenue, revenueByType, revenueByTech, funnel, repairs, devicePopularity, repairTypeDemand, recentQuotes, customers } = data
 
   const conversionRate = funnel.totalQuotes > 0
     ? ((funnel.approved / funnel.totalQuotes) * 100).toFixed(1)
     : '0.0'
 
-  const revenueTrend = revenue.previousPeriodRevenue > 0
-    ? (((revenue.currentPeriodRevenue - revenue.previousPeriodRevenue) / revenue.previousPeriodRevenue) * 100).toFixed(1)
-    : revenue.currentPeriodRevenue > 0 ? '+100' : '0'
+  const revenueTrend = revenue.prev > 0
+    ? (((revenue.total - revenue.prev) / revenue.prev) * 100).toFixed(1)
+    : revenue.total > 0 ? '+100' : '0'
 
   const trendSign = Number(revenueTrend) >= 0 ? '+' : ''
   const trendColor = Number(revenueTrend) >= 0 ? '#16a34a' : '#ef4444'
 
-  // Funnel steps
   const funnelSteps = [
     { label: 'Submitted', count: funnel.totalQuotes },
     { label: 'Estimate Sent', count: funnel.estimatesSent },
@@ -82,16 +114,11 @@ function AdminAnalyticsDashboardInner() {
     { label: 'Declined', count: funnel.declined },
   ]
   const maxFunnel = Math.max(...funnelSteps.map((s) => s.count), 1)
-
-  // Device popularity
   const maxDeviceCount = devicePopularity.length > 0 ? devicePopularity[0].count : 1
-
-  // Repair type demand
   const maxRepairCount = repairTypeDemand.length > 0 ? repairTypeDemand[0].count : 1
-  const totalRepairTypeRequests = repairTypeDemand.reduce((sum, r) => sum + r.count, 0)
-
-  // Revenue breakdown
-  const maxRevenuePart = Math.max(revenue.depositRevenue, revenue.balanceRevenue, 1)
+  const totalRepairTypeRequests = repairTypeDemand.reduce((s, r) => s + r.count, 0)
+  const maxRevenueByType = revenueByType.length > 0 ? revenueByType[0].amount : 1
+  const maxRevenueByTech = revenueByTech.length > 0 ? revenueByTech[0].amount : 1
 
   return (
     <main className='page-hero'>
@@ -101,25 +128,28 @@ function AdminAnalyticsDashboardInner() {
         <div className='info-card'>
           <div className='kicker'>Admin workspace</div>
           <h1>Analytics Dashboard</h1>
-          <p className='muted'>Overview of revenue, conversions, repairs, and device trends.</p>
-          <div className='inline-actions' style={{ marginTop: 12 }}>
+          <p className='muted'>Revenue, conversions, repairs, and device trends.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
+            {rangeSelector}
             <Link href='/admin/quotes' className='button button-secondary button-compact'>
-              Back to Quotes Dashboard
+              Back to Quotes
             </Link>
           </div>
         </div>
 
-        {/* A) Top KPI Cards */}
+        {/* A) KPI Cards */}
         <div className='grid-4'>
           <div className='feature-card'>
-            <div className='kicker'>Total Revenue</div>
-            <h3>{formatCurrency(revenue.totalRevenue)}</h3>
-            <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
-              Last 30 days: {formatCurrency(revenue.currentPeriodRevenue)}{' '}
-              <span style={{ color: trendColor, fontWeight: 600 }}>
-                ({trendSign}{revenueTrend}%)
-              </span>
-            </p>
+            <div className='kicker'>Revenue ({RANGE_OPTIONS.find(o => o.value === range)?.label})</div>
+            <h3>{fmt(revenue.total)}</h3>
+            {revenue.prev > 0 && (
+              <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
+                vs prev period{' '}
+                <span style={{ color: trendColor, fontWeight: 600 }}>
+                  {trendSign}{revenueTrend}%
+                </span>
+              </p>
+            )}
           </div>
           <div className='feature-card'>
             <div className='kicker'>Total Quotes</div>
@@ -136,62 +166,113 @@ function AdminAnalyticsDashboardInner() {
             </p>
           </div>
           <div className='feature-card'>
-            <div className='kicker'>Active Repairs</div>
-            <h3>{repairs.activeRepairs}</h3>
+            <div className='kicker'>Repeat Customer Rate</div>
+            <h3>{customers.repeatRate}%</h3>
             <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
-              {repairs.totalOrders} total orders
+              {customers.repeatCustomers} of {customers.total} customers
             </p>
           </div>
         </div>
 
-        {/* B) Revenue Breakdown */}
+        {/* B) Revenue Breakdown (deposits vs balances + collection rates) */}
         <div className='info-card'>
           <div className='kicker'>Revenue Breakdown</div>
           <h3 style={{ marginBottom: 16 }}>Deposits vs Final Balances</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Inspection Deposits</span>
-                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{formatCurrency(revenue.depositRevenue)}</span>
-              </div>
-              <div style={{ background: 'var(--border)', borderRadius: 6, height: 24, overflow: 'hidden' }}>
-                <div style={{
-                  width: `${(revenue.depositRevenue / maxRevenuePart) * 100}%`,
-                  height: '100%',
-                  background: '#2d6bff',
-                  borderRadius: 6,
-                  minWidth: revenue.depositRevenue > 0 ? 4 : 0,
-                  transition: 'width 0.4s ease',
-                }} />
-              </div>
-            </div>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Final Balances</span>
-                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{formatCurrency(revenue.balanceRevenue)}</span>
-              </div>
-              <div style={{ background: 'var(--border)', borderRadius: 6, height: 24, overflow: 'hidden' }}>
-                <div style={{
-                  width: `${(revenue.balanceRevenue / maxRevenuePart) * 100}%`,
-                  height: '100%',
-                  background: '#16a34a',
-                  borderRadius: 6,
-                  minWidth: revenue.balanceRevenue > 0 ? 4 : 0,
-                  transition: 'width 0.4s ease',
-                }} />
-              </div>
-            </div>
+            {[
+              { label: 'Inspection Deposits', amount: revenue.deposits, rate: revenue.depositRate, color: '#2d6bff' },
+              { label: 'Final Balances', amount: revenue.balances, rate: revenue.balanceRate, color: '#16a34a' },
+            ].map(({ label, amount, rate, color }) => {
+              const maxAmt = Math.max(revenue.deposits, revenue.balances, 1)
+              return (
+                <div key={label}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{label}</span>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                      {fmt(amount)}
+                      <span className='muted' style={{ fontWeight: 400, fontSize: '0.82rem', marginLeft: 8 }}>
+                        ({rate}% of orders)
+                      </span>
+                    </span>
+                  </div>
+                  <div style={{ background: 'var(--border)', borderRadius: 6, height: 24, overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${(amount / maxAmt) * 100}%`,
+                      height: '100%',
+                      background: color,
+                      borderRadius: 6,
+                      minWidth: amount > 0 ? 4 : 0,
+                      transition: 'width 0.4s ease',
+                    }} />
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
 
-        {/* C) Conversion Funnel */}
+        {/* C) Revenue by Repair Type */}
+        {revenueByType.length > 0 && (
+          <div className='info-card'>
+            <div className='kicker'>Revenue by Repair Type</div>
+            <h3 style={{ marginBottom: 16 }}>Top repair categories by revenue</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {revenueByType.map((item) => (
+                <div key={item.repairType}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{fmtKey(item.repairType)}</span>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{fmt(item.amount)}</span>
+                  </div>
+                  <div style={{ background: 'var(--border)', borderRadius: 5, height: 18, overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${(item.amount / maxRevenueByType) * 100}%`,
+                      height: '100%',
+                      background: '#7c3aed',
+                      borderRadius: 5,
+                      transition: 'width 0.4s ease',
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* D) Revenue by Technician */}
+        {revenueByTech.length > 0 && (
+          <div className='info-card'>
+            <div className='kicker'>Revenue by Technician</div>
+            <h3 style={{ marginBottom: 16 }}>Completed repair revenue per tech</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {revenueByTech.map((item) => (
+                <div key={item.tech}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{item.tech}</span>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{fmt(item.amount)}</span>
+                  </div>
+                  <div style={{ background: 'var(--border)', borderRadius: 5, height: 18, overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${(item.amount / maxRevenueByTech) * 100}%`,
+                      height: '100%',
+                      background: '#0891b2',
+                      borderRadius: 5,
+                      transition: 'width 0.4s ease',
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* E) Conversion Funnel */}
         <div className='info-card'>
           <div className='kicker'>Conversion Funnel</div>
           <h3 style={{ marginBottom: 16 }}>Quote Request Pipeline</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {funnelSteps.map((step) => {
               const pct = maxFunnel > 0 ? (step.count / maxFunnel) * 100 : 0
-              const barColor = step.label === 'Declined' ? '#ef4444'
+              const color = step.label === 'Declined' ? '#ef4444'
                 : step.label === 'Approved' ? '#16a34a'
                 : step.label === 'Estimate Sent' ? '#f59e0b'
                 : '#2d6bff'
@@ -213,7 +294,7 @@ function AdminAnalyticsDashboardInner() {
                     <div style={{
                       width: `${pct}%`,
                       height: '100%',
-                      background: barColor,
+                      background: color,
                       borderRadius: 6,
                       minWidth: step.count > 0 ? 4 : 0,
                       transition: 'width 0.4s ease',
@@ -225,12 +306,46 @@ function AdminAnalyticsDashboardInner() {
           </div>
         </div>
 
-        {/* D) Device Popularity */}
+        {/* F) Repair Type Demand (quote volume) */}
+        <div className='info-card'>
+          <div className='kicker'>Repair Type Demand</div>
+          <h3 style={{ marginBottom: 16 }}>Quote volume by repair type</h3>
+          {repairTypeDemand.length === 0 ? (
+            <p className='muted'>No repair type data yet.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {repairTypeDemand.map((item) => (
+                <div key={item.repairType}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{fmtKey(item.repairType)}</span>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                      {item.count}
+                      <span className='muted' style={{ marginLeft: 6, fontWeight: 400, fontSize: '0.82rem' }}>
+                        ({((item.count / totalRepairTypeRequests) * 100).toFixed(1)}%)
+                      </span>
+                    </span>
+                  </div>
+                  <div style={{ background: 'var(--border)', borderRadius: 5, height: 16, overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${(item.count / maxRepairCount) * 100}%`,
+                      height: '100%',
+                      background: '#f59e0b',
+                      borderRadius: 5,
+                      transition: 'width 0.4s ease',
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* G) Device Popularity */}
         <div className='info-card'>
           <div className='kicker'>Device Popularity</div>
-          <h3 style={{ marginBottom: 16 }}>Top 10 Requested Devices</h3>
+          <h3 style={{ marginBottom: 16 }}>Top 10 requested devices</h3>
           {devicePopularity.length === 0 ? (
-            <p className='muted'>No device data available yet.</p>
+            <p className='muted'>No device data yet.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {devicePopularity.map((item, index) => (
@@ -257,57 +372,31 @@ function AdminAnalyticsDashboardInner() {
           )}
         </div>
 
-        {/* E) Repair Type Demand */}
-        <div className='info-card'>
-          <div className='kicker'>Repair Type Demand</div>
-          <h3 style={{ marginBottom: 16 }}>Requests by Repair Type</h3>
-          {repairTypeDemand.length === 0 ? (
-            <p className='muted'>No repair type data available yet.</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {repairTypeDemand.map((item) => (
-                <div key={item.repairType}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatRepairType(item.repairType)}</span>
-                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                      {item.count}
-                      <span className='muted' style={{ marginLeft: 6, fontWeight: 400, fontSize: '0.82rem' }}>
-                        ({((item.count / totalRepairTypeRequests) * 100).toFixed(1)}%)
-                      </span>
-                    </span>
-                  </div>
-                  <div style={{ background: 'var(--border)', borderRadius: 5, height: 16, overflow: 'hidden' }}>
-                    <div style={{
-                      width: `${(item.count / maxRepairCount) * 100}%`,
-                      height: '100%',
-                      background: '#f59e0b',
-                      borderRadius: 5,
-                      transition: 'width 0.4s ease',
-                    }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* F) Turnaround Metrics */}
+        {/* H) Repair Metrics */}
         <div className='grid-4'>
           <div className='feature-card'>
-            <div className='kicker'>Avg Turnaround</div>
-            <h3>{repairs.avgTurnaroundDays !== null ? `${repairs.avgTurnaroundDays} days` : 'N/A'}</h3>
-            <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>Intake to completion</p>
+            <div className='kicker'>Active Repairs</div>
+            <h3>{repairs.activeRepairs}</h3>
+            <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>{repairs.totalOrders} total orders</p>
           </div>
-          {Object.entries(repairs.statusCounts).map(([status, count]) => (
-            <div key={status} className='feature-card'>
-              <div className='kicker'>{formatStatusLabel(status)}</div>
-              <h3>{count}</h3>
-              <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>repair orders</p>
-            </div>
-          ))}
+          <div className='feature-card'>
+            <div className='kicker'>Avg Turnaround</div>
+            <h3>{repairs.avgTurnaroundDays !== null ? `${repairs.avgTurnaroundDays}d` : 'N/A'}</h3>
+            <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>Intake to shipped</p>
+          </div>
+          {Object.entries(repairs.statusCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 2)
+            .map(([status, count]) => (
+              <div key={status} className='feature-card'>
+                <div className='kicker'>{fmtKey(status)}</div>
+                <h3>{count}</h3>
+                <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>repair orders</p>
+              </div>
+            ))}
         </div>
 
-        {/* G) Recent Activity */}
+        {/* I) Recent Quotes */}
         <div className='list-card'>
           <div className='section-head'>
             <div>
@@ -322,12 +411,9 @@ function AdminAnalyticsDashboardInner() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    <th style={thStyle}>Quote ID</th>
-                    <th style={thStyle}>Customer</th>
-                    <th style={thStyle}>Device</th>
-                    <th style={thStyle}>Repair</th>
-                    <th style={thStyle}>Status</th>
-                    <th style={thStyle}>Date</th>
+                    {['Quote ID', 'Customer', 'Device', 'Repair', 'Status', 'Date'].map((h) => (
+                      <th key={h} style={thStyle}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -340,44 +426,9 @@ function AdminAnalyticsDashboardInner() {
                       </td>
                       <td style={tdStyle}>{q.customer}</td>
                       <td style={tdStyle}>{q.device}</td>
-                      <td style={tdStyle}>{formatRepairType(q.repair)}</td>
-                      <td style={tdStyle}>{formatStatusLabel(q.status)}</td>
+                      <td style={tdStyle}>{fmtKey(q.repair)}</td>
+                      <td style={tdStyle}>{fmtKey(q.status)}</td>
                       <td style={tdStyle}>{new Date(q.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        <div className='list-card'>
-          <div className='section-head'>
-            <div>
-              <div className='kicker'>Recent Activity</div>
-              <h3>Latest Payments</h3>
-            </div>
-          </div>
-          {recentPayments.length === 0 ? (
-            <p className='muted' style={{ padding: '12px 0' }}>No recent payments.</p>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    <th style={thStyle}>Payment ID</th>
-                    <th style={thStyle}>Type</th>
-                    <th style={thStyle}>Amount</th>
-                    <th style={thStyle}>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentPayments.map((p) => (
-                    <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={tdStyle}>{p.id.slice(0, 8)}...</td>
-                      <td style={tdStyle}>{formatRepairType(p.kind)}</td>
-                      <td style={{ ...tdStyle, fontWeight: 600 }}>{formatCurrency(p.amount)}</td>
-                      <td style={tdStyle}>{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : 'N/A'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -405,20 +456,11 @@ const tdStyle = {
   padding: '8px 12px',
 }
 
-function formatCurrency(amount) {
+function fmt(amount) {
   return '$' + Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function formatRepairType(key) {
-  if (!key || key === 'unknown') return 'Unknown'
-  return key
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-function formatStatusLabel(status) {
-  if (!status) return 'Unknown'
-  return status
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
+function fmtKey(key) {
+  if (!key || key === 'unknown' || key === 'N/A') return key || 'Unknown'
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
