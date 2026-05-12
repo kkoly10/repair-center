@@ -368,6 +368,7 @@ export async function POST(request, context) {
       if (shipmentLookupError) throw shipmentLookupError
 
       const shipmentPayload = {
+        organization_id: orgId,
         repair_order_id: repairOrder.id,
         shipment_type: 'return',
         carrier: carrier || null,

@@ -9,13 +9,13 @@ export async function proxy(request) {
   })
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseKey) {
     return response
   }
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll()
@@ -54,13 +54,15 @@ export async function proxy(request) {
     return NextResponse.redirect(loginUrl)
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
+  const { data: membership } = await supabase
+    .from('organization_members')
     .select('role')
-    .eq('id', user.id)
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .in('role', ['owner', 'admin', 'tech'])
     .maybeSingle()
 
-  if (!profile || !['admin', 'tech'].includes(profile.role)) {
+  if (!membership) {
     const loginUrl = new URL('/admin/login', request.url)
     loginUrl.searchParams.set('error', 'unauthorized')
     return NextResponse.redirect(loginUrl)

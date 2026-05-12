@@ -186,6 +186,7 @@ export async function POST(request) {
         const { error: photoRowError } = await supabase
           .from('quote_request_photos')
           .insert({
+            organization_id: orgId,
             quote_request_id: quoteRequest.id,
             storage_path: storagePath,
             photo_type: inferPhotoType(index),

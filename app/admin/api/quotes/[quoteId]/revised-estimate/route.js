@@ -123,6 +123,7 @@ export async function POST(request, context) {
     if (estimateError) throw estimateError
 
     const lineItemsPayload = normalizedItems.map((item) => ({
+      organization_id: orgId,
       estimate_id: estimate.id,
       line_type: item.line_type,
       description: item.description,
@@ -133,6 +134,7 @@ export async function POST(request, context) {
 
     if (shippingAmount > 0) {
       lineItemsPayload.push({
+        organization_id: orgId,
         estimate_id: estimate.id,
         line_type: 'shipping',
         description: 'Return shipping',
@@ -144,6 +146,7 @@ export async function POST(request, context) {
 
     if (taxAmount > 0) {
       lineItemsPayload.push({
+        organization_id: orgId,
         estimate_id: estimate.id,
         line_type: 'fee',
         description: 'Tax',
@@ -155,6 +158,7 @@ export async function POST(request, context) {
 
     if (discountAmount > 0) {
       lineItemsPayload.push({
+        organization_id: orgId,
         estimate_id: estimate.id,
         line_type: 'discount',
         description: 'Discount',
@@ -166,6 +170,7 @@ export async function POST(request, context) {
 
     if (depositCreditAmount > 0) {
       lineItemsPayload.push({
+        organization_id: orgId,
         estimate_id: estimate.id,
         line_type: 'credit',
         description: 'Deposit credit',

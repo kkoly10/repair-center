@@ -133,6 +133,7 @@ export async function finalizeDepositPayment({
       const { data: insertedPayment, error: insertPaymentError } = await supabase
         .from('payments')
         .insert({
+          organization_id: orgId,
           repair_order_id: repairOrder.id,
           quote_estimate_id: estimateId || null,
           payment_kind: 'inspection_deposit',
@@ -191,6 +192,7 @@ export async function finalizeDepositPayment({
     const { data: insertedPayment, error: insertPaymentError } = await supabase
       .from('payments')
       .insert({
+        organization_id: orgId,
         repair_order_id: newOrder.id,
         quote_estimate_id: estimateId || null,
         payment_kind: 'inspection_deposit',
