@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
-import { getDefaultOrgId } from '../../../../lib/admin/org'
 import {
   sendDepositPaidNotification,
   sendMailInReadyNotification,
@@ -96,7 +95,6 @@ export async function finalizeDepositPayment({
   paymentIntentId,
 }) {
   const supabase = getSupabaseAdmin()
-  const orgId = await getDefaultOrgId()
 
   const { data: quoteRequest, error: quoteError } = await supabase
     .from('quote_requests')
@@ -106,6 +104,8 @@ export async function finalizeDepositPayment({
 
   if (quoteError) throw quoteError
   if (!quoteRequest) throw new Error(`Quote request not found: ${quoteRequestId}`)
+
+  const orgId = quoteRequest.organization_id
 
   const { data: existingOrder, error: existingOrderError } = await supabase
     .from('repair_orders')

@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
-import { getDefaultOrgId } from '../../../../../../lib/admin/org'
+import { getSessionOrgId } from '../../../../../../lib/admin/getSessionOrgId'
 import { sendEstimateSentNotification } from '../../../../../../lib/notifications'
 
 export const runtime = 'nodejs'
 
 export async function POST(request, context) {
+  let orgId
+  try {
+    orgId = await getSessionOrgId()
+  } catch (authError) {
+    return NextResponse.json({ error: authError.message }, { status: authError.status || 401 })
+  }
+
   const supabase = getSupabaseAdmin()
 
   try {
@@ -56,8 +63,6 @@ export async function POST(request, context) {
       taxAmount -
       discountAmount -
       depositCreditAmount
-
-    const orgId = await getDefaultOrgId()
 
     const { data: quoteRequest, error: quoteError } = await supabase
       .from('quote_requests')

@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
-import { getDefaultOrgId } from '../../../../../../lib/admin/org'
+import { getSessionOrgId } from '../../../../../../lib/admin/getSessionOrgId'
 
 export const runtime = 'nodejs'
 
 export async function GET(request, context) {
+  let orgId
+  try {
+    orgId = await getSessionOrgId()
+  } catch (authError) {
+    return NextResponse.json({ error: authError.message }, { status: authError.status || 401 })
+  }
+
   const supabase = getSupabaseAdmin()
 
   try {
@@ -19,6 +26,7 @@ export async function GET(request, context) {
       .from('quote_requests')
       .select('id')
       .eq('quote_id', quoteId)
+      .eq('organization_id', orgId)
       .maybeSingle()
 
     if (quoteError) throw quoteError
@@ -66,6 +74,13 @@ export async function GET(request, context) {
 }
 
 export async function POST(request, context) {
+  let orgId
+  try {
+    orgId = await getSessionOrgId()
+  } catch (authError) {
+    return NextResponse.json({ error: authError.message }, { status: authError.status || 401 })
+  }
+
   const supabase = getSupabaseAdmin()
 
   try {
@@ -81,6 +96,7 @@ export async function POST(request, context) {
       .from('quote_requests')
       .select('id')
       .eq('quote_id', quoteId)
+      .eq('organization_id', orgId)
       .maybeSingle()
 
     if (quoteError) throw quoteError
@@ -127,7 +143,6 @@ export async function POST(request, context) {
     const internalOnly = Boolean(body.internalOnly)
     const now = new Date().toISOString()
 
-    const orgId = await getDefaultOrgId()
     const insertPayload = {
       organization_id: orgId,
       repair_order_id: repairOrder.id,
