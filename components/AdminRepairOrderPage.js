@@ -201,10 +201,30 @@ function AdminRepairOrderInner({ quoteId }) {
     }
   }, [quoteId, record?.order?.id])
 
+  const [sendingReceipt, setSendingReceipt] = useState(false)
+
   const currentStatusLabel = useMemo(() => formatStatusLabel(status), [status])
   const isUnrepairedReturn = useMemo(() => UNREPAIRED_RETURN_STATUSES.has(status), [status])
   const revisedEstimatePath = `/admin/quotes/${quoteId}/revised-estimate`
   const paymentsPath = `/admin/quotes/${quoteId}/payments`
+  const invoicePath = `/admin/quotes/${quoteId}/invoice`
+
+  const handleSendReceipt = async () => {
+    if (sendingReceipt) return
+    setSendingReceipt(true)
+    setError('')
+    setSuccess('')
+    try {
+      const res = await fetch(`/admin/api/quotes/${quoteId}/send-invoice`, { method: 'POST' })
+      const data = await res.json()
+      if (data.ok) setSuccess('Receipt emailed to customer.')
+      else setError(data.error || 'Failed to send receipt.')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSendingReceipt(false)
+    }
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -431,6 +451,21 @@ function AdminRepairOrderInner({ quoteId }) {
             >
               Manage Payments
             </Link>
+            <Link
+              href={invoicePath}
+              className='button button-secondary button-compact'
+              target='_blank'
+              rel='noreferrer'
+            >
+              View Invoice
+            </Link>
+            <button
+              className='button button-secondary button-compact'
+              onClick={handleSendReceipt}
+              disabled={sendingReceipt}
+            >
+              {sendingReceipt ? 'Sending…' : 'Send Receipt'}
+            </button>
           </div>
 
           <div className='quote-summary'>

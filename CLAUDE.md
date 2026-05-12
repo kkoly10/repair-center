@@ -226,6 +226,29 @@ All metrics use existing columns and the `repair_order_audit_log` table from Spr
 
 ---
 
+## Sprint 10 — Invoices, Receipts & Customer History ✅ COMPLETE (Phase 5)
+
+### No migration needed
+All data comes from existing tables: `customers`, `repair_orders`, `quote_requests`, `quote_estimates`, `quote_estimate_items`, `payments`.
+
+### What was done
+- **`GET /admin/api/quotes/[quoteId]/invoice`** — fetches all invoice data (org, customer, order, estimate line items, paid payments); returns JSON used by the invoice page
+- **`POST /admin/api/quotes/[quoteId]/send-invoice`** — emails HTML receipt to customer via Resend; resolves email from `guest_email` or `customers` table; fetches full invoice data inline
+- **`lib/email.js`** — added `sendReceiptEmail(to, invoice)` + `receiptHtml()` template (device, line items table, payment summary)
+- **`GET /admin/api/customers`** — list all org customers with order_count, completed_count, last_order_at, is_repeat flag
+- **`GET /admin/api/customers/[customerId]`** — customer profile with full order history, lifetime value (total paid), repeat flag; orders enriched with quote brand/model/repair_type
+- **`components/AdminInvoicePage.js`** + **`app/admin/quotes/[quoteId]/invoice/page.js`** — printable HTML invoice with `window.print()` button; `@media print` CSS hides nav; org header, customer/device info, line items table, payment summary
+- **`components/AdminCustomersPage.js`** + **`app/admin/customers/page.js`** — customer list with summary cards (total, repeat count, repeat rate), search, repeat badge
+- **`components/AdminCustomerProfilePage.js`** + **`app/admin/customers/[customerId]/page.js`** — customer profile with lifetime value card, full repair history table, "View order" links
+- **`components/AdminRepairOrderPage.js`** — added "View Invoice" (opens in new tab) and "Send Receipt" (POST + success/error feedback) buttons to action bar
+- **`__tests__/api/customers.test.js`** — 7 tests: 401, org filter (customers + orders), stats shape, repeat flag computation, profile 404, profile data + total_paid
+- **`__tests__/api/send-invoice.test.js`** — 4 tests: 401, cross-org 404, no-email 400, happy path calls sendReceiptEmail
+
+### Test suite after Sprint 10
+56 tests across 8 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
