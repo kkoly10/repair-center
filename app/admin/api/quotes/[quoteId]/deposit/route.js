@@ -46,7 +46,24 @@ export async function POST(request, context) {
       return NextResponse.json({ error: 'Repair order not found.' }, { status: 404 })
     }
 
-    if (repairOrder.inspection_deposit_paid_at) {
+    const depositAmount = Number(repairOrder.inspection_deposit_required) || 0
+    if (depositAmount <= 0) {
+      return NextResponse.json({ error: 'No deposit is required for this order.' }, { status: 400 })
+    }
+
+    // Use an existing paid payment record as the primary idempotency gate so that
+    // a partial failure (payment inserted but order update failed) cannot produce
+    // duplicate payment rows on retry.
+    const { data: existingPayment, error: existingPaymentError } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('repair_order_id', repairOrder.id)
+      .eq('payment_kind', 'inspection_deposit')
+      .eq('status', 'paid')
+      .maybeSingle()
+
+    if (existingPaymentError) throw existingPaymentError
+    if (existingPayment || repairOrder.inspection_deposit_paid_at) {
       return NextResponse.json({ error: 'Deposit already marked as paid.' }, { status: 400 })
     }
 
@@ -60,7 +77,7 @@ export async function POST(request, context) {
         payment_kind: 'inspection_deposit',
         provider: 'manual',
         status: 'paid',
-        amount: repairOrder.inspection_deposit_required,
+        amount: depositAmount,
         paid_at: now,
       })
 
