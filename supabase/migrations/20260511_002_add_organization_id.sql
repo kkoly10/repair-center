@@ -101,13 +101,18 @@ begin
       'My Repair Center',
       'active',
       'beta',
-      v_owner_user_id
+      -- Only set created_by_user_id if the UUID exists in auth.users (safe for fresh DBs)
+      case when exists (select 1 from auth.users where id = v_owner_user_id)
+           then v_owner_user_id else null end
     )
     returning id into v_org_id;
 
-    -- Add the admin as owner
-    insert into public.organization_members (organization_id, user_id, role, status)
-    values (v_org_id, v_owner_user_id, 'owner', 'active');
+    -- Add the admin as owner only if the UUID exists in auth.users.
+    -- Skipped silently on fresh/staging databases where the UUID is absent.
+    if exists (select 1 from auth.users where id = v_owner_user_id) then
+      insert into public.organization_members (organization_id, user_id, role, status)
+      values (v_org_id, v_owner_user_id, 'owner', 'active');
+    end if;
 
     -- Create default settings (mail-in config placeholder — update in dashboard settings)
     insert into public.organization_settings (organization_id)
