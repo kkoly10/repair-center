@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 
 export default function AdminAnalyticsDashboard() {
@@ -26,35 +26,34 @@ function AdminAnalyticsDashboardInner() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const fetchAnalytics = useCallback(async (selectedRange) => {
-    setLoading(true)
-    setError('')
-    try {
-      const response = await fetch(`/admin/api/analytics?range=${selectedRange}`)
-      if (!response.ok) throw new Error('Failed to load analytics data.')
-      const json = await response.json()
-      setData(json)
-    } catch (err) {
-      setError(err.message || 'Unable to load analytics.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
   useEffect(() => {
-    fetchAnalytics(range)
-  }, [range, fetchAnalytics])
+    let cancelled = false
 
-  const handleRangeChange = (newRange) => {
-    setRange(newRange)
-  }
+    async function load() {
+      setLoading(true)
+      setError('')
+      try {
+        const response = await fetch(`/admin/api/analytics?range=${range}`)
+        if (!response.ok) throw new Error('Failed to load analytics data.')
+        const json = await response.json()
+        if (!cancelled) setData(json)
+      } catch (err) {
+        if (!cancelled) setError(err.message || 'Unable to load analytics.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [range])
 
   const rangeSelector = (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
       {RANGE_OPTIONS.map((opt) => (
         <button
           key={opt.value}
-          onClick={() => handleRangeChange(opt.value)}
+          onClick={() => setRange(opt.value)}
           className={range === opt.value ? 'button button-compact' : 'button button-secondary button-compact'}
           style={{ minWidth: 80 }}
         >
