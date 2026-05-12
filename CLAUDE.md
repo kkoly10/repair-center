@@ -87,6 +87,26 @@ Converting the app from a single-shop platform to multi-tenant. Work is organize
 
 ---
 
+## Sprint 3c — Multi-tenant gap audit and hardening ✅ COMPLETE
+
+### Audit findings fixed
+1. **`app/api/quote-requests/route.js`** — `customers` SELECT now includes `.eq('organization_id', orgId)`; `customers` UPDATE now includes `.eq('organization_id', orgId)` guard; `pricing_rules` SELECT now includes `.eq('organization_id', orgId)`
+2. **`app/api/estimate-review/[quoteId]/route.js`** — `repair_orders` INSERT was missing `organization_id`; now includes `organization_id: quoteRequest.organization_id`
+3. **`app/api/customer-portal/route.js`** — Completely rewrote to accept `orgSlug` in POST body; resolves org from slug (falls back to `getDefaultOrgId()`); `customers` SELECT and `quote_requests` SELECT both include `.eq('organization_id', orgId)`. Downstream `repair_orders` and `payments` are implicitly scoped via the org-filtered quote IDs
+4. **`supabase/migrations/20260512_007_pricing_rules_rls.sql`** — Drops `pricing_rules_public_select` policy that exposed ALL active pricing from ALL orgs to anonymous users. Applied to production
+5. **`app/api/pricing/[shopSlug]/route.js`** (NEW) — Public endpoint returning active pricing rules scoped to a single organization by slug; replaces the removed RLS-based public access
+
+### Accepted risks (not fixed — low blast radius)
+- Public routes that look up by `quote_id` (estimate-review, mail-in, track, payments/intent) do NOT filter by org on the initial quote fetch — the `quote_id` is a non-guessable identifier issued only to the submitting customer, and all routes require email verification as a second factor. Risk: near-zero in practice
+- `getPaymentSummaryByQuoteId` accepts optional `orgId` — `final-summary` public route calls it without org context; same email-verification defense applies
+- Webhook route (`payments/webhook`) processes by Stripe-verified metadata — no org scoping needed since data origin is our own Stripe PaymentIntent metadata
+
+### Remaining Sprint 3b/3c items (not yet started)
+- [ ] Admin UI pages for settings, team, onboarding need connecting to production data (components built, pages wired, but not battle-tested with real multi-org data)
+- [ ] `getDefaultOrgId()` still used in `customer-portal` and `quote-requests` fallback paths — intentional for single-tenant compatibility; will be removed when all shops have slugs
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
