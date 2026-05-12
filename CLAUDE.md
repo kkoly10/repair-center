@@ -177,7 +177,7 @@ Converting the app from a single-shop platform to multi-tenant. Work is organize
 
 ### How to run tests
 ```bash
-npm test              # run all 27 tests
+npm test              # run all 44 tests
 npm test -- --watch   # watch mode
 ```
 
@@ -186,6 +186,43 @@ npm test -- --watch   # watch mode
 - [ ] `getDefaultOrgId()` still used in fallback paths — acceptable for single-tenant, remove when all shops have slugs
 - [ ] RLS tests (anon cannot read pricing_rules, cross-org data isolation) require a real Supabase test DB — not covered by unit tests yet
 - [ ] `next lint` not yet passing cleanly (eslint-config-next installed; run `npm run lint` to check)
+
+---
+
+## Sprint 7 — Sprints 7 & 8 were Repair Queue ✅ COMPLETE (PR #20, merged)
+
+See Sprint 8 below — sprint numbering skipped 7 in practice.
+
+---
+
+## Sprint 8 — Repair Queue / Operations Layer ✅ COMPLETE (PR #20, merged)
+
+### Migration applied to production
+- `20260512_009_orders_queue_fields.sql` — adds `priority` (low/normal/high/urgent) and `due_at` (timestamptz) to `repair_orders`; creates `repair_order_audit_log` table (org_id, order_id, actor_user_id, event_type, old_value, new_value) with RLS
+
+### What was done
+- **`lib/admin/getSessionOrgId.js`** — refactored: private `resolveSession()` shared by `getSessionOrgId()` (returns orgId) and `getSessionContext()` (returns `{ orgId, userId }`)
+- **`GET /admin/api/orders`** — paginated queue with status/tech/search filters; joins quote_requests, customers, profiles; always org-scoped
+- **`PATCH /admin/api/orders/[orderId]`** — updates status/tech/priority/due_at; validates org ownership (maybySingle + org filter → 404); writes audit log entries for non-status changes; own JSON parse try/catch → 400 on malformed body
+- **`components/AdminOrdersQueue.js`** — inline editing for all four fields; `patchOrder` returns true/false so tech-name state update is only applied on success
+- **`__tests__/api/orders-queue.test.js`** — 9 tests: auth guard, org filter, shaped data, cross-org 404, invalid status/priority, happy path with audit log
+
+---
+
+## Sprint 9 — Staff Performance & Activity Log ✅ COMPLETE (PR #21, merged)
+
+### No migration needed
+All metrics use existing columns and the `repair_order_audit_log` table from Sprint 8.
+
+### What was done
+- **`GET /admin/api/quotes/[quoteId]/order` (GET)** — now fetches `repair_order_audit_log` in the parallel Promise.all alongside status history and shipments; returns `auditLog` in response; error is checked (was the bug fixed in self-review)
+- **`components/AdminRepairOrderPage.js`** — replaced "Status history / Customer-visible timeline" with unified "Activity log / Order timeline"; IIFE merges status events and audit events sorted by `created_at`; audit events get an "internal" badge; labels: `technician_assigned` → "Tech assigned/unassigned", `priority_changed` → "Priority → X", `due_date_changed` → "Due date set/cleared"
+- **`GET /admin/api/staff/performance`** — per-tech metrics scoped to session org; orders query bounded with `.or('current_status.not.in.(...),created_at.gte.{90daysAgo}')` so active repairs at any age are included but old completed orders don't cause unbounded scans
+- **`components/AdminStaffPerformancePage.js`** + **`app/admin/staff/page.js`** — summary cards (active, completed 30d, team size) + table with per-tech metrics and "View queue" link pre-filtered to active orders
+- **`__tests__/api/staff-performance.test.js`** — 7 tests: 401, org filter on members, org filter on orders, stats shape, active/completed counts, cross-org isolation (other tech's orders not counted), avg turnaround
+
+### Test suite after Sprint 9
+44 tests across 6 suites — all passing.
 
 ---
 
