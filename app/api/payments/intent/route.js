@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
+import { getDefaultOrgId } from '../../../../lib/admin/org'
 
 export const runtime = 'nodejs'
 
@@ -101,6 +102,7 @@ export async function POST(request) {
       receipt_email: email,
       description: `Repair deposit – ${[quoteRequest.brand_name, quoteRequest.model_name].filter(Boolean).join(' ')} ${quoteRequest.repair_type_key || ''}`.trim(),
       metadata: {
+        organizationId: await getDefaultOrgId(),
         quoteId: quoteRequest.quote_id,
         quoteRequestId: quoteRequest.id,
         estimateId: estimate.id,

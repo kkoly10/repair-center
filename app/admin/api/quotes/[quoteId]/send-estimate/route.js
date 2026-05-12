@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
+import { getDefaultOrgId } from '../../../../../../lib/admin/org'
 import { sendEstimateSentNotification } from '../../../../../../lib/notifications'
 
 export const runtime = 'nodejs'
@@ -56,10 +57,13 @@ export async function POST(request, context) {
       discountAmount -
       depositCreditAmount
 
+    const orgId = await getDefaultOrgId()
+
     const { data: quoteRequest, error: quoteError } = await supabase
       .from('quote_requests')
       .select('id, quote_id, customer_id, status, reviewed_by_user_id')
       .eq('quote_id', quoteId)
+      .eq('organization_id', orgId)
       .maybeSingle()
 
     if (quoteError) throw quoteError
@@ -81,6 +85,7 @@ export async function POST(request, context) {
     const { data: estimate, error: estimateError } = await supabase
       .from('quote_estimates')
       .insert({
+        organization_id: orgId,
         quote_request_id: quoteRequest.id,
         estimate_kind: estimateKind,
         status: 'sent',
@@ -103,6 +108,7 @@ export async function POST(request, context) {
     if (estimateError) throw estimateError
 
     const lineItemsPayload = normalizedItems.map((item) => ({
+      organization_id: orgId,
       estimate_id: estimate.id,
       line_type: item.line_type,
       description: item.description,
@@ -113,6 +119,7 @@ export async function POST(request, context) {
 
     if (shippingAmount > 0) {
       lineItemsPayload.push({
+        organization_id: orgId,
         estimate_id: estimate.id,
         line_type: 'shipping',
         description: 'Return shipping',
@@ -124,6 +131,7 @@ export async function POST(request, context) {
 
     if (discountAmount > 0) {
       lineItemsPayload.push({
+        organization_id: orgId,
         estimate_id: estimate.id,
         line_type: 'discount',
         description: 'Discount',
@@ -135,6 +143,7 @@ export async function POST(request, context) {
 
     if (depositCreditAmount > 0) {
       lineItemsPayload.push({
+        organization_id: orgId,
         estimate_id: estimate.id,
         line_type: 'credit',
         description: 'Deposit credit',
@@ -146,6 +155,7 @@ export async function POST(request, context) {
 
     if (taxAmount > 0) {
       lineItemsPayload.push({
+        organization_id: orgId,
         estimate_id: estimate.id,
         line_type: 'fee',
         description: 'Tax',
