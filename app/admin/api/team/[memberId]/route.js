@@ -1,8 +1,33 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 import { getSupabaseAdmin } from '../../../../../lib/supabase/admin'
 import { getSessionOrgId } from '../../../../../lib/admin/getSessionOrgId'
 
 export const runtime = 'nodejs'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+async function requireAdminRole(orgId, supabase) {
+  const cookieStore = await cookies()
+  const authClient = createServerClient(supabaseUrl, supabaseKey, {
+    cookies: { getAll() { return cookieStore.getAll() }, setAll() {} },
+  })
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return false
+
+  const { data: membership } = await supabase
+    .from('organization_members')
+    .select('role')
+    .eq('organization_id', orgId)
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  return ['owner', 'admin'].includes(membership?.role)
+}
 
 export async function PATCH(request, context) {
   let orgId
@@ -15,6 +40,13 @@ export async function PATCH(request, context) {
   const supabase = getSupabaseAdmin()
 
   try {
+    if (!await requireAdminRole(orgId, supabase)) {
+      return NextResponse.json(
+        { error: 'Forbidden: only owners and admins can change member roles.' },
+        { status: 403 }
+      )
+    }
+
     const params = await context.params
     const memberId = params?.memberId
 
@@ -60,6 +92,13 @@ export async function DELETE(request, context) {
   const supabase = getSupabaseAdmin()
 
   try {
+    if (!await requireAdminRole(orgId, supabase)) {
+      return NextResponse.json(
+        { error: 'Forbidden: only owners and admins can remove members.' },
+        { status: 403 }
+      )
+    }
+
     const params = await context.params
     const memberId = params?.memberId
 

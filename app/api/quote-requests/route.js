@@ -21,9 +21,15 @@ export async function POST(request) {
 
   const supabase = getSupabaseAdmin()
 
+  let rawFormData
+  try {
+    rawFormData = await request.formData()
+  } catch {
+    return NextResponse.json({ error: 'Invalid form data.' }, { status: 400 })
+  }
+
   // Resolve org from slug if provided; fall back to default org for single-tenant setups
   let orgId
-  const rawFormData = await request.formData()
   const orgSlug = (rawFormData.get('orgSlug') || '').toString().trim()
   if (orgSlug) {
     const { data: org, error: orgError } = await supabase

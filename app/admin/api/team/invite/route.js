@@ -118,6 +118,24 @@ export async function DELETE(request) {
   const supabase = getSupabaseAdmin()
 
   try {
+    const userId = await getCallerUserId()
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { data: callerMembership } = await supabase
+      .from('organization_members')
+      .select('role')
+      .eq('organization_id', orgId)
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .maybeSingle()
+
+    if (!callerMembership || !['owner', 'admin'].includes(callerMembership.role)) {
+      return NextResponse.json(
+        { error: 'Forbidden: only owners and admins can cancel invitations.' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const { invitationId } = body
 
