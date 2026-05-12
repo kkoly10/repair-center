@@ -10,18 +10,10 @@ const { getSupabaseAdmin } = require('../../lib/supabase/admin')
 const { POST } = require('../../app/admin/api/quotes/[quoteId]/deposit/route')
 
 // Build a supabase mock that returns sequential values from the `maybySingleQueue`
-// for each .maybySingle() call in order (quote lookup, order lookup, payment lookup, etc.)
+// for each .maybeSingle() call in order (quote lookup, order lookup, payment lookup, etc.)
 function makeChain({ maybySingleQueue = [], insertError = null, updateError = null } = {}) {
   const eqFilters = []
   let callCount = 0
-
-  const updateChain = {
-    eq: jest.fn().mockReturnThis(),
-    // Resolve the promise when awaited
-    then: undefined,
-  }
-  // Make updateChain thenable so `await supabase.from().update().eq().eq()` resolves
-  updateChain[Symbol.for('nodejs.util.inspect.custom')] = undefined
 
   const chain = {
     from: jest.fn().mockReturnThis(),
@@ -136,12 +128,12 @@ describe('POST /admin/api/quotes/[quoteId]/deposit', () => {
     expect(body.error).toMatch(/already marked as paid/i)
   })
 
-  it('returns 400 when payment record exists even if order timestamp is present', async () => {
+  it('returns 400 when order timestamp is set even without a payment record', async () => {
     const { chain } = makeChain({
       maybySingleQueue: [
         { data: { id: 'qr-1' }, error: null },
         { data: { id: 'ro-1', inspection_deposit_required: '25.00', inspection_deposit_paid_at: '2026-05-12T10:00:00Z' }, error: null },
-        { data: null, error: null }, // no payment record but timestamp present
+        { data: null, error: null }, // no payment record, but timestamp is set
       ],
     })
     getSupabaseAdmin.mockReturnValue(chain)
@@ -152,6 +144,34 @@ describe('POST /admin/api/quotes/[quoteId]/deposit', () => {
 
     expect(res.status).toBe(400)
     expect(body.error).toMatch(/already marked as paid/i)
+  })
+
+  it('happy path: inserts payment row and updates order timestamp, returns ok', async () => {
+    const { chain } = makeChain({
+      maybySingleQueue: [
+        { data: { id: 'qr-1' }, error: null },
+        { data: { id: 'ro-1', inspection_deposit_required: '25.00', inspection_deposit_paid_at: null }, error: null },
+        { data: null, error: null }, // no prior payment
+      ],
+    })
+    getSupabaseAdmin.mockReturnValue(chain)
+    getSessionOrgId.mockResolvedValue('org-a')
+
+    const res = await POST({}, makeCtx('RCQ-001'))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.ok).toBe(true)
+    // Must insert a payment row with the correct fields
+    expect(chain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organization_id: 'org-a',
+        payment_kind: 'inspection_deposit',
+        provider: 'manual',
+        status: 'paid',
+        amount: 25,
+      })
+    )
   })
 
   it('partial-state recovery: payment exists but timestamp null → returns ok without inserting duplicate', async () => {
