@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
-import { getDefaultOrgId } from '../../../../../../lib/admin/org'
+import { getSessionOrgId } from '../../../../../../lib/admin/getSessionOrgId'
 import {
   sendRepairStatusNotification,
   sendShipmentNotification,
@@ -30,6 +30,13 @@ const ALLOWED_STATUSES = [
 ]
 
 export async function GET(request, context) {
+  let orgId
+  try {
+    orgId = await getSessionOrgId()
+  } catch (authError) {
+    return NextResponse.json({ error: authError.message }, { status: authError.status || 401 })
+  }
+
   const supabase = getSupabaseAdmin()
 
   try {
@@ -39,8 +46,6 @@ export async function GET(request, context) {
     if (!quoteId) {
       return NextResponse.json({ error: 'Missing quote ID.' }, { status: 400 })
     }
-
-    const orgId = await getDefaultOrgId()
 
     const { data: quoteRequest, error: quoteError } = await supabase
       .from('quote_requests')
@@ -68,10 +73,12 @@ export async function GET(request, context) {
         .eq('quote_request_id', quoteRequest.id)
         .maybeSingle(),
       supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .in('role', ['admin', 'tech'])
-        .order('full_name', { ascending: true }),
+        .from('organization_members')
+        .select('user_id, role, profiles(id, full_name)')
+        .eq('organization_id', orgId)
+        .eq('status', 'active')
+        .in('role', ['owner', 'admin', 'tech'])
+        .order('created_at', { ascending: true }),
     ])
 
     if (customerResult.error) throw customerResult.error
@@ -127,7 +134,11 @@ export async function GET(request, context) {
       order: orderResult.data,
       history,
       shipments,
-      technicians: techniciansResult.data || [],
+      technicians: (techniciansResult.data || []).map((m) => ({
+        id: m.profiles?.id || m.user_id,
+        full_name: m.profiles?.full_name || 'Unknown',
+        role: m.role,
+      })),
     })
   } catch (error) {
     return NextResponse.json(
@@ -140,6 +151,13 @@ export async function GET(request, context) {
 }
 
 export async function POST(request, context) {
+  let orgId
+  try {
+    orgId = await getSessionOrgId()
+  } catch (authError) {
+    return NextResponse.json({ error: authError.message }, { status: authError.status || 401 })
+  }
+
   const supabase = getSupabaseAdmin()
 
   try {
@@ -186,8 +204,6 @@ export async function POST(request, context) {
         { status: 400 }
       )
     }
-
-    const orgId = await getDefaultOrgId()
 
     const { data: quoteRequest, error: quoteError } = await supabase
       .from('quote_requests')

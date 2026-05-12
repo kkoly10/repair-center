@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server'
 import { getPaymentSummaryByQuoteId } from '../../../../../../lib/payments/getPaymentSummary'
+import { getSessionOrgId } from '../../../../../../lib/admin/getSessionOrgId'
 
 export const runtime = 'nodejs'
 
 export async function GET(request, context) {
+  let orgId
+  try {
+    orgId = await getSessionOrgId()
+  } catch (authError) {
+    return NextResponse.json({ error: authError.message }, { status: authError.status || 401 })
+  }
+
   try {
     const params = await context.params
     const quoteId = params?.quoteId
@@ -12,7 +20,7 @@ export async function GET(request, context) {
       return NextResponse.json({ error: 'Missing quote ID.' }, { status: 400 })
     }
 
-    const record = await getPaymentSummaryByQuoteId(quoteId)
+    const record = await getPaymentSummaryByQuoteId(quoteId, orgId)
 
     return NextResponse.json({
       ok: true,

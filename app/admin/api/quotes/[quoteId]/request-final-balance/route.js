@@ -2,10 +2,18 @@ import { NextResponse } from 'next/server'
 import { getPaymentSummaryByQuoteId } from '../../../../../../lib/payments/getPaymentSummary'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
 import { sendFinalBalanceReadyNotification } from '../../../../../../lib/finalBalanceNotifications'
+import { getSessionOrgId } from '../../../../../../lib/admin/getSessionOrgId'
 
 export const runtime = 'nodejs'
 
 export async function POST(request, context) {
+  let orgId
+  try {
+    orgId = await getSessionOrgId()
+  } catch (authError) {
+    return NextResponse.json({ error: authError.message }, { status: authError.status || 401 })
+  }
+
   const supabase = getSupabaseAdmin()
 
   try {
@@ -16,7 +24,7 @@ export async function POST(request, context) {
       return NextResponse.json({ error: 'Missing quote ID.' }, { status: 400 })
     }
 
-    const record = await getPaymentSummaryByQuoteId(quoteId)
+    const record = await getPaymentSummaryByQuoteId(quoteId, orgId)
 
     if (!record.repairOrder) {
       return NextResponse.json({ error: 'Repair order not found.' }, { status: 404 })

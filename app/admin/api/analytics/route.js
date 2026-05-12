@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
+import { getSessionOrgId } from '../../../../lib/admin/getSessionOrgId'
 
 export const runtime = 'nodejs'
 
 export async function GET() {
+  let orgId
+  try {
+    orgId = await getSessionOrgId()
+  } catch (authError) {
+    return NextResponse.json({ error: authError.message }, { status: authError.status || 401 })
+  }
+
   try {
     const supabase = getSupabaseAdmin()
 
@@ -11,7 +19,6 @@ export async function GET() {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString()
 
-    // Run all queries in parallel
     const [
       paymentsResult,
       recentPaymentsResult,
@@ -28,12 +35,14 @@ export async function GET() {
       supabase
         .from('payments')
         .select('id, amount, payment_kind, paid_at')
+        .eq('organization_id', orgId)
         .eq('status', 'paid'),
 
       // Recent 10 payments
       supabase
         .from('payments')
         .select('id, amount, payment_kind, status, paid_at, currency')
+        .eq('organization_id', orgId)
         .eq('status', 'paid')
         .order('paid_at', { ascending: false })
         .limit(10),
@@ -42,6 +51,7 @@ export async function GET() {
       supabase
         .from('payments')
         .select('amount')
+        .eq('organization_id', orgId)
         .eq('status', 'paid')
         .gte('paid_at', thirtyDaysAgo),
 
@@ -49,6 +59,7 @@ export async function GET() {
       supabase
         .from('payments')
         .select('amount')
+        .eq('organization_id', orgId)
         .eq('status', 'paid')
         .gte('paid_at', sixtyDaysAgo)
         .lt('paid_at', thirtyDaysAgo),
@@ -57,30 +68,35 @@ export async function GET() {
       supabase
         .from('quote_requests')
         .select('status')
+        .eq('organization_id', orgId)
         .limit(10000),
 
       // Repair orders
       supabase
         .from('repair_orders')
         .select('id, current_status, intake_received_at, repair_completed_at')
+        .eq('organization_id', orgId)
         .limit(10000),
 
       // Device popularity
       supabase
         .from('quote_requests')
         .select('device_category, brand_name, model_name')
+        .eq('organization_id', orgId)
         .limit(10000),
 
       // Repair types
       supabase
         .from('quote_requests')
         .select('repair_type_key')
+        .eq('organization_id', orgId)
         .limit(10000),
 
       // Recent 10 quotes
       supabase
         .from('quote_requests')
         .select('id, quote_id, first_name, last_name, guest_email, device_category, brand_name, model_name, repair_type_key, status, created_at')
+        .eq('organization_id', orgId)
         .order('created_at', { ascending: false })
         .limit(10),
 
@@ -88,6 +104,7 @@ export async function GET() {
       supabase
         .from('repair_orders')
         .select('intake_received_at, repair_completed_at')
+        .eq('organization_id', orgId)
         .not('intake_received_at', 'is', null)
         .not('repair_completed_at', 'is', null),
     ])

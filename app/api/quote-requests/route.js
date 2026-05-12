@@ -20,10 +20,28 @@ export async function POST(request) {
   }
 
   const supabase = getSupabaseAdmin()
-  const orgId = await getDefaultOrgId()
+
+  // Resolve org from slug if provided; fall back to default org for single-tenant setups
+  let orgId
+  const rawFormData = await request.formData()
+  const orgSlug = (rawFormData.get('orgSlug') || '').toString().trim()
+  if (orgSlug) {
+    const { data: org, error: orgError } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('slug', orgSlug)
+      .eq('status', 'active')
+      .maybeSingle()
+    if (!orgError && org) {
+      orgId = org.id
+    }
+  }
+  if (!orgId) {
+    orgId = await getDefaultOrgId()
+  }
 
   try {
-    const formData = await request.formData()
+    const formData = rawFormData
 
     const firstName = (formData.get('firstName') || '').toString().trim()
     const lastName = (formData.get('lastName') || '').toString().trim()
