@@ -42,6 +42,9 @@ drop policy if exists customers_select_policy on public.customers;
 drop policy if exists customers_insert_policy on public.customers;
 drop policy if exists customers_update_policy on public.customers;
 
+drop policy if exists customers_staff_select on public.customers;
+drop policy if exists customers_staff_insert on public.customers;
+drop policy if exists customers_staff_update on public.customers;
 create policy customers_staff_select on public.customers
   for select to authenticated
   using (public.is_org_member(organization_id));
@@ -60,6 +63,9 @@ drop policy if exists quote_requests_select_policy on public.quote_requests;
 drop policy if exists quote_requests_insert_policy on public.quote_requests;
 drop policy if exists quote_requests_update_policy on public.quote_requests;
 
+drop policy if exists quote_requests_staff_select on public.quote_requests;
+drop policy if exists quote_requests_staff_insert on public.quote_requests;
+drop policy if exists quote_requests_staff_update on public.quote_requests;
 create policy quote_requests_staff_select on public.quote_requests
   for select to authenticated
   using (public.is_org_member(organization_id));
@@ -78,6 +84,9 @@ drop policy if exists quote_estimates_select_policy on public.quote_estimates;
 drop policy if exists quote_estimates_insert_policy on public.quote_estimates;
 drop policy if exists quote_estimates_update_policy on public.quote_estimates;
 
+drop policy if exists quote_estimates_staff_select on public.quote_estimates;
+drop policy if exists quote_estimates_staff_insert on public.quote_estimates;
+drop policy if exists quote_estimates_staff_update on public.quote_estimates;
 create policy quote_estimates_staff_select on public.quote_estimates
   for select to authenticated
   using (public.is_org_member(organization_id));
@@ -96,6 +105,9 @@ drop policy if exists repair_orders_select_policy on public.repair_orders;
 drop policy if exists repair_orders_insert_policy on public.repair_orders;
 drop policy if exists repair_orders_update_policy on public.repair_orders;
 
+drop policy if exists repair_orders_staff_select on public.repair_orders;
+drop policy if exists repair_orders_staff_insert on public.repair_orders;
+drop policy if exists repair_orders_staff_update on public.repair_orders;
 create policy repair_orders_staff_select on public.repair_orders
   for select to authenticated
   using (public.is_org_member(organization_id));
@@ -115,6 +127,8 @@ create policy repair_orders_staff_update on public.repair_orders
 drop policy if exists pricing_rules_select_policy on public.pricing_rules;
 drop policy if exists pricing_rules_insert_policy on public.pricing_rules;
 drop policy if exists pricing_rules_update_policy on public.pricing_rules;
+drop policy if exists pricing_rules_public_select on public.pricing_rules;
+drop policy if exists pricing_rules_staff_manage on public.pricing_rules;
 
 create policy pricing_rules_public_select on public.pricing_rules
   for select using (active = true);
@@ -129,6 +143,8 @@ drop policy if exists payments_select_policy on public.payments;
 drop policy if exists payments_insert_policy on public.payments;
 drop policy if exists payments_update_policy on public.payments;
 
+drop policy if exists payments_staff_select on public.payments;
+drop policy if exists payments_staff_insert on public.payments;
 create policy payments_staff_select on public.payments
   for select to authenticated
   using (
@@ -147,6 +163,7 @@ create policy payments_staff_insert on public.payments
 drop policy if exists notifications_select_policy on public.notifications;
 drop policy if exists notifications_insert_policy on public.notifications;
 
+drop policy if exists notifications_staff_select on public.notifications;
 create policy notifications_staff_select on public.notifications
   for select to authenticated
   using (
@@ -159,6 +176,8 @@ drop policy if exists repair_messages_select_policy on public.repair_messages;
 drop policy if exists repair_messages_insert_policy on public.repair_messages;
 drop policy if exists repair_messages_update_policy on public.repair_messages;
 
+drop policy if exists repair_messages_staff_select on public.repair_messages;
+drop policy if exists repair_messages_staff_insert on public.repair_messages;
 create policy repair_messages_staff_select on public.repair_messages
   for select to authenticated
   using (
@@ -178,6 +197,8 @@ drop policy if exists shipments_select_policy on public.shipments;
 drop policy if exists shipments_insert_policy on public.shipments;
 drop policy if exists shipments_update_policy on public.shipments;
 
+drop policy if exists shipments_staff_select on public.shipments;
+drop policy if exists shipments_staff_manage on public.shipments;
 create policy shipments_staff_select on public.shipments
   for select to authenticated
   using (
@@ -193,6 +214,8 @@ create policy shipments_staff_manage on public.shipments
 -- repair_order_status_history ─────────────────────────────────────────────────
 drop policy if exists repair_order_status_history_select_policy on public.repair_order_status_history;
 
+drop policy if exists status_history_staff_select on public.repair_order_status_history;
+drop policy if exists status_history_staff_insert on public.repair_order_status_history;
 create policy status_history_staff_select on public.repair_order_status_history
   for select to authenticated
   using (
@@ -211,6 +234,8 @@ create policy status_history_staff_insert on public.repair_order_status_history
 drop policy if exists device_intake_reports_select_policy on public.device_intake_reports;
 drop policy if exists device_intake_reports_insert_policy on public.device_intake_reports;
 
+drop policy if exists intake_reports_staff_select on public.device_intake_reports;
+drop policy if exists intake_reports_staff_manage on public.device_intake_reports;
 create policy intake_reports_staff_select on public.device_intake_reports
   for select to authenticated
   using (
@@ -226,6 +251,8 @@ create policy intake_reports_staff_manage on public.device_intake_reports
 -- quote_request_photos ────────────────────────────────────────────────────────
 drop policy if exists quote_request_photos_select_policy on public.quote_request_photos;
 
+drop policy if exists photos_staff_select on public.quote_request_photos;
+drop policy if exists photos_service_insert on public.quote_request_photos;
 create policy photos_staff_select on public.quote_request_photos
   for select to authenticated
   using (
@@ -240,6 +267,8 @@ create policy photos_service_insert on public.quote_request_photos
 drop policy if exists customer_addresses_select_policy on public.customer_addresses;
 drop policy if exists customer_addresses_insert_policy on public.customer_addresses;
 
+drop policy if exists customer_addresses_staff_select on public.customer_addresses;
+drop policy if exists customer_addresses_staff_manage on public.customer_addresses;
 create policy customer_addresses_staff_select on public.customer_addresses
   for select to authenticated
   using (
@@ -255,6 +284,8 @@ create policy customer_addresses_staff_manage on public.customer_addresses
 -- quote_estimate_items ────────────────────────────────────────────────────────
 drop policy if exists quote_estimate_items_select_policy on public.quote_estimate_items;
 
+drop policy if exists estimate_items_staff_select on public.quote_estimate_items;
+drop policy if exists estimate_items_staff_manage on public.quote_estimate_items;
 create policy estimate_items_staff_select on public.quote_estimate_items
   for select to authenticated
   using (
