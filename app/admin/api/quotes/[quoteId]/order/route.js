@@ -73,10 +73,12 @@ export async function GET(request, context) {
         .eq('quote_request_id', quoteRequest.id)
         .maybeSingle(),
       supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .in('role', ['admin', 'tech'])
-        .order('full_name', { ascending: true }),
+        .from('organization_members')
+        .select('user_id, role, profiles(id, full_name)')
+        .eq('organization_id', orgId)
+        .eq('status', 'active')
+        .in('role', ['owner', 'admin', 'tech'])
+        .order('created_at', { ascending: true }),
     ])
 
     if (customerResult.error) throw customerResult.error
@@ -132,7 +134,11 @@ export async function GET(request, context) {
       order: orderResult.data,
       history,
       shipments,
-      technicians: techniciansResult.data || [],
+      technicians: (techniciansResult.data || []).map((m) => ({
+        id: m.profiles?.id || m.user_id,
+        full_name: m.profiles?.full_name || 'Unknown',
+        role: m.role,
+      })),
     })
   } catch (error) {
     return NextResponse.json(

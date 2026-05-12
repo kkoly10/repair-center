@@ -73,13 +73,17 @@ Converting the app from a single-shop platform to multi-tenant. Work is organize
 
 ---
 
-## Sprint 3b — Remaining multi-tenancy tasks 🔲 NOT STARTED
+## Sprint 3b — Remaining multi-tenancy tasks ✅ COMPLETE (PR #11)
 
-- [ ] Public-facing routes: resolve org via subdomain or slug (URL routing signal)
-- [ ] `order/route.js` GET — technicians query reads from `profiles` filtered by `role`; should instead query `organization_members` joined to `profiles` so only staff from the correct org are returned
-- [ ] Admin UI: org settings page (business name, support email/phone, receiving address, packing checklist, shipping notes → `organization_settings` table)
-- [ ] Invite flow: add staff members to `organization_members`
-- [ ] Onboarding: create new org records for additional tenants
+### What was done
+- **Technicians fix** — `order/route.js` GET now queries `organization_members` joined to `profiles` (org-scoped), maps data to same `{ id, full_name, role }` shape
+- **Public slug routing** — `EstimateForm` reads `orgSlug` from prop or `?shop=` query param, sends it in form body; `/api/quote-requests/route.js` resolves org from slug before falling back to `getDefaultOrgId()`; `/shop/[orgSlug]/estimate/page.js` added as the per-shop URL
+- **DB migration 006** — `organization_invitations` table with token + expiry + RLS policies
+- **Admin settings** — `/admin/settings/` page + `GET/POST /admin/api/settings/` (org info, receiving address, branding)
+- **Admin team management** — `/admin/team/` page + `GET /admin/api/team/` (members + pending invites) + `POST/DELETE /admin/api/team/invite/` + `PATCH/DELETE /admin/api/team/[memberId]/`
+- **Invite flow** — `GET/POST /api/invitations/[token]/` (public) + `/invite/[token]/` accept page
+- **Self-serve signup** — `/signup/` page + `POST /api/auth/create-org/` (creates org + adds user as owner + seeds settings/branding/payment tables)
+- **Onboarding** — `/admin/onboarding/` page for new users with no org membership
 
 ---
 

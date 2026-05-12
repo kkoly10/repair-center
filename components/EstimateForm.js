@@ -18,8 +18,9 @@ import StatusTracker from './StatusTracker'
 const contactOptions = ['Email', 'Text', 'Either']
 const yesNoMaybe = ['Yes', 'No', 'Not sure']
 
-export default function EstimateForm() {
+export default function EstimateForm({ orgSlug }) {
   const searchParams = useSearchParams()
+  const resolvedOrgSlug = orgSlug || searchParams.get('shop') || ''
   const [category, setCategory] = useState(searchParams.get('category') || 'phone')
   const [brand, setBrand] = useState(searchParams.get('brand') || 'Apple')
   const [modelKey, setModelKey] = useState(searchParams.get('modelKey') || 'iphone-13')
@@ -116,6 +117,7 @@ export default function EstimateForm() {
     formData.set('liquidState', liquidState)
     formData.set('priorRepairState', priorRepairState)
     formData.set('dataState', dataState)
+    if (resolvedOrgSlug) formData.set('orgSlug', resolvedOrgSlug)
 
     try {
       const response = await fetch('/api/quote-requests', {
