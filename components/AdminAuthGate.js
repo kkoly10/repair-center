@@ -44,25 +44,27 @@ export default function AdminAuthGate({ children }) {
         return
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, role, full_name, phone')
-        .eq('id', user.id)
+      const { data: membership, error: membershipError } = await supabase
+        .from('organization_members')
+        .select('role, organization_id')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .in('role', ['owner', 'admin', 'tech'])
         .maybeSingle()
 
-      if (profileError) {
+      if (membershipError) {
         if (!ignore) {
           setState({
             loading: false,
             user,
             profile: null,
-            error: profileError.message,
+            error: membershipError.message,
           })
         }
         return
       }
 
-      if (!profile || !['admin', 'tech'].includes(profile.role)) {
+      if (!membership) {
         if (!ignore) {
           setState({
             loading: false,
@@ -78,7 +80,7 @@ export default function AdminAuthGate({ children }) {
         setState({
           loading: false,
           user,
-          profile,
+          profile: { id: user.id, role: membership.role, organization_id: membership.organization_id },
           error: null,
         })
       }

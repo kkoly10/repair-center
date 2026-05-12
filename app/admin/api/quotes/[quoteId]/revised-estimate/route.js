@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
+import { getDefaultOrgId } from '../../../../../../lib/admin/org'
 import { sendEstimateSentNotification } from '../../../../../../lib/notifications'
 
 export const runtime = 'nodejs'
@@ -57,10 +58,13 @@ export async function POST(request, context) {
       discountAmount -
       depositCreditAmount
 
+    const orgId = await getDefaultOrgId()
+
     const { data: quoteRequest, error: quoteError } = await supabase
       .from('quote_requests')
       .select('*')
       .eq('quote_id', quoteId)
+      .eq('organization_id', orgId)
       .maybeSingle()
 
     if (quoteError) throw quoteError
@@ -96,6 +100,7 @@ export async function POST(request, context) {
     const { data: estimate, error: estimateError } = await supabase
       .from('quote_estimates')
       .insert({
+        organization_id: orgId,
         quote_request_id: quoteRequest.id,
         estimate_kind: estimateKind,
         status: 'sent',

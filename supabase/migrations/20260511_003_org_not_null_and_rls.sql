@@ -127,6 +127,7 @@ create policy repair_orders_staff_update on public.repair_orders
 drop policy if exists pricing_rules_select_policy on public.pricing_rules;
 drop policy if exists pricing_rules_insert_policy on public.pricing_rules;
 drop policy if exists pricing_rules_update_policy on public.pricing_rules;
+drop policy if exists pricing_rules_staff_write on public.pricing_rules;
 drop policy if exists pricing_rules_public_select on public.pricing_rules;
 drop policy if exists pricing_rules_staff_manage on public.pricing_rules;
 
@@ -261,7 +262,7 @@ create policy photos_staff_select on public.quote_request_photos
   );
 
 create policy photos_service_insert on public.quote_request_photos
-  for insert with check (true); -- service_role handles all photo inserts (public quote form)
+  for insert to service_role with check (true); -- only service_role may insert (public quote form)
 
 -- customer_addresses ──────────────────────────────────────────────────────────
 drop policy if exists customer_addresses_select_policy on public.customer_addresses;

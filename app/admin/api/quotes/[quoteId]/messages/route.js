@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
+import { getDefaultOrgId } from '../../../../../../lib/admin/org'
 
 export const runtime = 'nodejs'
 
@@ -126,7 +127,9 @@ export async function POST(request, context) {
     const internalOnly = Boolean(body.internalOnly)
     const now = new Date().toISOString()
 
+    const orgId = await getDefaultOrgId()
     const insertPayload = {
+      organization_id: orgId,
       repair_order_id: repairOrder.id,
       sender_role: senderRole,
       body: messageBody,

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
+import { getDefaultOrgId } from '../../../../lib/admin/org'
 import {
   sendDepositPaidNotification,
   sendMailInReadyNotification,
@@ -95,6 +96,7 @@ export async function finalizeDepositPayment({
   paymentIntentId,
 }) {
   const supabase = getSupabaseAdmin()
+  const orgId = await getDefaultOrgId()
 
   const { data: quoteRequest, error: quoteError } = await supabase
     .from('quote_requests')
@@ -171,6 +173,7 @@ export async function finalizeDepositPayment({
     const { data: newOrder, error: orderError } = await supabase
       .from('repair_orders')
       .insert({
+        organization_id: orgId,
         quote_request_id: quoteRequestId,
         customer_id: quoteRequest.customer_id,
         model_id: modelResult.data?.id || null,

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../lib/supabase/admin'
+import { getDefaultOrgId } from '../../../lib/admin/org'
 import { checkRateLimit } from '../../../lib/rateLimiter'
 
 export const runtime = 'nodejs'
@@ -19,6 +20,7 @@ export async function POST(request) {
   }
 
   const supabase = getSupabaseAdmin()
+  const orgId = await getDefaultOrgId()
 
   try {
     const formData = await request.formData()
@@ -80,6 +82,7 @@ export async function POST(request) {
       const { data: insertedCustomer, error: customerInsertError } = await supabase
         .from('customers')
         .insert({
+          organization_id: orgId,
           first_name: firstName,
           last_name: lastName || null,
           email,
@@ -122,6 +125,7 @@ export async function POST(request) {
     const { data: quoteRequest, error: quoteInsertError } = await supabase
       .from('quote_requests')
       .insert({
+        organization_id: orgId,
         customer_id: customerId,
         guest_email: email,
         guest_phone: phone || null,

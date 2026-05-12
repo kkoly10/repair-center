@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
-import { MAIL_IN_CONFIG } from '../../../../lib/mailInConfig'
+import { getMailInConfig } from '../../../../lib/mailInConfig'
 
 export const runtime = 'nodejs'
 
@@ -112,7 +112,7 @@ export async function POST(request, context) {
         warranty_days: estimateResult.data?.warranty_days || null,
         status: estimateResult.data?.status || null,
       },
-      instructions: MAIL_IN_CONFIG,
+      instructions: await getMailInConfig(quoteRequest.organization_id),
     })
   } catch (error) {
     return NextResponse.json(

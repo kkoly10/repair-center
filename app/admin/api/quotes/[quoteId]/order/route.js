@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
+import { getDefaultOrgId } from '../../../../../../lib/admin/org'
 import {
   sendRepairStatusNotification,
   sendShipmentNotification,
@@ -39,10 +40,13 @@ export async function GET(request, context) {
       return NextResponse.json({ error: 'Missing quote ID.' }, { status: 400 })
     }
 
+    const orgId = await getDefaultOrgId()
+
     const { data: quoteRequest, error: quoteError } = await supabase
       .from('quote_requests')
       .select('*')
       .eq('quote_id', quoteId)
+      .eq('organization_id', orgId)
       .maybeSingle()
 
     if (quoteError) throw quoteError
@@ -183,10 +187,13 @@ export async function POST(request, context) {
       )
     }
 
+    const orgId = await getDefaultOrgId()
+
     const { data: quoteRequest, error: quoteError } = await supabase
       .from('quote_requests')
       .select('*')
       .eq('quote_id', quoteId)
+      .eq('organization_id', orgId)
       .maybeSingle()
 
     if (quoteError) throw quoteError
@@ -268,6 +275,7 @@ export async function POST(request, context) {
       const { data: insertedOrder, error: insertOrderError } = await supabase
         .from('repair_orders')
         .insert({
+          organization_id: orgId,
           quote_request_id: quoteRequest.id,
           customer_id: quoteRequest.customer_id,
           model_id: modelResult.data?.id || null,
