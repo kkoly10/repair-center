@@ -32,6 +32,7 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug }) {
     setLoading(true)
     setError('')
     setResultMessage('')
+    setManualPaymentInfo(null)
 
     try {
       const response = await fetch(`/api/estimate-review/${quoteId}`, {

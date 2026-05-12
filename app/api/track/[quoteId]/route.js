@@ -33,7 +33,7 @@ export async function POST(request, context) {
     }
 
     const orgId = await resolveOrgId(supabase, orgSlug)
-    const pathPrefix = orgSlug ? `/shop/${orgSlug}` : ''
+    const pathPrefix = orgId ? `/shop/${orgSlug}` : ''
 
     const resolved = await resolveTrackingIdentifier(identifier, { supabase, orgId })
     const quoteRequest = resolved.quoteRequest

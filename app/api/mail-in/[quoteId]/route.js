@@ -75,6 +75,7 @@ export async function POST(request, context) {
     if (customerResult.error) throw customerResult.error
     if (orderResult.error) throw orderResult.error
     if (estimateResult.error) throw estimateResult.error
+    if (paymentSettingsResult.error) throw paymentSettingsResult.error
 
     const allowedEmails = [quoteRequest.guest_email, customerResult.data?.email]
       .filter(Boolean)

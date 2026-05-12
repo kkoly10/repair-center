@@ -34,7 +34,7 @@ export async function POST(request, context) {
       if (org) orgFilter = org.id
     }
 
-    const pathPrefix = orgSlug ? `/shop/${orgSlug}` : ''
+    const pathPrefix = orgFilter ? `/shop/${orgSlug}` : ''
 
     let quoteQuery = supabase.from('quote_requests').select('*').eq('quote_id', quoteId)
     if (orgFilter) quoteQuery = quoteQuery.eq('organization_id', orgFilter)
