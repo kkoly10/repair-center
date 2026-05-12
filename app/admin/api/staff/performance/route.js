@@ -14,6 +14,8 @@ const TERMINAL_STATUSES = new Set([
   'no_fault_found',
 ])
 
+const TERMINAL_STATUSES_LIST = [...TERMINAL_STATUSES]
+
 export async function GET() {
   let orgId
   try {
@@ -26,6 +28,7 @@ export async function GET() {
 
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString()
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000).toISOString()
 
     const [membersResult, ordersResult] = await Promise.all([
       supabase
@@ -35,10 +38,14 @@ export async function GET() {
         .eq('status', 'active')
         .in('role', ['owner', 'admin', 'tech'])
         .order('created_at', { ascending: true }),
+      // Fetch all active (non-terminal) orders regardless of age, plus terminal
+      // orders from the last 90 days. This bounds the historical data pull while
+      // ensuring long-running active repairs are never missed.
       supabase
         .from('repair_orders')
         .select('id, assigned_technician_user_id, current_status, intake_received_at, shipped_at, delivered_at')
         .eq('organization_id', orgId)
+        .or(`current_status.not.in.(${TERMINAL_STATUSES_LIST.join(',')}),created_at.gte.${ninetyDaysAgo}`)
         .order('created_at', { ascending: false }),
     ])
 

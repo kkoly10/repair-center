@@ -22,6 +22,7 @@ function makeSupabaseMock({ membersResult, ordersResult }) {
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       in: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
       order: jest.fn().mockResolvedValue(result),
     }
     return chain
