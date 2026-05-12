@@ -61,13 +61,22 @@ Converting the app from a single-shop platform to multi-tenant. Work is organize
 
 ---
 
-## Sprint 3 — True multi-tenancy 🔲 NOT STARTED
+## Sprint 3a — Session-based org resolution in admin routes ✅ COMPLETE (PR #11)
 
-Tasks:
-- [ ] Replace `getDefaultOrgId()` calls in admin routes with org resolved from auth session (`organization_members` row, already available in `AdminAuthGate` profile context)
+### What was done
+- **`lib/admin/getSessionOrgId.js`** (new) — reads auth session from cookies via `@supabase/ssr`, looks up `organization_members`, throws 401/403 with `.status` property; falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` if publishable key not set
+- **All admin API route handlers updated** to call `getSessionOrgId()` before the main try/catch and filter all DB reads by `organization_id`:
+  - `send-estimate`, `revised-estimate`, `order` (GET+POST), `intake` (GET+POST), `messages` (GET+POST), `analytics` (10 queries), `sla`, `estimates/[estimateId]`, `payment-summary`, `request-final-balance`
+- **`getPaymentSummary.js`** — optional `orgId` param on `getPaymentSummaryByQuoteId` (public callers omit it safely)
+- **`intent/route.js`** — uses `quoteRequest.organization_id` instead of `getDefaultOrgId()`
+- **`webhook/route.js`** — derives `orgId` from fetched `quoteRequest.organization_id`
+
+---
+
+## Sprint 3b — Remaining multi-tenancy tasks 🔲 NOT STARTED
+
 - [ ] Public-facing routes: resolve org via subdomain or slug (URL routing signal)
-- [ ] `app/admin/api/analytics/route.js` — add `.eq('organization_id', orgId)` filters
-- [ ] `app/admin/api/sla/route.js` — add org filters
+- [ ] `order/route.js` GET — technicians query reads from `profiles` filtered by `role`; should instead query `organization_members` joined to `profiles` so only staff from the correct org are returned
 - [ ] Admin UI: org settings page (business name, support email/phone, receiving address, packing checklist, shipping notes → `organization_settings` table)
 - [ ] Invite flow: add staff members to `organization_members`
 - [ ] Onboarding: create new org records for additional tenants
