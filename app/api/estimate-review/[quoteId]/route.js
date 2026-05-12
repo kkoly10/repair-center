@@ -203,6 +203,7 @@ export async function POST(request, context) {
         const { data: insertedOrder, error: orderInsertError } = await supabase
           .from('repair_orders')
           .insert({
+            organization_id: quoteRequest.organization_id,
             quote_request_id: quoteRequest.id,
             customer_id: quoteRequest.customer_id,
             model_id: modelResult.data?.id || null,

@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '../../../lib/supabase/admin'
+import { getDefaultOrgId } from '../../../lib/admin/org'
 import { NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
@@ -9,6 +10,7 @@ export async function POST(request) {
   try {
     const body = await request.json()
     const email = (body.email || '').trim().toLowerCase()
+    const orgSlug = (body.orgSlug || '').toString().trim()
 
     if (!email) {
       return NextResponse.json(
@@ -17,10 +19,26 @@ export async function POST(request) {
       )
     }
 
-    // 1. Look up customer by email (case-insensitive)
+    // Resolve org from slug if provided; fall back to default org for single-tenant setups
+    let orgId
+    if (orgSlug) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('slug', orgSlug)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (org) orgId = org.id
+    }
+    if (!orgId) {
+      orgId = await getDefaultOrgId()
+    }
+
+    // 1. Look up customer by email within this org (case-insensitive)
     const { data: customers, error: customerError } = await supabase
       .from('customers')
       .select('id, first_name, last_name, email, phone')
+      .eq('organization_id', orgId)
       .ilike('email', email)
       .limit(5)
 
@@ -34,10 +52,11 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, error: 'No account found' })
     }
 
-    // 2. Query quote_requests where customer_id matches OR guest_email matches
+    // 2. Query quote_requests scoped to this org where customer_id matches OR guest_email matches
     const { data: quotes, error: quotesError } = await supabase
       .from('quote_requests')
       .select('*')
+      .eq('organization_id', orgId)
       .or(`customer_id.eq.${customer.id},guest_email.ilike.${email}`)
       .order('created_at', { ascending: false })
 

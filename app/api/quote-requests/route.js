@@ -21,9 +21,15 @@ export async function POST(request) {
 
   const supabase = getSupabaseAdmin()
 
+  let rawFormData
+  try {
+    rawFormData = await request.formData()
+  } catch {
+    return NextResponse.json({ error: 'Invalid form data.' }, { status: 400 })
+  }
+
   // Resolve org from slug if provided; fall back to default org for single-tenant setups
   let orgId
-  const rawFormData = await request.formData()
   const orgSlug = (rawFormData.get('orgSlug') || '').toString().trim()
   if (orgSlug) {
     const { data: org, error: orgError } = await supabase
@@ -72,6 +78,7 @@ export async function POST(request) {
     const { data: existingCustomers, error: customerLookupError } = await supabase
       .from('customers')
       .select('id, email')
+      .eq('organization_id', orgId)
       .ilike('email', email)
       .limit(5)
 
@@ -94,6 +101,7 @@ export async function POST(request) {
           preferred_contact_method: preferredContactMethod,
         })
         .eq('id', customerId)
+        .eq('organization_id', orgId)
 
       if (customerUpdateError) throw customerUpdateError
     } else {
@@ -133,6 +141,7 @@ export async function POST(request) {
     const { data: pricingRule, error: pricingRuleError } = await supabase
       .from('pricing_rules')
       .select('id, public_price_fixed, public_price_min, public_price_max')
+      .eq('organization_id', orgId)
       .eq('model_id', model.id)
       .eq('repair_type_id', repairType.id)
       .eq('active', true)
