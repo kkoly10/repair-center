@@ -125,6 +125,28 @@ export async function POST(request) {
     if (brandingResult.error) throw brandingResult.error
     if (paymentSettingsResult.error) throw paymentSettingsResult.error
 
+    // Clone pricing rules from the oldest org (template/default)
+    const { data: templateOrg } = await supabase
+      .from('organizations')
+      .select('id')
+      .neq('id', orgId)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (templateOrg) {
+      const { data: templateRules } = await supabase
+        .from('pricing_rules')
+        .select('model_id, repair_type_id, price_mode, public_price_fixed, public_price_min, public_price_max, deposit_amount, return_shipping_fee, warranty_days, active')
+        .eq('organization_id', templateOrg.id)
+
+      if (templateRules && templateRules.length > 0) {
+        const clonedRules = templateRules.map((rule) => ({ ...rule, organization_id: orgId }))
+        // Ignore errors — new org without pricing is better than a failed signup
+        await supabase.from('pricing_rules').insert(clonedRules)
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       organizationId: orgId,

@@ -197,7 +197,7 @@ export async function POST(request, context) {
             .maybeSingle(),
           supabase
             .from('organization_payment_settings')
-            .select('payment_mode, manual_instructions')
+            .select('payment_mode, manual_payment_instructions')
             .eq('organization_id', quoteRequest.organization_id)
             .maybeSingle(),
         ])
@@ -210,7 +210,7 @@ export async function POST(request, context) {
       let createdOrder = existingOrderResult.data
       const depositAmount = pricingRuleResult.data?.deposit_amount || 0
       const paymentMode = paymentSettingsResult.data?.payment_mode || 'manual'
-      const manualInstructions = paymentSettingsResult.data?.manual_instructions || ''
+      const manualInstructions = paymentSettingsResult.data?.manual_payment_instructions || ''
 
       // For Stripe-based payment modes, redirect to checkout before creating the order
       if (!createdOrder && depositAmount > 0 && paymentMode !== 'manual') {

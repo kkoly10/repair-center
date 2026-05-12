@@ -141,6 +141,26 @@ Converting the app from a single-shop platform to multi-tenant. Work is organize
 
 ---
 
+## Sprint 5 — Payment settings, admin pricing, photo hardening ✅ COMPLETE
+
+### Migrations applied to production
+- `20260512_008_pricing_rules_unique_org.sql` — dropped global `unique(model_id, repair_type_id)` constraint, replaced with `unique(organization_id, model_id, repair_type_id)`
+
+### What was done
+1. **Column fix** — `organization_payment_settings.manual_instructions` → `manual_payment_instructions` in `estimate-review` and `mail-in` routes (column name was always `manual_payment_instructions` in DB; code had wrong name)
+2. **Payment settings in admin** — `GET /admin/api/settings` now includes `payment` section; `POST /admin/api/settings` accepts `payment` section (payment_mode, manual_payment_instructions, cashapp_tag, zelle_contact, square_payment_url); `AdminSettingsPage` has Section 4 UI for payment settings
+3. **Admin pricing page** — `GET /admin/api/pricing` lists all org pricing rules with nested model+brand+repair joins; `PATCH /admin/api/pricing/[ruleId]` inline-edits price_mode/fixed/min/max/deposit/shipping/warranty/active; `AdminPricingPage` component with category/brand/free-text filters; `app/admin/pricing/page.js` wrapper
+4. **Manual payment mode full flow** — `estimate-review` creates order immediately when payment_mode='manual', returns `manualPaymentMode: true` + instructions + depositAmount; `CustomerEstimateReviewPage` shows instructions panel; `MailInInstructionsPage` shows manual instructions instead of Stripe link
+5. **Pricing rule cloning** — `create-org` now fetches oldest org's pricing rules after seeding, inserts clones for the new org (failure silently ignored to not block signup)
+6. **Photo hardening** — `quote-requests` POST: max 6 files (slice), max 10 MB per file, MIME allowlist (jpeg/png/webp/heic/heif/gif), storage path changed from `{quoteId}/file` to `orgs/{orgId}/quotes/{quoteId}/file`
+7. **Deposit mark-paid endpoint** — `POST /admin/api/quotes/[quoteId]/deposit`: verifies session+org, finds repair order, inserts `payments` row (kind=inspection_deposit, provider=manual, status=paid), updates `repair_orders.inspection_deposit_paid_at`
+
+### Accepted limitations
+- No UI button to trigger deposit mark-paid yet — endpoint exists and is ready for wiring
+- `getDefaultOrgId()` still used in `customer-portal` and `quote-requests` fallback paths — intentional
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)

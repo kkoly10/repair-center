@@ -64,7 +64,8 @@ export async function POST(request) {
     const liquidState = (formData.get('liquidState') || '').toString().trim()
     const priorRepairState = (formData.get('priorRepairState') || '').toString().trim()
     const dataState = (formData.get('dataState') || '').toString().trim()
-    const photoFiles = formData.getAll('photos').filter((item) => item && typeof item === 'object' && 'arrayBuffer' in item)
+    const allPhotoFiles = formData.getAll('photos').filter((item) => item && typeof item === 'object' && 'arrayBuffer' in item)
+    const photoFiles = allPhotoFiles.slice(0, 6)
 
     if (!firstName || !email || !category || !modelKey || !repairKey || !issueDescription) {
       return NextResponse.json(
@@ -185,16 +186,31 @@ export async function POST(request) {
 
     if (quoteInsertError) throw quoteInsertError
 
+    const ALLOWED_PHOTO_MIME = new Set([
+      'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'image/gif',
+    ])
+    const MAX_PHOTO_BYTES = 10 * 1024 * 1024
+
     const photoWarnings = []
 
     for (let index = 0; index < photoFiles.length; index += 1) {
       const file = photoFiles[index]
       if (!file || !file.name || file.size === 0) continue
 
+      if (!ALLOWED_PHOTO_MIME.has(file.type)) {
+        photoWarnings.push(`${file.name}: unsupported file type`)
+        continue
+      }
+
+      if (file.size > MAX_PHOTO_BYTES) {
+        photoWarnings.push(`${file.name}: file exceeds 10 MB limit`)
+        continue
+      }
+
       try {
         const extension = getFileExtension(file.name)
         const fileName = `${Date.now()}-${index}.${extension}`
-        const storagePath = `${quoteRequest.quote_id}/${fileName}`
+        const storagePath = `orgs/${orgId}/quotes/${quoteRequest.quote_id}/${fileName}`
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
 
