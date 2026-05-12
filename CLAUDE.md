@@ -161,6 +161,34 @@ Converting the app from a single-shop platform to multi-tenant. Work is organize
 
 ---
 
+## Sprint 6 — Testing, CI, and beta hardening ✅ COMPLETE
+
+### What was done
+1. **GitHub Actions CI** — `.github/workflows/ci.yml`: two jobs (`test` and `build`) trigger on push to `main`/`claude/**` and on PRs to `main`; `test` job runs `npm test`; `build` job runs `npm run build` with stub env vars so secrets are not needed
+2. **Jest test suite** — 27 tests across 4 suites:
+   - `__tests__/lib/photoMime.test.js` — MIME allowlist, extension normalization, limits
+   - `__tests__/api/pricing-isolation.test.js` — org isolation (org_id filter), cross-org 404, auth guard, price_mode validation, manual mode clears price fields
+   - `__tests__/api/deposit.test.js` — auth guard, cross-org 404, no-deposit 400, idempotency (payment+timestamp both present → 400), partial-state recovery (payment exists + timestamp null → ok + no dup insert)
+   - `__tests__/api/payment-mode-routing.test.js` — source-level guards: manual vs Stripe branch, correct column name, requiresPayment exists
+3. **Deposit partial-state recovery** — If `payments` row exists but `repair_orders.inspection_deposit_paid_at` is null (partial failure from previous call), endpoint now repairs the timestamp and returns `ok:true` instead of 400; no duplicate payment is inserted
+4. **MIME extension normalization** — Extracted `lib/photoMime.js` (MIME→ext map, allowlist, limits); `quote-requests` route now derives file extension from MIME type instead of trusting the filename extension; constants shared with tests
+5. **Admin convenience buttons** — `AdminSettingsPage` now shows a "Your Shop" panel when slug is loaded: Preview shop page, Preview estimate form, Copy shop link (copies `origin/shop/{slug}` to clipboard)
+6. **No active pricing rules warning** — `AdminPricingPage` shows a `notice-warn` banner when rules exist but none are active, prompting admin to activate at least one
+
+### How to run tests
+```bash
+npm test              # run all 27 tests
+npm test -- --watch   # watch mode
+```
+
+### Remaining blockers to 8.5/10
+- [ ] No UI button to mark deposit paid (endpoint is ready, needs wiring in `AdminQuoteDetailPage`)
+- [ ] `getDefaultOrgId()` still used in fallback paths — acceptable for single-tenant, remove when all shops have slugs
+- [ ] RLS tests (anon cannot read pricing_rules, cross-org data isolation) require a real Supabase test DB — not covered by unit tests yet
+- [ ] `next lint` not yet passing cleanly (eslint-config-next installed; run `npm run lint` to check)
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)

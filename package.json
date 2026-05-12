@@ -4,7 +4,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "next lint",
+    "test": "jest"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^5.6.1",
@@ -16,5 +18,13 @@
     "react-dom": "19.2.0",
     "resend": "^6.9.4",
     "stripe": "^20.4.1"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.15.33",
+    "@swc/jest": "^0.2.39",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.6",
+    "jest": "^30.4.2",
+    "jest-environment-node": "^30.4.1"
   }
 }

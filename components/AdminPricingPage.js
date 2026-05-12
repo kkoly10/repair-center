@@ -120,6 +120,8 @@ function AdminPricingPageInner() {
     </main>
   )
 
+  const hasActiveRules = rules.some((r) => r.active)
+
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
@@ -131,6 +133,13 @@ function AdminPricingPageInner() {
             to <strong>Manual review</strong> to hide pricing and always require a custom quote.
           </p>
         </div>
+
+        {rules.length > 0 && !hasActiveRules && (
+          <div className='notice notice-warn'>
+            No pricing rules are currently active. Customers will see every repair as requiring
+            manual review. Activate at least one rule or set prices to make them visible.
+          </div>
+        )}
 
         <div className='policy-card'>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
