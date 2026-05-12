@@ -52,6 +52,7 @@ export async function GET() {
       const active = assigned.filter((o) => !TERMINAL_STATUSES.has(o.current_status))
       const completedRecent = assigned.filter((o) => {
         const completedAt = o.shipped_at || o.delivered_at
+        if (!completedAt) return false
         return completedAt >= thirtyDaysAgo && TERMINAL_STATUSES.has(o.current_status)
       })
       const withTurnaround = assigned.filter((o) => o.intake_received_at && o.shipped_at)

@@ -110,6 +110,7 @@ export async function GET(request, context) {
 
       if (historyResult.error) throw historyResult.error
       if (shipmentsResult.error) throw shipmentsResult.error
+      if (auditLogResult.error) throw auditLogResult.error
 
       history = historyResult.data || []
       shipments = shipmentsResult.data || []

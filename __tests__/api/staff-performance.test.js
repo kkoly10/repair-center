@@ -139,6 +139,34 @@ describe('GET /admin/api/staff/performance', () => {
     expect(alice.completed_last_30d).toBe(1) // o-2 (shipped within 30d)
   })
 
+  it('does not count orders from other technicians in a member stats', async () => {
+    const { supabase } = makeSupabaseMock({
+      membersResult: {
+        data: [{ user_id: 'u-1', role: 'tech', profiles: { full_name: 'Alice' } }],
+        error: null,
+      },
+      ordersResult: {
+        data: [
+          { id: 'o-1', assigned_technician_user_id: 'u-1', current_status: 'repairing', intake_received_at: null, shipped_at: null, delivered_at: null },
+          { id: 'o-2', assigned_technician_user_id: 'u-2', current_status: 'repairing', intake_received_at: null, shipped_at: null, delivered_at: null },
+          { id: 'o-3', assigned_technician_user_id: 'u-2', current_status: 'shipped', intake_received_at: null, shipped_at: new Date().toISOString(), delivered_at: null },
+        ],
+        error: null,
+      },
+    })
+    getSupabaseAdmin.mockReturnValue(supabase)
+    getSessionOrgId.mockResolvedValue('org-a')
+
+    const res = await GET()
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    const alice = body.stats[0]
+    expect(alice.total_assigned).toBe(1)
+    expect(alice.active_assigned).toBe(1)
+    expect(alice.completed_last_30d).toBe(0)
+  })
+
   it('computes avg_turnaround_days from intake_received_at → shipped_at', async () => {
     const base = new Date('2026-05-01T00:00:00Z')
     const tenDaysLater = new Date(base.getTime() + 10 * 86400000).toISOString()
