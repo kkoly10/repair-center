@@ -35,6 +35,9 @@ function AdminQuoteDetailInner({ quoteId }) {
   const [expandedEstimateId, setExpandedEstimateId] = useState(null)
   const [estimateDetails, setEstimateDetails] = useState({})
   const [paymentData, setPaymentData] = useState(null)
+  const [markingDepositPaid, setMarkingDepositPaid] = useState(false)
+  const [depositPaidSuccess, setDepositPaidSuccess] = useState(false)
+  const [depositPaidError, setDepositPaidError] = useState('')
 
   const [status, setStatus] = useState('submitted')
   const [quoteSummary, setQuoteSummary] = useState('')
@@ -183,6 +186,24 @@ function AdminQuoteDetailInner({ quoteId }) {
   const mailInPath =
     status === 'approved_for_mail_in' ? `/mail-in/${quoteId}` : null
   const paymentsPath = `/admin/quotes/${quoteId}/payments`
+
+  const handleMarkDepositPaid = async () => {
+    setMarkingDepositPaid(true)
+    setDepositPaidError('')
+    setDepositPaidSuccess(false)
+    try {
+      const res = await fetch(`/admin/api/quotes/${quoteId}/deposit`, { method: 'POST' })
+      const body = await res.json()
+      if (!res.ok) throw new Error(body.error || 'Failed to mark deposit as paid.')
+      setDepositPaidSuccess(true)
+      const refreshRes = await fetch(`/admin/api/quotes/${quoteId}/payment-summary`, { cache: 'no-store' })
+      if (refreshRes.ok) setPaymentData(await refreshRes.json())
+    } catch (err) {
+      setDepositPaidError(err.message)
+    } finally {
+      setMarkingDepositPaid(false)
+    }
+  }
 
   const handleSave = async (event) => {
     event.preventDefault()
@@ -588,6 +609,41 @@ function AdminQuoteDetailInner({ quoteId }) {
                 compact
               />
             ) : null}
+
+            {paymentData?.repairOrder && Number(paymentData.repairOrder.inspection_deposit_required) > 0 ? (() => {
+              const depositAlreadyPaid = depositPaidSuccess || paymentData.payments?.some(
+                (p) => p.payment_kind === 'inspection_deposit' && p.status === 'paid'
+              )
+              return (
+                <div className='policy-card'>
+                  <div className='kicker'>Deposit</div>
+                  <h3>Inspection deposit</h3>
+                  <p>
+                    Required: <strong>${Number(paymentData.repairOrder.inspection_deposit_required).toFixed(2)}</strong>
+                  </p>
+                  {depositAlreadyPaid ? (
+                    <div className='notice notice-success' style={{ marginTop: 18 }}>
+                      Deposit has been marked as paid.
+                    </div>
+                  ) : (
+                    <>
+                      {depositPaidError ? (
+                        <div className='notice notice-error' style={{ marginTop: 18 }}>{depositPaidError}</div>
+                      ) : null}
+                      <div className='inline-actions' style={{ marginTop: 18 }}>
+                        <button
+                          className='button button-primary'
+                          onClick={handleMarkDepositPaid}
+                          disabled={markingDepositPaid}
+                        >
+                          {markingDepositPaid ? 'Saving…' : 'Mark deposit paid'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )
+            })() : null}
 
             <div className='policy-card'>
               <div className='kicker'>Customer review link</div>

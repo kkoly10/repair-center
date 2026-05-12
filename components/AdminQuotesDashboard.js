@@ -110,6 +110,7 @@ function AdminQuotesDashboardInner() {
 
   useEffect(() => {
     const ignore = { current: false }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadQuotes(ignore)
     return () => { ignore.current = true }
   }, [loadQuotes])
