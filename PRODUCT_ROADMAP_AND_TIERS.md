@@ -50,7 +50,7 @@ Founder pricing is locked in for life for shops that sign up during controlled b
 | Pricing catalog (per-model, per-repair rules) | **Available now** |
 | 1 staff seat (owner only) | **Available now** |
 | Invite-based team signup | **In beta** |
-| Repair order workflow (intake, inspection, repair, return) | **In beta** |
+| Repair order workflow (intake, inspection, repair, return) | **Available now** |
 | Multi-staff seats | **Not included — Growth+** |
 | Inventory & parts | **Not included — Pro+** |
 | Reporting / analytics | **Not included — Pro+** |
@@ -67,8 +67,8 @@ Includes everything in Starter, plus:
 |---------|--------|
 | Up to 5 staff seats | **Available now** |
 | Team management (invite, role, remove) | **Available now** |
-| Repair queue + status workflow | **In beta** |
-| SLA tracking (repair time targets) | **In beta** |
+| Repair queue + status workflow | **Available now** |
+| SLA tracking (due date / overdue view) | **Available now** |
 | Basic repair analytics (volume, revenue) | **Coming soon** |
 | Customer history (repeat customers) | **Coming soon** |
 | Invoices / receipts (PDF) | **Coming soon** |
@@ -128,11 +128,19 @@ Includes everything in Pro, plus:
 - Manual + Stripe payment modes
 - Admin settings, pricing catalog, team invites
 
-### Phase 2 — Repair Queue & Workflow ⚙️ In Beta
-- Repair order status workflow (submitted → inspected → repairing → shipped)
-- Intake form, device condition photos
-- Technician assignment
-- SLA tracking
+### Phase 2 — Repair Queue & Workflow ✅ Complete (Sprint 8)
+- `/admin/orders` queue: all active repair orders in one view
+- Status, priority, technician, due date — all editable inline from the queue
+- Filters: active / waiting parts / awaiting payment / overdue / completed / all
+- Search by order #, quote ID, customer name/email
+- Tech filter dropdown (per-org member list)
+- `priority` (low/normal/high/urgent) and `due_at` columns on repair_orders
+- `repair_order_audit_log` table: tracks technician assignment, priority, and due date changes
+- `GET /admin/api/orders` + `PATCH /admin/api/orders/[orderId]` — both org-scoped
+- `getSessionContext()` helper returns `{ orgId, userId }` for audit attribution
+- Status changes from queue still feed the existing `repair_order_status_history` trigger
+- Intake form, device condition photos (existing, per-quote repair order page)
+- SLA tracking (due_at overdue view is the first SLA indicator)
 
 ### Phase 3 — Staff & Team Management 🔜 Coming Soon
 - Staff roles (owner, admin, technician)
@@ -211,4 +219,4 @@ Includes everything in Pro, plus:
 | **9.3 / 10** | Bigger shop operations | Inventory, parts tracking, PDF invoices, staff reports, and advanced analytics in place. Pro tier shops have meaningful operational control. |
 | **9.5 / 10** | Competitor-close SaaS | Subscription billing live, Stripe Connect available, multi-location support usable. Positioned to compete directly with RepairDesk, RepairShopr, and similar platforms. |
 
-**Current status: targeting 8.5 (controlled beta).** Sprints 1–7 complete. Phase 1 is done; Phase 2 is in beta.
+**Current status: targeting 9.0 (strong shop workflow).** Sprints 1–8 complete. Phase 1 and Phase 2 are done. Phase 3 (staff performance metrics) is next.
