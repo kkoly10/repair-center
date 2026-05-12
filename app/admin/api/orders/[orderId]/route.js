@@ -45,7 +45,12 @@ export async function PATCH(request, context) {
       return NextResponse.json({ error: 'Missing order ID.' }, { status: 400 })
     }
 
-    const body = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+    }
 
     // Verify org ownership before any mutation
     const { data: order, error: fetchError } = await supabase

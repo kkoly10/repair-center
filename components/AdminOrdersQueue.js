@@ -184,8 +184,10 @@ function AdminOrdersQueueInner() {
           o.id === orderId ? { ...o, ...data.order, technician_name: o.technician_name } : o
         )
       )
+      return true
     } catch (err) {
       setSaveError(err.message)
+      return false
     } finally {
       setSavingId(null)
     }
@@ -197,8 +199,8 @@ function AdminOrdersQueueInner() {
 
   const handleTechChange = (orderId, techId) => {
     const tech = techs.find((t) => t.user_id === techId || t.id === techId)
-    patchOrder(orderId, { assigned_technician_user_id: techId || null }).then(() => {
-      if (tech) {
+    patchOrder(orderId, { assigned_technician_user_id: techId || null }).then((ok) => {
+      if (ok && tech) {
         setOrders((prev) =>
           prev.map((o) =>
             o.id === orderId ? { ...o, technician_name: tech.full_name || tech.name || null } : o
