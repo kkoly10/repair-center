@@ -48,6 +48,16 @@ function AdminSettingsPageInner() {
   const [savedBranding, setSavedBranding] = useState(false)
   const [errorBranding, setErrorBranding] = useState('')
 
+  // Section 4 — Payment Settings
+  const [paymentMode, setPaymentMode] = useState('manual')
+  const [manualPaymentInstructions, setManualPaymentInstructions] = useState('')
+  const [cashappTag, setCashappTag] = useState('')
+  const [zelleContact, setZelleContact] = useState('')
+  const [squarePaymentUrl, setSquarePaymentUrl] = useState('')
+  const [savingPayment, setSavingPayment] = useState(false)
+  const [savedPayment, setSavedPayment] = useState(false)
+  const [errorPayment, setErrorPayment] = useState('')
+
   useEffect(() => {
     let cancelled = false
 
@@ -89,6 +99,13 @@ function AdminSettingsPageInner() {
           setAccentColor(branding.accent_color || '#16a34a')
           setHeroHeadline(branding.hero_headline || '')
           setHeroSubheadline(branding.hero_subheadline || '')
+
+          const payment = json.payment || {}
+          setPaymentMode(payment.payment_mode || 'manual')
+          setManualPaymentInstructions(payment.manual_payment_instructions || '')
+          setCashappTag(payment.cashapp_tag || '')
+          setZelleContact(payment.zelle_contact || '')
+          setSquarePaymentUrl(payment.square_payment_url || '')
 
           setLoading(false)
         }
@@ -199,6 +216,38 @@ function AdminSettingsPageInner() {
       setErrorBranding(err.message || 'Failed to save branding.')
     } finally {
       setSavingBranding(false)
+    }
+  }
+
+  async function handleSavePayment(e) {
+    e.preventDefault()
+    setSavingPayment(true)
+    setErrorPayment('')
+    setSavedPayment(false)
+    try {
+      const res = await fetch('/admin/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payment: {
+            payment_mode: paymentMode,
+            manual_payment_instructions: manualPaymentInstructions,
+            cashapp_tag: cashappTag,
+            zelle_contact: zelleContact,
+            square_payment_url: squarePaymentUrl,
+          },
+        }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.error || 'Failed to save payment settings.')
+      }
+      setSavedPayment(true)
+      setTimeout(() => setSavedPayment(false), 3000)
+    } catch (err) {
+      setErrorPayment(err.message || 'Failed to save payment settings.')
+    } finally {
+      setSavingPayment(false)
     }
   }
 
@@ -455,6 +504,82 @@ function AdminSettingsPageInner() {
                 {savingBranding ? 'Saving...' : 'Save Branding'}
               </button>
               {savedBranding && <span style={{ color: '#16a34a', fontWeight: 600 }}>Saved!</span>}
+            </div>
+          </form>
+        </div>
+
+        {/* Section 4 — Payment Settings */}
+        <div className='policy-card'>
+          <h2>Payment Settings</h2>
+          <form onSubmit={handleSavePayment} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
+            <div>
+              <label style={labelStyle}>Payment Mode</label>
+              <select
+                value={paymentMode}
+                onChange={(e) => setPaymentMode(e.target.value)}
+                style={inputStyle}
+              >
+                <option value='manual'>Manual (cash, CashApp, Zelle, Square link, etc.)</option>
+                <option value='platform_stripe'>Platform Stripe (card via our Stripe account)</option>
+              </select>
+              <p style={{ fontSize: '0.84rem', color: 'var(--muted)', marginTop: 6 }}>
+                Manual mode: repair orders are created immediately on estimate approval; no Stripe redirect. Use the fields below to tell customers how to pay.
+              </p>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Manual Payment Instructions</label>
+              <textarea
+                value={manualPaymentInstructions}
+                onChange={(e) => setManualPaymentInstructions(e.target.value)}
+                style={{ ...inputStyle, minHeight: 100, resize: 'vertical' }}
+                placeholder={'Send $X via CashApp to $yourhandle\nOr Zelle to payments@yourshop.com\nInclude your order number in the note.'}
+              />
+              <p style={{ fontSize: '0.84rem', color: 'var(--muted)', marginTop: 4 }}>
+                Shown to customers on the estimate approval and mail-in pages when a deposit is required.
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <label style={labelStyle}>CashApp Tag</label>
+                <input
+                  type='text'
+                  value={cashappTag}
+                  onChange={(e) => setCashappTag(e.target.value)}
+                  style={inputStyle}
+                  placeholder='$YourCashTag'
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Zelle Contact</label>
+                <input
+                  type='text'
+                  value={zelleContact}
+                  onChange={(e) => setZelleContact(e.target.value)}
+                  style={inputStyle}
+                  placeholder='payments@yourshop.com or (555) 555-5555'
+                />
+              </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Square Payment Link</label>
+              <input
+                type='url'
+                value={squarePaymentUrl}
+                onChange={(e) => setSquarePaymentUrl(e.target.value)}
+                style={inputStyle}
+                placeholder='https://square.link/u/yourlink'
+              />
+            </div>
+
+            {errorPayment && <div className='notice'>{errorPayment}</div>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button type='submit' className='button' disabled={savingPayment}>
+                {savingPayment ? 'Saving...' : 'Save Payment Settings'}
+              </button>
+              {savedPayment && <span style={{ color: '#16a34a', fontWeight: 600 }}>Saved!</span>}
             </div>
           </form>
         </div>

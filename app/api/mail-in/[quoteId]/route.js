@@ -67,7 +67,7 @@ export async function POST(request, context) {
         .maybeSingle(),
       supabase
         .from('organization_payment_settings')
-        .select('payment_mode, manual_instructions')
+        .select('payment_mode, manual_payment_instructions')
         .eq('organization_id', quoteRequest.organization_id)
         .maybeSingle(),
     ])
@@ -99,7 +99,7 @@ export async function POST(request, context) {
     }
 
     const paymentMode = paymentSettingsResult.data?.payment_mode || 'manual'
-    const manualPaymentInstructions = paymentSettingsResult.data?.manual_instructions || ''
+    const manualPaymentInstructions = paymentSettingsResult.data?.manual_payment_instructions || ''
 
     return NextResponse.json({
       ok: true,
