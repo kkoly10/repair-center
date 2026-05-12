@@ -51,6 +51,7 @@ export async function GET(request, context) {
         .from('repair_orders')
         .select('id, order_number, current_status, intake_received_at, shipped_at, delivered_at, created_at')
         .eq('quote_request_id', quoteRequest.id)
+        .eq('organization_id', orgId)
         .maybeSingle(),
       supabase
         .from('organizations')

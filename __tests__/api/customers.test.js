@@ -59,10 +59,8 @@ function makeProfileMock({ customerResult, ordersResult, quotesResult, paymentsR
   const quoteChain = makeListChain(quotesResult)
   const paymentChain = makeListChain(paymentsResult)
 
-  let callCount = { customers: 0, repair_orders: 0, quote_requests: 0, payments: 0 }
   const supabase = {
     from: jest.fn().mockImplementation((table) => {
-      callCount[table] = (callCount[table] || 0) + 1
       if (table === 'customers') return customerChain
       if (table === 'repair_orders') return orderChain
       if (table === 'quote_requests') return quoteChain

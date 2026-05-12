@@ -4,6 +4,11 @@ import { getSessionOrgId } from '../../../../../lib/admin/getSessionOrgId'
 
 export const runtime = 'nodejs'
 
+const TERMINAL_STATUSES = new Set([
+  'shipped', 'delivered', 'cancelled', 'declined',
+  'returned_unrepaired', 'beyond_economical_repair', 'no_fault_found',
+])
+
 export async function GET(request, context) {
   let orgId
   try {
@@ -69,11 +74,6 @@ export async function GET(request, context) {
       if (paymentsError) throw paymentsError
       totalPaid = (payments || []).reduce((sum, p) => sum + Number(p.amount || 0), 0)
     }
-
-    const TERMINAL_STATUSES = new Set([
-      'shipped', 'delivered', 'cancelled', 'declined',
-      'returned_unrepaired', 'beyond_economical_repair', 'no_fault_found',
-    ])
 
     // Build a quoteId → quote lookup for enriching orders
     const quoteById = Object.fromEntries(quotes.map((q) => [q.id, q]))

@@ -4,6 +4,11 @@ import { getSessionOrgId } from '../../../../lib/admin/getSessionOrgId'
 
 export const runtime = 'nodejs'
 
+const TERMINAL_STATUSES = new Set([
+  'shipped', 'delivered', 'cancelled', 'declined',
+  'returned_unrepaired', 'beyond_economical_repair', 'no_fault_found',
+])
+
 export async function GET() {
   let orgId
   try {
@@ -32,11 +37,6 @@ export async function GET() {
     if (ordersResult.error) throw ordersResult.error
 
     const orders = ordersResult.data || []
-
-    const TERMINAL_STATUSES = new Set([
-      'shipped', 'delivered', 'cancelled', 'declined',
-      'returned_unrepaired', 'beyond_economical_repair', 'no_fault_found',
-    ])
 
     const customers = (customersResult.data || []).map((c) => {
       const customerOrders = orders.filter((o) => o.customer_id === c.id)

@@ -35,26 +35,7 @@ export async function POST(request, context) {
       return NextResponse.json({ error: 'Quote not found.' }, { status: 404 })
     }
 
-    const customerEmail = quoteRequest.guest_email
-    if (!customerEmail) {
-      if (quoteRequest.customer_id) {
-        const { data: customer, error: custError } = await supabase
-          .from('customers')
-          .select('email')
-          .eq('id', quoteRequest.customer_id)
-          .eq('organization_id', orgId)
-          .maybeSingle()
-        if (custError) throw custError
-        if (!customer?.email) {
-          return NextResponse.json({ error: 'No customer email found for this order.' }, { status: 400 })
-        }
-        quoteRequest._resolvedEmail = customer.email
-      } else {
-        return NextResponse.json({ error: 'No customer email found for this order.' }, { status: 400 })
-      }
-    }
-
-    const toEmail = quoteRequest._resolvedEmail || quoteRequest.guest_email
+    const toEmailFromQuote = quoteRequest.guest_email || null
 
     // Fetch all invoice data in parallel
     const [orderResult, orgResult, customerResult] = await Promise.all([
@@ -81,6 +62,11 @@ export async function POST(request, context) {
     if (orderResult.error) throw orderResult.error
     if (orgResult.error) throw orgResult.error
     if (customerResult.error) throw customerResult.error
+
+    const toEmail = toEmailFromQuote || customerResult.data?.email || null
+    if (!toEmail) {
+      return NextResponse.json({ error: 'No customer email found for this order.' }, { status: 400 })
+    }
 
     const order = orderResult.data
     let estimateItems = []
