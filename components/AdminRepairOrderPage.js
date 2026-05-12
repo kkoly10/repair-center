@@ -739,25 +739,62 @@ function AdminRepairOrderInner({ quoteId }) {
             )}
 
             <div className='policy-card'>
-              <div className='kicker'>Status history</div>
-              <h3>Customer-visible timeline</h3>
+              <div className='kicker'>Activity log</div>
+              <h3>Order timeline</h3>
               <div className='preview-meta' style={{ marginTop: 18 }}>
-                {(record.history || []).length ? (
-                  record.history.map((item) => (
+                {(() => {
+                  const statusEvents = (record.history || []).map((item) => ({
+                    id: `s-${item.id}`,
+                    created_at: item.created_at,
+                    kind: 'status',
+                    label: formatStatusLabel(item.new_status),
+                    detail: item.note || null,
+                    internal: !item.customer_visible,
+                  }))
+                  const auditEvents = (record.auditLog || []).map((item) => {
+                    let label = item.event_type
+                    if (item.event_type === 'technician_assigned') {
+                      label = item.new_value ? `Tech assigned` : 'Tech unassigned'
+                    } else if (item.event_type === 'priority_changed') {
+                      label = `Priority → ${item.new_value || '—'}`
+                    } else if (item.event_type === 'due_date_changed') {
+                      label = item.new_value
+                        ? `Due date set: ${new Date(item.new_value).toLocaleDateString()}`
+                        : 'Due date cleared'
+                    }
+                    return {
+                      id: `a-${item.id}`,
+                      created_at: item.created_at,
+                      kind: 'audit',
+                      label,
+                      detail: null,
+                      internal: true,
+                    }
+                  })
+                  const timeline = [...statusEvents, ...auditEvents].sort(
+                    (a, b) => new Date(a.created_at) - new Date(b.created_at)
+                  )
+                  if (!timeline.length) {
+                    return (
+                      <div className='preview-meta-row'>
+                        <span>No timeline entries yet.</span>
+                        <span>—</span>
+                      </div>
+                    )
+                  }
+                  return timeline.map((item) => (
                     <div key={item.id} className='preview-meta-row'>
                       <span>
-                        {formatStatusLabel(item.new_status)}
-                        {item.note ? ` · ${item.note}` : ''}
+                        {item.internal ? (
+                          <span className='mini-chip' style={{ marginRight: 6, fontSize: 10 }}>internal</span>
+                        ) : null}
+                        {item.label}
+                        {item.detail ? ` · ${item.detail}` : ''}
                       </span>
-                      <span>{new Date(item.created_at).toLocaleString()}</span>
+                      <span style={{ whiteSpace: 'nowrap' }}>{new Date(item.created_at).toLocaleString()}</span>
                     </div>
                   ))
-                ) : (
-                  <div className='preview-meta-row'>
-                    <span>No timeline entries yet.</span>
-                    <span>—</span>
-                  </div>
-                )}
+                })()}
               </div>
             </div>
 
