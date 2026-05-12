@@ -56,13 +56,26 @@ export async function POST(request, context) {
     // duplicate payment rows on retry.
     const { data: existingPayment, error: existingPaymentError } = await supabase
       .from('payments')
-      .select('id')
+      .select('id, paid_at')
       .eq('repair_order_id', repairOrder.id)
       .eq('payment_kind', 'inspection_deposit')
       .eq('status', 'paid')
       .maybeSingle()
 
     if (existingPaymentError) throw existingPaymentError
+
+    // Partial-state recovery: payment record exists but order timestamp was never written
+    // (can happen if the previous update call failed after the insert succeeded).
+    if (existingPayment && !repairOrder.inspection_deposit_paid_at) {
+      const { error: repairError } = await supabase
+        .from('repair_orders')
+        .update({ inspection_deposit_paid_at: existingPayment.paid_at || new Date().toISOString() })
+        .eq('id', repairOrder.id)
+        .eq('organization_id', orgId)
+      if (repairError) throw repairError
+      return NextResponse.json({ ok: true })
+    }
+
     if (existingPayment || repairOrder.inspection_deposit_paid_at) {
       return NextResponse.json({ error: 'Deposit already marked as paid.' }, { status: 400 })
     }

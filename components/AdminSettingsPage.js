@@ -15,6 +15,8 @@ function AdminSettingsPageInner() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [orgSlug, setOrgSlug] = useState('')
+  const [copyFeedback, setCopyFeedback] = useState('')
 
   // Section 1 — Business Info
   const [orgName, setOrgName] = useState('')
@@ -70,6 +72,7 @@ function AdminSettingsPageInner() {
           setData(json)
 
           const org = json.org || {}
+          setOrgSlug(org.slug || '')
           setOrgName(org.name || '')
           setOrgPublicName(org.public_name || '')
           setOrgSupportEmail(org.support_email || '')
@@ -274,6 +277,52 @@ function AdminSettingsPageInner() {
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
+
+        <div className='info-card'>
+          <div className='kicker'>Admin — Settings</div>
+          <h1>Settings</h1>
+        </div>
+
+        {/* Shop Links */}
+        {orgSlug && (
+          <div className='policy-card'>
+            <h2 style={{ marginBottom: 12 }}>Your Shop</h2>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <a
+                href={`/shop/${orgSlug}`}
+                target='_blank'
+                rel='noreferrer'
+                className='button button-secondary button-compact'
+              >
+                Preview shop page
+              </a>
+              <a
+                href={`/shop/${orgSlug}/estimate`}
+                target='_blank'
+                rel='noreferrer'
+                className='button button-secondary button-compact'
+              >
+                Preview estimate form
+              </a>
+              <button
+                type='button'
+                className='button button-secondary button-compact'
+                onClick={() => {
+                  const url = `${window.location.origin}/shop/${orgSlug}`
+                  navigator.clipboard.writeText(url).then(() => {
+                    setCopyFeedback('Copied!')
+                    setTimeout(() => setCopyFeedback(''), 2000)
+                  })
+                }}
+              >
+                {copyFeedback || 'Copy shop link'}
+              </button>
+            </div>
+            <p style={{ fontSize: '0.84rem', color: 'var(--muted)', marginTop: 10 }}>
+              Public URL: <code style={{ fontSize: '0.82rem' }}>/shop/{orgSlug}</code>
+            </p>
+          </div>
+        )}
 
         {/* Section 1 — Business Info */}
         <div className='policy-card'>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../lib/supabase/admin'
 import { getDefaultOrgId } from '../../../lib/admin/org'
 import { checkRateLimit } from '../../../lib/rateLimiter'
+import { ALLOWED_PHOTO_MIME, MAX_PHOTO_BYTES, MAX_PHOTO_COUNT, extensionForMime } from '../../../lib/photoMime'
 
 export const runtime = 'nodejs'
 
@@ -65,7 +66,7 @@ export async function POST(request) {
     const priorRepairState = (formData.get('priorRepairState') || '').toString().trim()
     const dataState = (formData.get('dataState') || '').toString().trim()
     const allPhotoFiles = formData.getAll('photos').filter((item) => item && typeof item === 'object' && 'arrayBuffer' in item)
-    const photoFiles = allPhotoFiles.slice(0, 6)
+    const photoFiles = allPhotoFiles.slice(0, MAX_PHOTO_COUNT)
 
     if (!firstName || !email || !category || !modelKey || !repairKey || !issueDescription) {
       return NextResponse.json(
@@ -186,11 +187,6 @@ export async function POST(request) {
 
     if (quoteInsertError) throw quoteInsertError
 
-    const ALLOWED_PHOTO_MIME = new Set([
-      'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'image/gif',
-    ])
-    const MAX_PHOTO_BYTES = 10 * 1024 * 1024
-
     const photoWarnings = []
 
     for (let index = 0; index < photoFiles.length; index += 1) {
@@ -208,7 +204,7 @@ export async function POST(request) {
       }
 
       try {
-        const extension = getFileExtension(file.name)
+        const extension = extensionForMime(file.type)
         const fileName = `${Date.now()}-${index}.${extension}`
         const storagePath = `orgs/${orgId}/quotes/${quoteRequest.quote_id}/${fileName}`
         const arrayBuffer = await file.arrayBuffer()
@@ -267,11 +263,6 @@ function mapContactMethod(value) {
   if (value === 'Email') return 'email'
   if (value === 'Text') return 'text'
   return 'either'
-}
-
-function getFileExtension(fileName) {
-  const parts = fileName.split('.')
-  return parts.length > 1 ? parts.pop().toLowerCase() : 'jpg'
 }
 
 function inferPhotoType(index) {
