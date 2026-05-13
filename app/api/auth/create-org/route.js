@@ -83,6 +83,8 @@ export async function POST(request) {
       )
     }
 
+    const trialEndsAt = new Date(Date.now() + 14 * 86400000).toISOString()
+
     const { data: newOrg, error: orgInsertError } = await supabase
       .from('organizations')
       .insert({
@@ -91,6 +93,7 @@ export async function POST(request) {
         public_name: publicName || name,
         status: 'trialing',
         plan_key: 'beta',
+        trial_ends_at: trialEndsAt,
         created_by_user_id: userId,
       })
       .select('id, slug')

@@ -69,8 +69,9 @@ export async function proxy(request) {
     return NextResponse.redirect(loginUrl)
   }
 
+  const BLOCKED_STATUSES = new Set(['suspended', 'cancelled'])
   const orgStatus = membership.organizations?.status
-  if (orgStatus && orgStatus !== 'active' && !isAdminSuspended) {
+  if (orgStatus && BLOCKED_STATUSES.has(orgStatus) && !isAdminSuspended) {
     return NextResponse.redirect(new URL('/admin/suspended', request.url))
   }
 

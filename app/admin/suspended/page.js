@@ -15,6 +15,9 @@ export default function SuspendedPage() {
             Contact support to restore access, or sign in with a different account.
           </p>
           <div className='inline-actions' style={{ marginTop: 24, justifyContent: 'center' }}>
+            <Link href='/admin/billing' className='button button-primary'>
+              View billing &amp; subscription
+            </Link>
             <Link href='/admin/login' className='button button-secondary'>
               Sign in with different account
             </Link>

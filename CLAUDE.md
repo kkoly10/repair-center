@@ -331,8 +331,35 @@ All data comes from existing tables: `payments`, `repair_orders`, `quote_request
 
 ---
 
+## Sprint 14 — Platform Subscription Billing ✅ COMPLETE
+
+### Migration applied to production
+- `20260513_013_billing_subscriptions.sql` — adds `stripe_customer_id` (text, nullable) to `organizations`; creates `organization_subscriptions` table (PK: `organization_id`, columns: `stripe_customer_id`, `stripe_subscription_id`, `stripe_price_id`, `plan_key`, `status`, `trial_ends_at`, `current_period_end`, `cancel_at_period_end`, `created_at`, `updated_at`) with RLS (`is_org_member(organization_id)` for SELECT; service role only for writes)
+
+### What was done
+- **`proxy.js`** — fixed critical status gate bug from Sprint 13: changed `orgStatus !== 'active'` to `BLOCKED_STATUSES.has(orgStatus)` where `BLOCKED_STATUSES = new Set(['suspended', 'cancelled'])`; allows `'trialing'` and `'past_due'` through (Sprint 13 had locked out every new signup since `create-org` sets `status: 'trialing'`)
+- **`app/api/auth/create-org/route.js`** — now sets `trial_ends_at = now() + 14 days` on org creation
+- **`GET /admin/api/billing`** — returns `billing.{status, planKey, trialEndsAt, trialDaysLeft, currentPeriodEnd, cancelAtPeriodEnd, hasActiveSubscription, stripeCustomerId}` from `organizations` + `organization_subscriptions` join
+- **`POST /admin/api/billing/checkout`** — creates or reuses Stripe customer; creates Checkout session in `subscription` mode with `STRIPE_BILLING_PRICE_ID`; persists `stripe_customer_id` to `organizations` row on first use; returns `{ url }`
+- **`POST /admin/api/billing/portal`** — looks up `stripe_customer_id` from org or subscription row; creates Stripe Customer Portal session; returns `{ url }`; 400 if no subscription found
+- **`POST /api/billing/webhook`** — verifies `stripe-signature` with `STRIPE_BILLING_WEBHOOK_SECRET`; handles: `checkout.session.completed` (retrieves full subscription, upserts to `organization_subscriptions`, syncs org status), `customer.subscription.updated/deleted` (same upsert), `invoice.payment_succeeded` (same), `invoice.payment_failed` (marks org `past_due`)
+- **`components/AdminBillingPage.js`** + **`app/admin/billing/page.js`** — plan status card with trial countdown / renewal date / past-due warning / cancel warning; action buttons: "Upgrade to Pro" (→ checkout) for non-subscribers, "Manage Subscription" (→ portal) for existing subscribers; plan FAQ section
+- **`app/admin/suspended/page.js`** — updated: added "View billing & subscription" button linking to `/admin/billing`
+- **`__tests__/api/billing.test.js`** (new) — 12 tests: GET billing 401/trialing shape/active+sub shape; POST checkout 401/no-price-id-500/happy-path; POST portal 401/no-customer-400/happy-path; webhook bad-signature/checkout.completed upsert/missing-secret-500
+
+### Required env vars (new)
+- `STRIPE_BILLING_PRICE_ID` — Stripe price ID for the Pro plan (monthly/annual)
+- `STRIPE_BILLING_WEBHOOK_SECRET` — webhook signing secret for `/api/billing/webhook` (separate from `STRIPE_WEBHOOK_SECRET` used for repair payments)
+
+### Test suite after Sprint 14
+94 tests across 11 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
 - Service role key in `SUPABASE_SERVICE_ROLE_KEY` — used by `lib/supabase/admin.js`
-- Stripe webhook secret in `STRIPE_WEBHOOK_SECRET`
+- Stripe webhook secret for repair payments: `STRIPE_WEBHOOK_SECRET`
+- Stripe webhook secret for billing: `STRIPE_BILLING_WEBHOOK_SECRET`
+- Stripe billing price ID: `STRIPE_BILLING_PRICE_ID`
