@@ -16,7 +16,7 @@ export async function GET() {
 
   const { count, error } = await supabase
     .from('quote_requests')
-    .select('id', { count: 'exact', head: true })
+    .select('*', { count: 'exact', head: true })
     .eq('organization_id', orgId)
     .eq('status', 'submitted')
 

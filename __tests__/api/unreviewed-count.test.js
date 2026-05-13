@@ -80,7 +80,7 @@ describe('GET /admin/api/quotes/unreviewed-count', () => {
     await GET()
 
     expect(supabase.from).toHaveBeenCalledWith('quote_requests')
-    expect(supabase.chain.select).toHaveBeenCalledWith('id', { count: 'exact', head: true })
+    expect(supabase.chain.select).toHaveBeenCalledWith('*', { count: 'exact', head: true })
     // Verify eq was called with org filter
     const eqCalls = supabase.chain.eq.mock.calls
     expect(eqCalls.some(([col, val]) => col === 'organization_id' && val === 'org-42')).toBe(true)
