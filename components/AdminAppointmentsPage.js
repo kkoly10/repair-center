@@ -114,11 +114,12 @@ function AdminAppointmentsInner() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [truncated, setTruncated] = useState(false)
 
   useEffect(() => {
     fetch('/admin/api/appointments')
       .then((r) => (r.ok ? r.json() : r.json().then((d) => Promise.reject(d.error || 'Failed'))))
-      .then((d) => { setAppointments(d.appointments || []); setLoading(false) })
+      .then((d) => { setAppointments(d.appointments || []); setTruncated(!!d.truncated); setLoading(false) })
       .catch((err) => { setLoadError(String(err)); setLoading(false) })
   }, [])
 
@@ -148,6 +149,12 @@ function AdminAppointmentsInner() {
           <h1>Appointments</h1>
           <p>Manage drop-off appointment requests from customers.</p>
         </div>
+
+        {truncated && (
+          <div className='notice notice-warn'>
+            Showing the first 500 appointments. Export or filter by date range to see older records.
+          </div>
+        )}
 
         {/* Summary cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>

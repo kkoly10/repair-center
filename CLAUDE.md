@@ -669,3 +669,4 @@ To create a staging environment:
 - Stripe billing price ID: `STRIPE_BILLING_PRICE_ID`
 - Cron secret for `/api/cron/trial-check`: `CRON_SECRET` (optional)
 - HMAC token secret for email links: `EMAIL_LINK_SECRET` (optional but recommended; rotate to invalidate old links)
+- Default shop slug for legacy single-tenant routes: `NEXT_PUBLIC_DEFAULT_ORG_SLUG` / `DEFAULT_ORG_SLUG` (used by `EstimateForm` to fetch org-scoped pricing on the generic `/estimate` route)

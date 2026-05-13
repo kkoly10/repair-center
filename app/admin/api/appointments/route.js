@@ -19,9 +19,11 @@ export async function GET(request) {
   const from = searchParams.get('from')
   const to = searchParams.get('to')
 
+  const LIMIT = 500
+
   let query = supabase
     .from('appointments')
-    .select('id, first_name, last_name, email, phone, brand_name, model_name, repair_description, preferred_at, notes, status, confirmed_at, cancelled_at, cancellation_reason, quote_request_id, created_at')
+    .select('id, first_name, last_name, email, phone, brand_name, model_name, repair_description, preferred_at, notes, status, confirmed_at, cancelled_at, cancellation_reason, quote_request_id, created_at', { count: 'exact' })
     .eq('organization_id', orgId)
     .order('preferred_at', { ascending: true })
 
@@ -29,9 +31,9 @@ export async function GET(request) {
   if (from) query = query.gte('preferred_at', from)
   if (to) query = query.lte('preferred_at', to)
 
-  const { data: appointments, error } = await query.limit(200)
+  const { data: appointments, count, error } = await query.limit(LIMIT)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ ok: true, appointments: appointments || [] })
+  return NextResponse.json({ ok: true, appointments: appointments || [], total: count ?? 0, truncated: (count ?? 0) > LIMIT })
 }
