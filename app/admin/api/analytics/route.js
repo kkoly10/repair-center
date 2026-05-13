@@ -47,7 +47,7 @@ export async function GET(request) {
       (() => {
         let q = supabase
           .from('payments')
-          .select('id, kind, amount, repair_order_id')
+          .select('id, payment_kind, amount, repair_order_id')
           .eq('organization_id', orgId)
           .eq('status', 'paid')
         if (rangeStart) q = q.gte('created_at', rangeStart)
@@ -152,10 +152,10 @@ export async function GET(request) {
     // --- Revenue Metrics ---
     const totalRevenue = paidPayments.reduce((s, p) => s + Number(p.amount || 0), 0)
     const depositRevenue = paidPayments
-      .filter((p) => p.kind === 'inspection_deposit')
+      .filter((p) => p.payment_kind === 'inspection_deposit')
       .reduce((s, p) => s + Number(p.amount || 0), 0)
     const balanceRevenue = paidPayments
-      .filter((p) => p.kind === 'final_balance')
+      .filter((p) => p.payment_kind === 'final_balance')
       .reduce((s, p) => s + Number(p.amount || 0), 0)
     const prevRevenue = (prevResult.data || []).reduce((s, p) => s + Number(p.amount || 0), 0)
 
@@ -188,12 +188,12 @@ export async function GET(request) {
     // --- Collection Rates (deposits and balances vs all orders) ---
     const depositOrderIds = new Set(
       paidPayments
-        .filter((p) => p.kind === 'inspection_deposit' && p.repair_order_id)
+        .filter((p) => p.payment_kind === 'inspection_deposit' && p.repair_order_id)
         .map((p) => p.repair_order_id)
     )
     const balanceOrderIds = new Set(
       paidPayments
-        .filter((p) => p.kind === 'final_balance' && p.repair_order_id)
+        .filter((p) => p.payment_kind === 'final_balance' && p.repair_order_id)
         .map((p) => p.repair_order_id)
     )
     const totalOrders = repairOrders.length

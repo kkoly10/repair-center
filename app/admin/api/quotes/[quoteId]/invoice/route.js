@@ -79,7 +79,7 @@ export async function GET(request, context) {
           .maybeSingle(),
         supabase
           .from('payments')
-          .select('id, kind, amount, status, provider, created_at')
+          .select('id, payment_kind, amount, status, provider, created_at')
           .eq('repair_order_id', orderResult.data.id)
           .order('created_at', { ascending: true }),
       ])
@@ -153,7 +153,7 @@ export async function GET(request, context) {
         payments: payments
           .filter((p) => p.status === 'paid')
           .map((p) => ({
-            kind: p.kind,
+            kind: p.payment_kind,
             amount: p.amount,
             provider: p.provider,
             created_at: p.created_at,

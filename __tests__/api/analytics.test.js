@@ -4,7 +4,7 @@
  * Invariants:
  *  - Requires authentication (401 if not)
  *  - Payments filtered by organization_id
- *  - Uses 'kind' column (not 'payment_kind') and 'created_at' (not 'paid_at')
+ *  - Uses 'payment_kind' column and 'created_at' (not 'paid_at')
  *  - Revenue total computed from paid payments
  *  - Revenue by repair type aggregated via payment → order → quote join
  *  - Revenue by technician aggregated via payment → order → member join
@@ -106,8 +106,8 @@ describe('GET /admin/api/analytics', () => {
   it('computes total revenue from paid payment amounts', async () => {
     const { supabase } = makeSupabaseMock({
       paymentsData: [
-        { id: 'p-1', kind: 'inspection_deposit', amount: '100.00', repair_order_id: null },
-        { id: 'p-2', kind: 'final_balance', amount: '250.50', repair_order_id: null },
+        { id: 'p-1', payment_kind: 'inspection_deposit', amount: '100.00', repair_order_id: null },
+        { id: 'p-2', payment_kind: 'final_balance', amount: '250.50', repair_order_id: null },
       ],
     })
     getSupabaseAdmin.mockReturnValue(supabase)
@@ -122,12 +122,12 @@ describe('GET /admin/api/analytics', () => {
     expect(body.revenue.balances).toBeCloseTo(250.5)
   })
 
-  it('splits revenue correctly by kind (not payment_kind)', async () => {
+  it('splits revenue correctly by payment_kind', async () => {
     const { supabase } = makeSupabaseMock({
       paymentsData: [
-        { id: 'p-1', kind: 'inspection_deposit', amount: '75', repair_order_id: null },
-        { id: 'p-2', kind: 'final_balance', amount: '125', repair_order_id: null },
-        { id: 'p-3', kind: 'final_balance', amount: '50', repair_order_id: null },
+        { id: 'p-1', payment_kind: 'inspection_deposit', amount: '75', repair_order_id: null },
+        { id: 'p-2', payment_kind: 'final_balance', amount: '125', repair_order_id: null },
+        { id: 'p-3', payment_kind: 'final_balance', amount: '50', repair_order_id: null },
       ],
     })
     getSupabaseAdmin.mockReturnValue(supabase)
@@ -143,9 +143,9 @@ describe('GET /admin/api/analytics', () => {
   it('aggregates revenue by repair type via payment→order→quote join', async () => {
     const { supabase } = makeSupabaseMock({
       paymentsData: [
-        { id: 'p-1', kind: 'final_balance', amount: '150', repair_order_id: 'o-1' },
-        { id: 'p-2', kind: 'final_balance', amount: '200', repair_order_id: 'o-2' },
-        { id: 'p-3', kind: 'inspection_deposit', amount: '50', repair_order_id: 'o-1' },
+        { id: 'p-1', payment_kind: 'final_balance', amount: '150', repair_order_id: 'o-1' },
+        { id: 'p-2', payment_kind: 'final_balance', amount: '200', repair_order_id: 'o-2' },
+        { id: 'p-3', payment_kind: 'inspection_deposit', amount: '50', repair_order_id: 'o-1' },
       ],
       ordersData: [
         { id: 'o-1', current_status: 'delivered', customer_id: null, assigned_technician_id: null, quote_request_id: 'qr-1', intake_received_at: null, shipped_at: null },
@@ -173,8 +173,8 @@ describe('GET /admin/api/analytics', () => {
   it('aggregates revenue by technician using member profile names', async () => {
     const { supabase } = makeSupabaseMock({
       paymentsData: [
-        { id: 'p-1', kind: 'final_balance', amount: '300', repair_order_id: 'o-1' },
-        { id: 'p-2', kind: 'final_balance', amount: '150', repair_order_id: 'o-2' },
+        { id: 'p-1', payment_kind: 'final_balance', amount: '300', repair_order_id: 'o-1' },
+        { id: 'p-2', payment_kind: 'final_balance', amount: '150', repair_order_id: 'o-2' },
       ],
       ordersData: [
         { id: 'o-1', current_status: 'delivered', customer_id: null, assigned_technician_id: 'u-1', quote_request_id: null, intake_received_at: null, shipped_at: null },
