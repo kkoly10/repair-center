@@ -511,6 +511,33 @@ Add to `vercel.json` (Vercel Cron) or call from an external scheduler daily:
 
 ---
 
+## Sprint 23 — Appointment Scheduling ✅ COMPLETE
+
+### Migration applied to production
+- `20260514_018_appointments.sql` — `appointments` table: org-scoped, status enum (`pending`/`confirmed`/`cancelled`/`no_show`/`converted`), `preferred_at`, customer fields, optional `customer_id` + `quote_request_id` FKs; `updated_at` trigger; RLS via `is_org_member`
+
+### What was done
+- **`POST /api/appointments`** — public endpoint; resolves org by slug + active status check; validates future datetime; inserts appointment; fires `sendAppointmentConfirmationEmail` fire-and-forget
+- **`GET /admin/api/appointments`** — auth-gated; returns all org appointments ordered by `preferred_at`; supports `?status=`, `?from=`, `?to=` query params
+- **`PATCH /admin/api/appointments/[appointmentId]`** — auth-gated; verifies org ownership; updates `status`, `notes`, `preferred_at`, `cancellation_reason`; auto-sets `confirmed_at` and `cancelled_at` on status transitions; 400 on invalid status
+- **`lib/email.js`** — added `sendAppointmentConfirmationEmail({ to, orgName, firstName, preferredAt, device, repairDescription })`
+- **`components/BookingPage.js`** (new) — public booking form: name, email, phone, device brand/model, repair description, datetime picker (min = 1 hour from now); success state with email confirmation message
+- **`app/shop/[orgSlug]/book/page.js`** (new) — server component wrapper for `BookingPage`
+- **`components/AdminAppointmentsPage.js`** (new) — summary cards (pending, upcoming, total); status filter tabs with counts; table with confirm/no-show/cancel/convert-to-quote actions; status badges; PATCH on each action button
+- **`app/admin/appointments/page.js`** (new) — wrapper
+- **`components/AdminNav.js`** — "Appointments" link added; orange badge when pending count > 0 (fetches `/admin/api/appointments?status=pending` on mount)
+- **`app/shop/[orgSlug]/page.js`** — "Book Appointment" card added alongside estimate and track cards
+
+### Route added to public shop
+| URL | Description |
+|-----|-------------|
+| `/shop/[slug]/book` | Appointment booking form |
+
+### Test suite after Sprint 23
+165 tests across 18 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
