@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: '/admin/quotes', label: 'Quotes' },
   { href: '/admin/orders', label: 'Orders' },
   { href: '/admin/customers', label: 'Customers' },
+  { href: '/admin/reviews', label: 'Reviews' },
   { href: '/admin/analytics', label: 'Analytics' },
   { href: '/admin/sla', label: 'SLA' },
   { href: '/admin/parts', label: 'Parts' },
