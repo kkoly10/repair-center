@@ -169,6 +169,7 @@ describe('GET /admin/api/appointments', () => {
       gte: jest.fn().mockReturnThis(),
       lte: jest.fn().mockReturnThis(),
       order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
       then: (resolve) => resolve({ data: appts, error: null }),
     }
     getSupabaseAdmin.mockReturnValue({ from: jest.fn(() => chain) })
@@ -188,6 +189,7 @@ describe('GET /admin/api/appointments', () => {
       gte: jest.fn().mockReturnThis(),
       lte: jest.fn().mockReturnThis(),
       order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
       then: (resolve) => resolve({ data: [], error: null }),
     }
     getSupabaseAdmin.mockReturnValue({ from: jest.fn(() => chain) })

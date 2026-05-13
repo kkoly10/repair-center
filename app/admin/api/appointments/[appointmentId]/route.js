@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../lib/supabase/admin'
 import { getSessionOrgId } from '../../../../../lib/admin/getSessionOrgId'
+import { VALID_APPOINTMENT_STATUSES } from '../../../../../lib/admin/appointmentStatuses'
 
 export const runtime = 'nodejs'
-
-const VALID_STATUSES = ['pending', 'confirmed', 'cancelled', 'no_show', 'converted']
 
 export async function PATCH(request, context) {
   let orgId
@@ -46,7 +45,7 @@ export async function PATCH(request, context) {
     return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 })
   }
 
-  if (update.status && !VALID_STATUSES.includes(update.status)) {
+  if (update.status && !VALID_APPOINTMENT_STATUSES.includes(update.status)) {
     return NextResponse.json({ error: 'Invalid status.' }, { status: 400 })
   }
 

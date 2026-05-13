@@ -47,9 +47,9 @@ export default function AdminNav() {
       .then((r) => r.json())
       .then((json) => { if (typeof json.count === 'number') setUnreviewedCount(json.count) })
       .catch(() => {})
-    fetch('/admin/api/appointments?status=pending')
+    fetch('/admin/api/appointments/count')
       .then((r) => r.json())
-      .then((json) => { if (json.ok) setPendingAppointments((json.appointments || []).length) })
+      .then((json) => { if (typeof json.count === 'number') setPendingAppointments(json.count) })
       .catch(() => {})
   }, [])
 

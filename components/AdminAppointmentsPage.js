@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { useState, useEffect, useMemo } from 'react'
 
 const STATUS_LABELS = {
@@ -97,14 +98,10 @@ function AppointmentRow({ appt, onPatch }) {
             </>
           )}
           {appt.status === 'confirmed' && !appt.quote_request_id && (
-            <a
-              href={`/admin/quotes/new?appointmentId=${appt.id}&firstName=${encodeURIComponent(appt.first_name || '')}&lastName=${encodeURIComponent(appt.last_name || '')}&email=${encodeURIComponent(appt.email || '')}&brandName=${encodeURIComponent(appt.brand_name || '')}&modelName=${encodeURIComponent(appt.model_name || '')}`}
-              className='button button-small'
-              style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12 }}
-            >→ New Quote</a>
+            <Link href='/admin/quotes' style={{ fontSize: 12, color: '#6366f1' }}>→ Quotes</Link>
           )}
           {appt.quote_request_id && (
-            <a href={`/admin/quotes/${appt.quote_request_id}`} style={{ fontSize: 12, color: '#6366f1' }}>View quote →</a>
+            <Link href={`/admin/quotes/${appt.quote_request_id}`} style={{ fontSize: 12, color: '#6366f1' }}>View quote →</Link>
           )}
         </div>
       </td>

@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
 import { getSessionOrgId } from '../../../../lib/admin/getSessionOrgId'
+import { VALID_APPOINTMENT_STATUSES } from '../../../../lib/admin/appointmentStatuses'
 
 export const runtime = 'nodejs'
-
-const VALID_STATUSES = ['pending', 'confirmed', 'cancelled', 'no_show', 'converted']
 
 export async function GET(request) {
   let orgId
@@ -26,11 +25,11 @@ export async function GET(request) {
     .eq('organization_id', orgId)
     .order('preferred_at', { ascending: true })
 
-  if (status && VALID_STATUSES.includes(status)) query = query.eq('status', status)
+  if (status && VALID_APPOINTMENT_STATUSES.includes(status)) query = query.eq('status', status)
   if (from) query = query.gte('preferred_at', from)
   if (to) query = query.lte('preferred_at', to)
 
-  const { data: appointments, error } = await query
+  const { data: appointments, error } = await query.limit(200)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
