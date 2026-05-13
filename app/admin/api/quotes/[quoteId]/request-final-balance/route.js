@@ -44,6 +44,7 @@ export async function POST(request, context) {
       .from('repair_orders')
       .update({ current_status: nextStatus })
       .eq('id', record.repairOrder.id)
+      .eq('organization_id', orgId)
 
     if (orderUpdateError) throw orderUpdateError
 
