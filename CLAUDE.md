@@ -412,6 +412,25 @@ Add to `vercel.json` (Vercel Cron) or call from an external scheduler daily:
 
 ---
 
+## Sprint 17 — Internal Order Notes & Auto Customer Notifications ✅ COMPLETE
+
+### Migration applied to production
+- `20260513_016_order_notes.sql` — adds `notes text` (nullable) to `repair_orders` for internal staff use
+
+### What was done
+- **`PATCH /admin/api/orders/[orderId]`** — three additions:
+  1. Added `notes` to patchable fields; writes `note_updated` audit log entry (old_value / new_value)
+  2. Added `quote_request_id` to the initial SELECT (needed for notification lookup)
+  3. After a status change to a customer-facing status, fetches the latest `repair_order_status_history` row (written by DB trigger) to get a stable `historyId` for deduplication, then fires `sendRepairStatusNotification` fire-and-forget — customer gets email + SMS without blocking the response
+- **`CUSTOMER_NOTIFY_STATUSES`** — statuses that trigger customer notification: `inspection`, `repairing`, `awaiting_balance_payment`, `ready_to_ship`, `shipped`, `delivered`, `cancelled`, `returned_unrepaired`, `beyond_economical_repair`, `no_fault_found`
+- **`components/AdminRepairOrderPage.js`** — added "Staff notes" section: textarea + Save button; loads existing notes on mount (`result.order?.notes`); PATCH to `/admin/api/orders/{orderId}` with `{ notes }` body; success/error feedback
+- **`__tests__/api/orders-queue.test.js`** — 3 new tests: notes saves + audit entry, notification fires for customer-facing status, notification suppressed for internal-only status; also fixed missing `limit()` on mock chain
+
+### Test suite after Sprint 17
+105 tests across 12 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
