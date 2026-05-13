@@ -13,6 +13,13 @@ export default function BookingPage({ orgSlug, orgName }) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
+  // useState initializer runs once on mount — avoids impure Date.now() on every render
+  const [minDateStr] = useState(() => {
+    const d = new Date(Date.now() + 60 * 60 * 1000)
+    d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15, 0, 0)
+    return d.toISOString().slice(0, 16)
+  })
+
   function set(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
   }
@@ -45,7 +52,7 @@ export default function BookingPage({ orgSlug, orgName }) {
             <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
             <h1 style={{ margin: '0 0 8px' }}>Request Received!</h1>
             <p style={{ color: 'var(--muted)', maxWidth: 400, margin: '0 auto 24px' }}>
-              We'll review your request and send a confirmation email to <strong>{form.email}</strong> shortly.
+              We&apos;ll review your request and send a confirmation email to <strong>{form.email}</strong> shortly.
             </p>
             <a href={`/shop/${orgSlug}`} className='button button-secondary'>Back to {orgName}</a>
           </div>
@@ -54,18 +61,13 @@ export default function BookingPage({ orgSlug, orgName }) {
     )
   }
 
-  // Build a min datetime string (1 hour from now, rounded to 15 min)
-  const minDate = new Date(Date.now() + 60 * 60 * 1000)
-  minDate.setMinutes(Math.ceil(minDate.getMinutes() / 15) * 15, 0, 0)
-  const minDateStr = minDate.toISOString().slice(0, 16)
-
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='info-card'>
           <div className='kicker'>{orgName}</div>
           <h1>Book a Drop-Off Appointment</h1>
-          <p>Request a time to drop off your device. We'll confirm your appointment by email.</p>
+          <p>Request a time to drop off your device. We&apos;ll confirm your appointment by email.</p>
         </div>
 
         <form onSubmit={handleSubmit} className='policy-card' style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
