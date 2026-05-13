@@ -391,6 +391,27 @@ Add to `vercel.json` (Vercel Cron) or call from an external scheduler daily:
 
 ---
 
+## Sprint 16 — Global Search, SLA Dashboard & Production Fixes ✅ COMPLETE
+
+### Migrations applied to production
+- `20260513_015_profiles_email.sql` — **Critical fix**: `profiles` table was missing an `email` column; added `email text`, backfilled from `auth.users`, updated `handle_new_auth_user()` trigger to copy email on signup (required for trial warning emails to reach org owners)
+
+### What was done
+1. **`profiles.email` migration** — Trial warning cron was silently dropping emails because `getOwnerEmail()` selected `profiles(email)` but the column didn't exist
+2. **`vercel.json`** — added Vercel Cron schedule `0 9 * * *` for `/api/cron/trial-check`
+3. **`GET /admin/api/search?q=`** — cross-table search across `quote_requests`, `repair_orders`, `customers`; all org-scoped; returns empty for `q.length < 2`; results shaped as `{ type, id, title, subtitle, meta, status, href, createdAt }`; sorted by most recent `createdAt`
+4. **`components/AdminNav.js`** — sticky nav bar now includes debounced search box (300ms) with dropdown results; fetches `/admin/api/billing` on mount for trial/past-due banners; `searchFocused` state + derived `dropdownOpen = searchFocused && query.length >= 2` (avoids `react-hooks/set-state-in-effect` lint error)
+5. **`components/AdminSLAPage.js`** + **`app/admin/sla/page.js`** — SLA dashboard renders `/admin/api/sla` data (endpoint already existed); KPI cards for compliance %, overdue count, stuck count; overdue and stuck order tables; avg turnaround by repair type table
+6. **`__tests__/api/search.test.js`** — 8 tests: 401, empty for short query, empty for blank query, queries all 3 tables with org filter, quote/order/customer result shapes with correct hrefs, sorted by most recent
+
+### Lint fixes
+- `AdminNav.js` was using `setSearchOpen` (synchronous setState in effect) — replaced with `searchFocused` state + `dropdownOpen` derived constant; all state updates moved inside async `setTimeout` callback
+
+### Test suite after Sprint 16
+102 tests across 12 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
