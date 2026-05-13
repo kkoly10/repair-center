@@ -431,6 +431,24 @@ Add to `vercel.json` (Vercel Cron) or call from an external scheduler daily:
 
 ---
 
+## Sprint 18 — Deposit Mark-Paid UI + Request Final Balance ✅ COMPLETE
+
+### No migration needed
+
+### What was done
+- **`components/AdminRepairOrderPage.js`** — three additions:
+  1. **"Mark Deposit Paid" button** — appears in the action bar when `inspection_deposit_required > 0` and `inspection_deposit_paid_at` is null; calls `POST /admin/api/quotes/[quoteId]/deposit`; on success updates local order state and refreshes payment summary panel; shows inline success/error feedback
+  2. **"Request Final Balance" button** — appears when `paymentData.summary.finalBalanceDue > 0`; calls `POST /admin/api/quotes/[quoteId]/request-final-balance`; on success updates status and refreshes payment summary; shows amount due in button label
+  3. **Deposit status in quote summary** — new summary card shows deposit amount and Paid/Unpaid in green/red when deposit is required; disappears when no deposit is set
+
+### Remaining gaps (resolved)
+- ~~No UI button to mark deposit paid~~ — now implemented
+
+### Test suite after Sprint 18
+105 tests across 12 suites — all passing (no new test suite; UI-only change).
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
