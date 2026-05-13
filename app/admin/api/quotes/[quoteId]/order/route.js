@@ -65,12 +65,14 @@ export async function GET(request, context) {
             .from('customers')
             .select('id, first_name, last_name, email, phone')
             .eq('id', quoteRequest.customer_id)
+            .eq('organization_id', orgId)
             .maybeSingle()
         : Promise.resolve({ data: null, error: null }),
       supabase
         .from('repair_orders')
         .select('*')
         .eq('quote_request_id', quoteRequest.id)
+        .eq('organization_id', orgId)
         .maybeSingle(),
       supabase
         .from('organization_members')
@@ -250,6 +252,7 @@ export async function POST(request, context) {
       const { data: paidPayments, error: paymentsError } = await supabase
         .from('payments')
         .select('amount, status')
+        .eq('organization_id', orgId)
         .eq('repair_order_id', repairOrder.id)
         .eq('status', 'paid')
 
