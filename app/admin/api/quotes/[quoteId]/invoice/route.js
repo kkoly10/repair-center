@@ -72,7 +72,7 @@ export async function GET(request, context) {
       const [estimateResult, paymentsResult] = await Promise.all([
         supabase
           .from('quote_estimates')
-          .select('id, total_amount, deposit_amount, created_at')
+          .select('id, total_amount, created_at')
           .eq('quote_request_id', quoteRequest.id)
           .order('created_at', { ascending: false })
           .limit(1)
@@ -93,8 +93,8 @@ export async function GET(request, context) {
       if (estimate?.id) {
         const { data: items, error: itemsError } = await supabase
           .from('quote_estimate_items')
-          .select('id, description, quantity, unit_price, total_price')
-          .eq('quote_estimate_id', estimate.id)
+          .select('id, description, quantity, unit_amount, line_total')
+          .eq('estimate_id', estimate.id)
           .order('created_at', { ascending: true })
 
         if (itemsError) throw itemsError
@@ -141,14 +141,13 @@ export async function GET(request, context) {
         estimate: estimate
           ? {
               total_amount: estimate.total_amount,
-              deposit_amount: estimate.deposit_amount,
             }
           : null,
         line_items: estimateItems.map((i) => ({
           description: i.description,
           quantity: i.quantity,
-          unit_price: i.unit_price,
-          total_price: i.total_price,
+          unit_price: i.unit_amount,
+          total_price: i.line_total,
         })),
         payments: payments
           .filter((p) => p.status === 'paid')

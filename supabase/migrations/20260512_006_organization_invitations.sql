@@ -14,23 +14,23 @@ create table public.organization_invitations (
   created_at      timestamptz not null default now()
 );
 
-create index idx_org_invitations_org_id    on public.organization_invitations(organization_id);
-create index idx_org_invitations_token     on public.organization_invitations(token);
-create index idx_org_invitations_email     on public.organization_invitations(invited_email);
+create index if not exists idx_org_invitations_org_id    on public.organization_invitations(organization_id);
+create index if not exists idx_org_invitations_token     on public.organization_invitations(token);
+create index if not exists idx_org_invitations_email     on public.organization_invitations(invited_email);
 
 alter table public.organization_invitations enable row level security;
 
--- Org members can view pending invites for their org
+drop policy if exists "org_members_view_invitations" on public.organization_invitations;
 create policy "org_members_view_invitations"
   on public.organization_invitations for select to authenticated
   using (is_org_member(organization_id));
 
--- Org owners/admins can insert invitations
+drop policy if exists "org_admins_create_invitations" on public.organization_invitations;
 create policy "org_admins_create_invitations"
   on public.organization_invitations for insert to authenticated
   with check (has_org_role(organization_id, array['owner', 'admin']));
 
--- Org owners/admins can delete (cancel) invitations
+drop policy if exists "org_admins_delete_invitations" on public.organization_invitations;
 create policy "org_admins_delete_invitations"
   on public.organization_invitations for delete to authenticated
   using (has_org_role(organization_id, array['owner', 'admin']));

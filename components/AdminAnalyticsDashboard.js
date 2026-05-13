@@ -112,9 +112,7 @@ function AdminAnalyticsDashboardInner() {
   const quoteTrendSign = Number(quoteTrend) >= 0 ? '+' : ''
   const quoteTrendColor = Number(quoteTrend) >= 0 ? '#16a34a' : '#ef4444'
 
-  const prevConversionRate = funnel.prevTotalQuotes > 0
-    ? ((funnel.approved / funnel.prevTotalQuotes) * 100).toFixed(1)
-    : null
+  // prevConversionRate omitted — prev period approved count not available in response
 
   const funnelSteps = [
     { label: 'Submitted', count: funnel.totalQuotes },
@@ -173,7 +171,7 @@ function AdminAnalyticsDashboardInner() {
             )}
             {!funnel.prevTotalQuotes && (
               <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
-                {revenue.totalPayments} payments collected
+                {funnel.approved} approved
               </p>
             )}
           </div>
@@ -182,9 +180,6 @@ function AdminAnalyticsDashboardInner() {
             <h3>{conversionRate}%</h3>
             <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
               {funnel.approved} approved
-              {prevConversionRate !== null && (
-                <span> · prev {prevConversionRate}%</span>
-              )}
             </p>
           </div>
           <div className='feature-card'>

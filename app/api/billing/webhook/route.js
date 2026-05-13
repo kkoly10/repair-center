@@ -48,6 +48,9 @@ async function upsertSubscription(supabase, orgId, subscription) {
 }
 
 export async function POST(request) {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: 'Stripe not configured.' }, { status: 500 })
+  }
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
   const webhookSecret = process.env.STRIPE_BILLING_WEBHOOK_SECRET
 
@@ -57,6 +60,10 @@ export async function POST(request) {
 
   const body = await request.text()
   const sig = request.headers.get('stripe-signature')
+
+  if (!sig) {
+    return NextResponse.json({ error: 'Missing stripe-signature header.' }, { status: 400 })
+  }
 
   let event
   try {

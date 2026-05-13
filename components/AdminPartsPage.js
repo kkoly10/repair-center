@@ -140,6 +140,11 @@ function AdminPartsPageInner() {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Failed to update part.')
 
+      const newIsLowStock = Number(editForm.low_stock_threshold || 0) > 0 && Number(editForm.quantity_on_hand || 0) <= Number(editForm.low_stock_threshold || 0)
+      const oldPart = parts.find((p) => p.id === partId)
+      const wasLowStock = !!(oldPart?.is_low_stock && oldPart?.active)
+      const isNowLowStock = newIsLowStock && !!editForm.active
+
       setParts((prev) => prev.map((p) => p.id !== partId ? p : {
         ...p,
         name: editForm.name,
@@ -148,13 +153,12 @@ function AdminPartsPageInner() {
         cost_price: Number(editForm.cost_price || 0),
         quantity_on_hand: Number(editForm.quantity_on_hand || 0),
         low_stock_threshold: Number(editForm.low_stock_threshold || 0),
-        is_low_stock: Number(editForm.low_stock_threshold || 0) > 0 && Number(editForm.quantity_on_hand || 0) <= Number(editForm.low_stock_threshold || 0),
+        is_low_stock: newIsLowStock,
         active: editForm.active,
       }))
-      setLowStockCount((prev) => {
-        const updatedParts = parts.map((p) => p.id !== partId ? p : { ...p, is_low_stock: Number(editForm.low_stock_threshold || 0) > 0 && Number(editForm.quantity_on_hand || 0) <= Number(editForm.low_stock_threshold || 0), active: editForm.active })
-        return updatedParts.filter((p) => p.is_low_stock && p.active).length
-      })
+      if (wasLowStock !== isNowLowStock) {
+        setLowStockCount((prev) => prev + (isNowLowStock ? 1 : -1))
+      }
       setEditingId(null)
     } catch (err) {
       setEditError(err.message || 'Failed to update part.')

@@ -186,8 +186,25 @@ export async function finalizeDepositPayment({
       .select('id, order_number')
       .single()
 
-    if (orderError) throw orderError
-    repairOrder = newOrder
+    if (orderError) {
+      // 23505 = unique_violation — duplicate webhook delivery; re-fetch the existing order
+      if (orderError.code === '23505') {
+        const { data: racedOrder } = await supabase
+          .from('repair_orders')
+          .select('id, order_number')
+          .eq('quote_request_id', quoteRequestId)
+          .maybeSingle()
+        if (racedOrder) {
+          repairOrder = racedOrder
+        } else {
+          throw orderError
+        }
+      } else {
+        throw orderError
+      }
+    } else {
+      repairOrder = newOrder
+    }
 
     const { data: insertedPayment, error: insertPaymentError } = await supabase
       .from('payments')

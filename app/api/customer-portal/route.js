@@ -57,7 +57,7 @@ export async function POST(request) {
       .from('quote_requests')
       .select('*')
       .eq('organization_id', orgId)
-      .or(`customer_id.eq.${customer.id},guest_email.ilike.${email}`)
+      .or(`customer_id.eq.${customer.id},guest_email.eq.${email}`)
       .order('created_at', { ascending: false })
 
     if (quotesError) throw quotesError
@@ -70,6 +70,7 @@ export async function POST(request) {
       const { data: orders, error: ordersError } = await supabase
         .from('repair_orders')
         .select('*')
+        .eq('organization_id', orgId)
         .in('quote_request_id', quoteIds)
         .order('created_at', { ascending: false })
 
@@ -85,6 +86,7 @@ export async function POST(request) {
       const { data: paymentData, error: paymentsError } = await supabase
         .from('payments')
         .select('*')
+        .eq('organization_id', orgId)
         .in('repair_order_id', orderIds)
         .order('created_at', { ascending: false })
 

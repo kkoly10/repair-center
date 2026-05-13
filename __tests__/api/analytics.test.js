@@ -148,8 +148,8 @@ describe('GET /admin/api/analytics', () => {
         { id: 'p-3', payment_kind: 'inspection_deposit', amount: '50', repair_order_id: 'o-1' },
       ],
       ordersData: [
-        { id: 'o-1', current_status: 'delivered', customer_id: null, assigned_technician_id: null, quote_request_id: 'qr-1', intake_received_at: null, shipped_at: null },
-        { id: 'o-2', current_status: 'delivered', customer_id: null, assigned_technician_id: null, quote_request_id: 'qr-2', intake_received_at: null, shipped_at: null },
+        { id: 'o-1', current_status: 'delivered', customer_id: null, assigned_technician_user_id: null, quote_request_id: 'qr-1', intake_received_at: null, shipped_at: null },
+        { id: 'o-2', current_status: 'delivered', customer_id: null, assigned_technician_user_id: null, quote_request_id: 'qr-2', intake_received_at: null, shipped_at: null },
       ],
       quotesData: [
         { id: 'qr-1', status: 'delivered', device_category: null, brand_name: 'Apple', model_name: 'iPhone 14', repair_type_key: 'screen_repair' },
@@ -177,8 +177,8 @@ describe('GET /admin/api/analytics', () => {
         { id: 'p-2', payment_kind: 'final_balance', amount: '150', repair_order_id: 'o-2' },
       ],
       ordersData: [
-        { id: 'o-1', current_status: 'delivered', customer_id: null, assigned_technician_id: 'u-1', quote_request_id: null, intake_received_at: null, shipped_at: null },
-        { id: 'o-2', current_status: 'delivered', customer_id: null, assigned_technician_id: 'u-2', quote_request_id: null, intake_received_at: null, shipped_at: null },
+        { id: 'o-1', current_status: 'delivered', customer_id: null, assigned_technician_user_id: 'u-1', quote_request_id: null, intake_received_at: null, shipped_at: null },
+        { id: 'o-2', current_status: 'delivered', customer_id: null, assigned_technician_user_id: 'u-2', quote_request_id: null, intake_received_at: null, shipped_at: null },
       ],
       membersData: [
         { user_id: 'u-1', profiles: { full_name: 'Alice Smith' } },
@@ -202,9 +202,9 @@ describe('GET /admin/api/analytics', () => {
   it('computes repeat customer rate from orders per customer', async () => {
     const { supabase } = makeSupabaseMock({
       ordersData: [
-        { id: 'o-1', current_status: 'delivered', customer_id: 'c-1', assigned_technician_id: null, quote_request_id: null, intake_received_at: null, shipped_at: null },
-        { id: 'o-2', current_status: 'delivered', customer_id: 'c-1', assigned_technician_id: null, quote_request_id: null, intake_received_at: null, shipped_at: null },
-        { id: 'o-3', current_status: 'shipped', customer_id: 'c-2', assigned_technician_id: null, quote_request_id: null, intake_received_at: null, shipped_at: null },
+        { id: 'o-1', current_status: 'delivered', customer_id: 'c-1', assigned_technician_user_id: null, quote_request_id: null, intake_received_at: null, shipped_at: null },
+        { id: 'o-2', current_status: 'delivered', customer_id: 'c-1', assigned_technician_user_id: null, quote_request_id: null, intake_received_at: null, shipped_at: null },
+        { id: 'o-3', current_status: 'shipped', customer_id: 'c-2', assigned_technician_user_id: null, quote_request_id: null, intake_received_at: null, shipped_at: null },
       ],
       customersData: [{ id: 'c-1' }, { id: 'c-2' }],
     })
