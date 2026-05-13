@@ -67,6 +67,7 @@ export async function GET(request, context) {
       const { data: payments, error: paymentsError } = await supabase
         .from('payments')
         .select('repair_order_id, amount, status')
+        .eq('organization_id', orgId)
         .in('repair_order_id', orderIds)
         .eq('status', 'paid')
         .order('created_at', { ascending: true })
