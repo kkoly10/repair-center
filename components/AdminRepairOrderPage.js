@@ -108,6 +108,14 @@ function AdminRepairOrderInner({ quoteId }) {
   const [notesError, setNotesError] = useState('')
   const [notesSuccess, setNotesSuccess] = useState(false)
 
+  const [depositMarking, setDepositMarking] = useState(false)
+  const [depositMarkError, setDepositMarkError] = useState('')
+  const [depositMarkSuccess, setDepositMarkSuccess] = useState(false)
+
+  const [requestingBalance, setRequestingBalance] = useState(false)
+  const [requestBalanceError, setRequestBalanceError] = useState('')
+  const [requestBalanceSuccess, setRequestBalanceSuccess] = useState('')
+
   useEffect(() => {
     let ignore = false
 
@@ -253,6 +261,12 @@ function AdminRepairOrderInner({ quoteId }) {
   const paymentsPath = `/admin/quotes/${quoteId}/payments`
   const invoicePath = `/admin/quotes/${quoteId}/invoice`
 
+  const depositRequired = Number(record?.order?.inspection_deposit_required || 0)
+  const depositPaid = !!record?.order?.inspection_deposit_paid_at
+  const showMarkDepositPaid = depositRequired > 0 && !depositPaid
+  const finalBalanceDue = Number(paymentData?.summary?.finalBalanceDue || 0)
+  const showRequestFinalBalance = record?.order?.id && finalBalanceDue > 0
+
   const handleSendReceipt = async () => {
     if (sendingReceipt) return
     setSendingReceipt(true)
@@ -267,6 +281,60 @@ function AdminRepairOrderInner({ quoteId }) {
       setError(err.message)
     } finally {
       setSendingReceipt(false)
+    }
+  }
+
+  const handleMarkDepositPaid = async () => {
+    if (depositMarking) return
+    setDepositMarking(true)
+    setDepositMarkError('')
+    setDepositMarkSuccess(false)
+    try {
+      const res = await fetch(`/admin/api/quotes/${quoteId}/deposit`, { method: 'POST' })
+      const data = await res.json()
+      if (data.ok) {
+        setDepositMarkSuccess(true)
+        setRecord((prev) => ({
+          ...prev,
+          order: { ...prev.order, inspection_deposit_paid_at: new Date().toISOString() },
+        }))
+        const payRes = await fetch(`/admin/api/quotes/${quoteId}/payment-summary`, { cache: 'no-store' })
+        const payResult = await payRes.json().catch(() => null)
+        if (payRes.ok && payResult) setPaymentData(payResult)
+      } else {
+        setDepositMarkError(data.error || 'Failed to mark deposit paid.')
+      }
+    } catch (err) {
+      setDepositMarkError(err.message || 'Failed to mark deposit paid.')
+    } finally {
+      setDepositMarking(false)
+    }
+  }
+
+  const handleRequestFinalBalance = async () => {
+    if (requestingBalance) return
+    setRequestingBalance(true)
+    setRequestBalanceError('')
+    setRequestBalanceSuccess('')
+    try {
+      const res = await fetch(`/admin/api/quotes/${quoteId}/request-final-balance`, { method: 'POST' })
+      const data = await res.json()
+      if (data.ok) {
+        setRequestBalanceSuccess(`Balance request sent. Amount due: $${Number(data.amountDue).toFixed(2)}`)
+        if (data.status && record?.order) {
+          setRecord((prev) => ({ ...prev, order: { ...prev.order, current_status: data.status } }))
+          setStatus(data.status)
+        }
+        const payRes = await fetch(`/admin/api/quotes/${quoteId}/payment-summary`, { cache: 'no-store' })
+        const payResult = await payRes.json().catch(() => null)
+        if (payRes.ok && payResult) setPaymentData(payResult)
+      } else {
+        setRequestBalanceError(data.error || 'Failed to request final balance.')
+      }
+    } catch (err) {
+      setRequestBalanceError(err.message || 'Failed to request final balance.')
+    } finally {
+      setRequestingBalance(false)
     }
   }
 
@@ -570,6 +638,26 @@ function AdminRepairOrderInner({ quoteId }) {
             >
               Send Revised Estimate
             </Link>
+            {showMarkDepositPaid && (
+              <button
+                className='button button-compact'
+                style={{ background: '#16a34a', color: '#fff', border: 'none' }}
+                onClick={handleMarkDepositPaid}
+                disabled={depositMarking}
+              >
+                {depositMarking ? 'Marking…' : `Mark Deposit Paid ($${depositRequired.toFixed(2)})`}
+              </button>
+            )}
+            {showRequestFinalBalance && (
+              <button
+                className='button button-compact'
+                style={{ background: '#2d6bff', color: '#fff', border: 'none' }}
+                onClick={handleRequestFinalBalance}
+                disabled={requestingBalance}
+              >
+                {requestingBalance ? 'Sending…' : `Request Final Balance ($${finalBalanceDue.toFixed(2)})`}
+              </button>
+            )}
             <Link
               href={paymentsPath}
               className='button button-secondary button-compact'
@@ -592,6 +680,18 @@ function AdminRepairOrderInner({ quoteId }) {
               {sendingReceipt ? 'Sending…' : 'Send Receipt'}
             </button>
           </div>
+          {(depositMarkSuccess || depositMarkError || requestBalanceSuccess || requestBalanceError) && (
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {depositMarkSuccess && (
+                <div className='notice' style={{ color: '#16a34a' }}>Deposit marked as paid.</div>
+              )}
+              {depositMarkError && <div className='notice'>{depositMarkError}</div>}
+              {requestBalanceSuccess && (
+                <div className='notice' style={{ color: '#16a34a' }}>{requestBalanceSuccess}</div>
+              )}
+              {requestBalanceError && <div className='notice'>{requestBalanceError}</div>}
+            </div>
+          )}
 
           <div className='quote-summary'>
             <div className='quote-summary-card'>
@@ -606,6 +706,14 @@ function AdminRepairOrderInner({ quoteId }) {
               <strong>Current stage</strong>
               <span>{currentStatusLabel}</span>
             </div>
+            {depositRequired > 0 && (
+              <div className='quote-summary-card'>
+                <strong>Inspection deposit</strong>
+                <span style={{ color: depositPaid ? '#16a34a' : '#ef4444', fontWeight: 600 }}>
+                  ${depositRequired.toFixed(2)} · {depositPaid ? 'Paid' : 'Unpaid'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

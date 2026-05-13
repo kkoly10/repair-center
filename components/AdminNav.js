@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: '/admin/quotes', label: 'Quotes' },
   { href: '/admin/orders', label: 'Orders' },
   { href: '/admin/customers', label: 'Customers' },
+  { href: '/admin/reviews', label: 'Reviews' },
   { href: '/admin/analytics', label: 'Analytics' },
   { href: '/admin/sla', label: 'SLA' },
   { href: '/admin/parts', label: 'Parts' },
@@ -25,6 +26,7 @@ export default function AdminNav() {
   const pathname = usePathname()
   const router = useRouter()
   const [billing, setBilling] = useState(null)
+  const [unreviewedCount, setUnreviewedCount] = useState(0)
 
   // Search state
   const [query, setQuery] = useState('')
@@ -38,6 +40,10 @@ export default function AdminNav() {
     fetch('/admin/api/billing')
       .then((r) => r.json())
       .then((json) => { if (json.ok) setBilling(json.billing) })
+      .catch(() => {})
+    fetch('/admin/api/quotes/unreviewed-count')
+      .then((r) => r.json())
+      .then((json) => { if (typeof json.count === 'number') setUnreviewedCount(json.count) })
       .catch(() => {})
   }, [])
 
@@ -187,6 +193,23 @@ export default function AdminNav() {
                 }}
               >
                 {label}
+                {label === 'Quotes' && unreviewedCount > 0 && (
+                  <span style={{
+                    marginLeft: 5,
+                    background: 'var(--warn, #d97706)',
+                    color: '#fff',
+                    borderRadius: 10,
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    padding: '2px 5px',
+                    minWidth: 16,
+                    textAlign: 'center',
+                    display: 'inline-block',
+                  }}>
+                    {unreviewedCount > 99 ? '99+' : unreviewedCount}
+                  </span>
+                )}
                 {label === 'Billing' && showUrgentBanner && (
                   <span style={{
                     marginLeft: 4,

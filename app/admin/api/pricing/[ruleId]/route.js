@@ -65,3 +65,37 @@ export async function PATCH(request, context) {
     )
   }
 }
+
+export async function DELETE(request, context) {
+  let orgId
+  try {
+    orgId = await getSessionOrgId()
+  } catch (authError) {
+    return NextResponse.json({ error: authError.message }, { status: authError.status || 401 })
+  }
+
+  const supabase = getSupabaseAdmin()
+
+  const params = await context.params
+  const ruleId = params?.ruleId
+
+  const { data: existing, error: lookupError } = await supabase
+    .from('pricing_rules')
+    .select('id')
+    .eq('id', ruleId)
+    .eq('organization_id', orgId)
+    .maybeSingle()
+
+  if (lookupError) return NextResponse.json({ error: lookupError.message }, { status: 500 })
+  if (!existing) return NextResponse.json({ error: 'Pricing rule not found.' }, { status: 404 })
+
+  const { error: deleteError } = await supabase
+    .from('pricing_rules')
+    .delete()
+    .eq('id', ruleId)
+    .eq('organization_id', orgId)
+
+  if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 })
+
+  return NextResponse.json({ ok: true })
+}

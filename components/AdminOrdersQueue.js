@@ -234,6 +234,7 @@ function AdminOrdersQueueInner() {
               <p>Manage active repair orders, assign technicians, set priorities, and track due dates.</p>
             </div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <a href='/admin/api/export/orders' className='button button-secondary' download>Export CSV</a>
               <Link href='/admin/quotes' className='button button-secondary'>Quote requests</Link>
               <AdminSignOutButton />
             </div>
