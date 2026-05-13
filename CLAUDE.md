@@ -538,6 +538,42 @@ Add to `vercel.json` (Vercel Cron) or call from an external scheduler daily:
 
 ---
 
+## Sprint 24 — Repair Catalog Management ✅ COMPLETE
+
+### Migration applied to production
+- `20260514_019_org_catalog.sql` — adds nullable `organization_id` to `repair_catalog_brands`, `repair_catalog_models`, `repair_types` (`NULL` = global platform item; non-null = org-specific custom item); replaces global unique constraints on `slug`/`model_key`/`repair_key` with partial unique indexes (global items unique globally, org items unique per org); updates RLS: SELECT = global OR org member; INSERT/UPDATE/DELETE = org members on their own items only; indexes on `organization_id WHERE NOT NULL`
+
+### What was done
+- **`GET /admin/api/catalog/brands`** — returns global + org brands; marks each with `is_org_owned`
+- **`POST /admin/api/catalog/brands`** — creates org-specific brand; auto-generates slug from name + org ID prefix; validates category
+- **`PATCH /admin/api/catalog/brands/[brandId]`** — updates org-owned brand (name, category, active); 404 for global/cross-org items
+- **`DELETE /admin/api/catalog/brands/[brandId]`** — hard-deletes org-owned brand (cascades to models + pricing rules via DB FKs)
+- **`GET /admin/api/catalog/models`** — returns global + org models with brand join; `is_org_owned` flag
+- **`POST /admin/api/catalog/models`** — creates org-specific model; verifies brand is accessible (global or org-owned); auto-generates `model_key`
+- **`PATCH /admin/api/catalog/models/[modelId]`** — updates org-owned model; 404 for global/cross-org
+- **`DELETE /admin/api/catalog/models/[modelId]`** — hard-deletes org-owned model (cascades pricing rules)
+- **`GET /admin/api/catalog/repair-types`** — returns global + org repair types; `is_org_owned` flag
+- **`POST /admin/api/catalog/repair-types`** — creates org-specific repair type; auto-generates `repair_key`; validates price_mode_default
+- **`PATCH /admin/api/catalog/repair-types/[typeId]`** — updates org-owned repair type; 404 for global/cross-org
+- **`DELETE /admin/api/catalog/repair-types/[typeId]`** — hard-deletes (cascades pricing rules)
+- **`app/admin/api/catalog/route.js` (updated)** — GET now includes org-specific models and repair types in addition to global items (used by pricing rule creation form)
+- **`components/AdminCatalogPage.js`** (new) — three-tab admin page (Brands / Models / Repair Types); global items shown read-only with "Global" badge; org items have "Custom" badge + Edit/Delete buttons; inline edit rows; `+ Add` forms per tab; model tab includes brand selector and search
+- **`app/admin/catalog/page.js`** (new) — wrapper
+- **`components/AdminNav.js`** — "Catalog" link added between Parts and Staff
+- **`__tests__/api/catalog-management.test.js`** (new) — 17 tests: GET brands 401/org-filter/is_org_owned; POST brands 401/400-missing-name/400-bad-category/201-org-scoped; PATCH brands 404-cross-org/200-updates; DELETE brands 404-cross-org/200-deletes; POST models 400-no-brand/404-bad-brand/201-org-scoped; POST repair-types 400/201; DELETE repair-types 404/200
+- **`__tests__/api/pricing-create-delete.test.js` (updated)** — added `.or()` to catalog mock chains to match updated route
+
+### Key design decisions
+- Global catalog items are read-only for org admins — modifications require platform team action
+- Org-specific items coexist with global items in all selectors (pricing rule form, booking form)
+- Deleting org items cascades via existing DB FKs (brand → models → pricing_rules)
+- Slug/key auto-generation appends 8-char org ID prefix to avoid collisions with global items
+
+### Test suite after Sprint 24
+182 tests across 19 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
