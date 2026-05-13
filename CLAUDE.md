@@ -283,8 +283,9 @@ All data comes from existing tables: `payments`, `repair_orders`, `quote_request
 
 ## Sprint 12 — Inventory & Parts ✅ COMPLETE
 
-### Migration applied to production
-- `20260512_010_inventory.sql` — `suppliers`, `parts`, `repair_order_parts` tables with org-scoped RLS (`is_staff(organization_id)` FOR ALL)
+### Migrations applied to production
+- `20260512_010_inventory.sql` — `suppliers`, `parts`, `repair_order_parts` tables with org-scoped RLS; **originally used `is_staff(organization_id)` (a no-arg legacy function — bug), migration was corrected to `is_org_member(organization_id)` before applying**
+- `20260513_011_fix_inventory_rls.sql` — corrective migration: drops and recreates the three inventory RLS policies using `is_org_member(organization_id)`; also applied migration 010 correctly for the first time (original apply had failed silently due to the bad function call, leaving tables non-existent)
 
 ### What was done
 - **`GET /admin/api/parts`** — lists all org parts with nested `suppliers(name)` join; `is_low_stock` computed in JS (PostgREST column-to-column comparison not supported); `lowStockCount` returned; `?low_stock=1` filter post-fetch

@@ -22,8 +22,8 @@ ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS suppliers_staff_all ON suppliers;
 CREATE POLICY suppliers_staff_all ON suppliers
   FOR ALL
-  USING (is_staff(organization_id))
-  WITH CHECK (is_staff(organization_id));
+  USING (is_org_member(organization_id))
+  WITH CHECK (is_org_member(organization_id));
 
 -- ─── Parts catalog ────────────────────────────────────────────────────────────
 
@@ -50,8 +50,8 @@ ALTER TABLE parts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS parts_staff_all ON parts;
 CREATE POLICY parts_staff_all ON parts
   FOR ALL
-  USING (is_staff(organization_id))
-  WITH CHECK (is_staff(organization_id));
+  USING (is_org_member(organization_id))
+  WITH CHECK (is_org_member(organization_id));
 
 -- ─── Parts used per repair order ──────────────────────────────────────────────
 
@@ -75,5 +75,5 @@ ALTER TABLE repair_order_parts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS repair_order_parts_staff_all ON repair_order_parts;
 CREATE POLICY repair_order_parts_staff_all ON repair_order_parts
   FOR ALL
-  USING (is_staff(organization_id))
-  WITH CHECK (is_staff(organization_id));
+  USING (is_org_member(organization_id))
+  WITH CHECK (is_org_member(organization_id));
