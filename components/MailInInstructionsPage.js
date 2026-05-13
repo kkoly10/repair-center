@@ -152,8 +152,9 @@ export default function MailInInstructionsPage({ quoteId, orgSlug }) {
                   <h3>{record.instructions.businessName}</h3>
                   <p>
                     {record.instructions.receivingAddress.line1}
-                    <br />
-                    {record.instructions.receivingAddress.line2}
+                    {record.instructions.receivingAddress.line2 ? (
+                      <><br />{record.instructions.receivingAddress.line2}</>
+                    ) : null}
                     <br />
                     {record.instructions.receivingAddress.city},{' '}
                     {record.instructions.receivingAddress.state}{' '}

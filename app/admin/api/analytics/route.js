@@ -69,7 +69,7 @@ export async function GET(request) {
       // All repair orders (active count, turnaround, collection rates, repeat rate)
       supabase
         .from('repair_orders')
-        .select('id, current_status, customer_id, assigned_technician_id, quote_request_id, intake_received_at, shipped_at')
+        .select('id, current_status, customer_id, assigned_technician_user_id, quote_request_id, intake_received_at, shipped_at')
         .eq('organization_id', orgId)
         .limit(5000)
         .order('created_at', { ascending: false }),
@@ -177,8 +177,8 @@ export async function GET(request) {
     for (const p of paidPayments) {
       if (!p.repair_order_id) continue
       const order = orderById[p.repair_order_id]
-      if (!order?.assigned_technician_id) continue
-      const name = techNameById[order.assigned_technician_id] || 'Unassigned'
+      if (!order?.assigned_technician_user_id) continue
+      const name = techNameById[order.assigned_technician_user_id] || 'Unassigned'
       byTechMap[name] = (byTechMap[name] || 0) + Number(p.amount || 0)
     }
     const revenueByTech = Object.entries(byTechMap)

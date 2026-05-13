@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS organization_subscriptions (
 
 ALTER TABLE organization_subscriptions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS org_subscriptions_staff_read ON organization_subscriptions;
 CREATE POLICY org_subscriptions_staff_read ON organization_subscriptions
   FOR SELECT
   USING (is_org_member(organization_id));

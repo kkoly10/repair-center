@@ -77,14 +77,14 @@ export async function POST(request, context) {
       const [estimateResult, paymentsResult] = await Promise.all([
         supabase
           .from('quote_estimates')
-          .select('id, total_amount, deposit_amount, created_at')
+          .select('id, total_amount, created_at')
           .eq('quote_request_id', quoteRequest.id)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle(),
         supabase
           .from('payments')
-          .select('id, kind, amount, status, provider, created_at')
+          .select('id, payment_kind, amount, status, provider, created_at')
           .eq('repair_order_id', order.id)
           .order('created_at', { ascending: true }),
       ])
@@ -93,16 +93,22 @@ export async function POST(request, context) {
       if (paymentsResult.error) throw paymentsResult.error
 
       estimate = estimateResult.data
-      payments = (paymentsResult.data || []).filter((p) => p.status === 'paid')
+      payments = (paymentsResult.data || [])
+        .filter((p) => p.status === 'paid')
+        .map((p) => ({ ...p, kind: p.payment_kind }))
 
       if (estimate?.id) {
         const { data: items, error: itemsError } = await supabase
           .from('quote_estimate_items')
-          .select('description, quantity, unit_price, total_price')
-          .eq('quote_estimate_id', estimate.id)
+          .select('description, quantity, unit_amount, line_total')
+          .eq('estimate_id', estimate.id)
           .order('created_at', { ascending: true })
         if (itemsError) throw itemsError
-        estimateItems = items || []
+        estimateItems = (items || []).map((i) => ({
+          description: i.description,
+          quantity: i.quantity,
+          total_price: i.line_total,
+        }))
       }
     }
 
@@ -135,7 +141,7 @@ export async function POST(request, context) {
               delivered_at: order.delivered_at,
             }
           : null,
-        estimate: estimate ? { total_amount: estimate.total_amount, deposit_amount: estimate.deposit_amount } : null,
+        estimate: estimate ? { total_amount: estimate.total_amount } : null,
         line_items: estimateItems,
         payments,
       },

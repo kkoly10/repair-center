@@ -52,15 +52,34 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, error: 'No account found' })
     }
 
-    // 2. Query quote_requests scoped to this org where customer_id matches OR guest_email matches
-    const { data: quotes, error: quotesError } = await supabase
-      .from('quote_requests')
-      .select('*')
-      .eq('organization_id', orgId)
-      .or(`customer_id.eq.${customer.id},guest_email.ilike.${email}`)
-      .order('created_at', { ascending: false })
+    // 2. Query quote_requests scoped to this org where customer_id matches OR guest_email matches.
+    // Two separate parameterized queries avoid string-interpolation injection risk while keeping
+    // case-insensitive guest_email matching (ilike) for mixed-case legacy records.
+    const [byCustomerResult, byGuestEmailResult] = await Promise.all([
+      supabase
+        .from('quote_requests')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('customer_id', customer.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('quote_requests')
+        .select('*')
+        .eq('organization_id', orgId)
+        .ilike('guest_email', email)
+        .order('created_at', { ascending: false }),
+    ])
 
-    if (quotesError) throw quotesError
+    if (byCustomerResult.error) throw byCustomerResult.error
+    if (byGuestEmailResult.error) throw byGuestEmailResult.error
+
+    const quoteMap = new Map()
+    for (const q of [...(byCustomerResult.data || []), ...(byGuestEmailResult.data || [])]) {
+      quoteMap.set(q.id, q)
+    }
+    const quotes = Array.from(quoteMap.values()).sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    )
 
     // 3. For each quote with a repair order, get the repair order details
     const quoteIds = (quotes || []).map((q) => q.id)
@@ -70,6 +89,7 @@ export async function POST(request) {
       const { data: orders, error: ordersError } = await supabase
         .from('repair_orders')
         .select('*')
+        .eq('organization_id', orgId)
         .in('quote_request_id', quoteIds)
         .order('created_at', { ascending: false })
 
@@ -85,6 +105,7 @@ export async function POST(request) {
       const { data: paymentData, error: paymentsError } = await supabase
         .from('payments')
         .select('*')
+        .eq('organization_id', orgId)
         .in('repair_order_id', orderIds)
         .order('created_at', { ascending: false })
 
