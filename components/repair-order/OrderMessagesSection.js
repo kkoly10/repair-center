@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 
 export default function OrderMessagesSection({ quoteId }) {
   const [messages, setMessages] = useState([])
-  const [messagesLoading, setMessagesLoading] = useState(false)
+  const [messagesLoading, setMessagesLoading] = useState(true)
   const [messageBody, setMessageBody] = useState('')
   const [messageInternalOnly, setMessageInternalOnly] = useState(false)
   const [messageSending, setMessageSending] = useState(false)
@@ -14,7 +14,6 @@ export default function OrderMessagesSection({ quoteId }) {
 
   useEffect(() => {
     let ignore = false
-    setMessagesLoading(true)
 
     fetch(`/admin/api/quotes/${quoteId}/messages`, { cache: 'no-store' })
       .then((r) => r.json())

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 export default function OrderPartsSection({ orderId }) {
   const [partsUsed, setPartsUsed] = useState([])
   const [partsTotalCost, setPartsTotalCost] = useState(0)
-  const [partsLoading, setPartsLoading] = useState(false)
+  const [partsLoading, setPartsLoading] = useState(true)
   const [partsError, setPartsError] = useState('')
   const [availableParts, setAvailableParts] = useState([])
   const [addPartId, setAddPartId] = useState('')
@@ -17,7 +17,6 @@ export default function OrderPartsSection({ orderId }) {
   useEffect(() => {
     if (!orderId) return
     let ignore = false
-    setPartsLoading(true)
 
     Promise.all([
       fetch(`/admin/api/orders/${orderId}/parts`, { cache: 'no-store' }),
