@@ -449,6 +449,68 @@ Add to `vercel.json` (Vercel Cron) or call from an external scheduler daily:
 
 ---
 
+## Sprint 19 — New Quote Admin Alerts + Unreviewed Count Badge ✅ COMPLETE
+
+### What was done
+- **`app/api/quote-requests/route.js`** — fire-and-forget admin alert after quote creation: fetches org name + owner/admin emails from `organization_members`, calls `sendNewQuoteAlertEmail`
+- **`app/admin/api/quotes/unreviewed-count/route.js`** (new) — GET; counts `status = 'submitted'` quote_requests for session org; returns `{ count }`
+- **`components/AdminNav.js`** — fetches unreviewed count on mount alongside billing; orange badge on Quotes link when count > 0 (shows "99+" for counts > 99)
+- **`lib/email.js`** — added `sendNewQuoteAlertEmail({ to, orgName, quoteId, customerName, device, repairType })`; `emailWrapper` parameterized with optional `footerNote` so admin alerts use appropriate footer text
+
+### Test suite after Sprint 19
+110 tests across 16 suites — all passing.
+
+---
+
+## Sprint 20 — Customer Reviews + Follow-Up Automation ✅ COMPLETE
+
+### Migration applied to production
+- `20260514_017_repair_reviews.sql` — `repair_reviews` table: org-scoped, unique per `quote_request_id`, rating 1–5 check, source enum (`email_link`/`web`/`manual`)
+
+### What was done
+- **`POST /api/review/[quoteId]`** — public; validates rating 1–5; inserts review; 409 on duplicate
+- **`app/review/[quoteId]/page.js`** — server component; reads `?rating=` param, clamps 1–5, passes `initialRating` to `CustomerReviewPage`
+- **`components/CustomerReviewPage.js`** — 'use client'; auto-submits from email star link via useEffect; manual star picker + textarea; thank-you state; 409 treated as already submitted
+- **`GET /api/cron/follow-up`** — CRON_SECRET required; sends review requests for orders shipped 3 days ago; warranty reminders 7 days before expiry (bounded lower by `repair_completed_at >= now - 372 days`)
+- **`GET /admin/api/reviews`** — auth-gated; joins `quote_requests`; returns reviews + `{ total, avgRating, distribution }`
+- **`components/AdminReviewsPage.js`** — star distribution cards, search, table
+- **`vercel.json`** — added `/api/cron/follow-up` at `0 10 * * *`
+
+### Test suite after Sprint 20
+125 tests across 17 suites — all passing.
+
+---
+
+## Sprint 21 — CSV Data Export ✅ COMPLETE
+
+### What was done
+- **`lib/csvExport.js`** (new) — `csvRow(values)` (RFC 4180 escaping), `csvResponse(rows, filename)`, `fmtAmount(cents)`, `fmtDate(iso)`
+- **`GET /admin/api/export/customers`** — customers + aggregated order stats + payments; columns: Name, Email, Phone, Orders, Completed, Total Paid, Repeat, Joined
+- **`GET /admin/api/export/orders`** — selects `assigned_technician_user_id`, deduplicates, queries `organization_members` by `user_id` for names (workaround: no direct FK from `repair_orders` to `organization_members`); columns: Order #, Quote ID, Customer, Email, Device, Repair Type, Status, Priority, Technician, Due Date, Total Paid, Created
+- **`GET /admin/api/export/reviews`** — rating, customer, device, comment, source
+- **`AdminCustomersPage`**, **`AdminOrdersQueue`**, **`AdminReviewsPage`** — "Export CSV" `<a download>` buttons added
+
+### Test suite after Sprint 21
+136 tests across 16 suites — all passing.
+
+---
+
+## Sprint 22 — Pricing Rule Creation + Deletion ✅ COMPLETE
+
+### No migration needed
+`quote_requests.selected_pricing_rule_id` already has `ON DELETE SET NULL` from Sprint 5 migration, so hard-delete of pricing rules is safe.
+
+### What was done
+- **`GET /admin/api/catalog`** (new) — returns all active catalog models (with brand join), all repair types, and existing rule keys for the org as `"modelId:repairTypeId"` strings; used by add-rule form for duplicate detection
+- **`POST /admin/api/pricing`** — new handler on existing route; validates `modelId` + `repairTypeId` required, `priceMode` in [`fixed`, `range`, `manual`]; verifies model + repair type exist via parallel `maybySingle`; inserts org-scoped rule; 409 on `23505` unique violation; returns 201
+- **`DELETE /admin/api/pricing/[ruleId]`** — new handler on existing route; verifies org ownership via `maybySingle` → 404 if not found; hard-deletes; returns `{ ok: true }`
+- **`components/AdminPricingPage.js`** — major rewrite: "+ Add Rule" button in header; expandable add form with model selector grouped by `category — brand` (optgroup), repair type selector, price fields conditional on mode; inline duplicate warning when selected combination already exists; delete button per rule card with `window.confirm` guard; lazy catalog load on first "+ Add Rule" click
+
+### Test suite after Sprint 22
+151 tests across 17 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
