@@ -37,6 +37,8 @@ export async function proxy(request) {
   const pathname = request.nextUrl.pathname
   const isAdminPath = pathname.startsWith('/admin')
   const isAdminLogin = pathname === '/admin/login'
+  // Allow suspended/billing through so blocked users can manage their subscription
+  const isBlockedStatusBypass = pathname === '/admin/suspended' || pathname.startsWith('/admin/billing')
 
   if (!isAdminPath) return response
 
@@ -56,7 +58,7 @@ export async function proxy(request) {
 
   const { data: membership } = await supabase
     .from('organization_members')
-    .select('role')
+    .select('role, organization_id, organizations(status, trial_ends_at)')
     .eq('user_id', user.id)
     .eq('status', 'active')
     .in('role', ['owner', 'admin', 'tech'])
@@ -66,6 +68,17 @@ export async function proxy(request) {
     const loginUrl = new URL('/admin/login', request.url)
     loginUrl.searchParams.set('error', 'unauthorized')
     return NextResponse.redirect(loginUrl)
+  }
+
+  const BLOCKED_STATUSES = new Set(['suspended', 'cancelled'])
+  const orgStatus = membership.organizations?.status
+  const trialEndsAt = membership.organizations?.trial_ends_at
+
+  // Lazily expire trials: if org is still 'trialing' but trial_ends_at has passed, block access
+  const trialExpired = orgStatus === 'trialing' && trialEndsAt && new Date(trialEndsAt) < new Date()
+
+  if ((trialExpired || (orgStatus && BLOCKED_STATUSES.has(orgStatus))) && !isBlockedStatusBypass) {
+    return NextResponse.redirect(new URL('/admin/suspended', request.url))
   }
 
   return response

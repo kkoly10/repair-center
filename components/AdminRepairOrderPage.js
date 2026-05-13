@@ -103,6 +103,11 @@ function AdminRepairOrderInner({ quoteId }) {
   const [addPartSaving, setAddPartSaving] = useState(false)
   const [addPartError, setAddPartError] = useState('')
 
+  const [internalNotes, setInternalNotes] = useState('')
+  const [notesSaving, setNotesSaving] = useState(false)
+  const [notesError, setNotesError] = useState('')
+  const [notesSuccess, setNotesSuccess] = useState(false)
+
   useEffect(() => {
     let ignore = false
 
@@ -132,6 +137,7 @@ function AdminRepairOrderInner({ quoteId }) {
           setStatus(result.order?.current_status || 'awaiting_mail_in')
           setTechnicianNote(result.order?.technician_note || '')
           setTechnicianId(result.order?.assigned_technician_user_id || '')
+          setInternalNotes(result.order?.notes || '')
 
           const returnShipment = (result.shipments || []).find(
             (item) => item.shipment_type === 'return'
@@ -301,20 +307,25 @@ function AdminRepairOrderInner({ quoteId }) {
 
   const handleRemovePart = async (usageId) => {
     if (!record?.order?.id) return
+    setPartsError('')
     try {
       const res = await fetch(
         `/admin/api/orders/${record.order.id}/parts?usageId=${usageId}`,
         { method: 'DELETE' }
       )
-      if (!res.ok) return
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        setPartsError(json.error || 'Failed to remove part.')
+        return
+      }
       const usageRes = await fetch(`/admin/api/orders/${record.order.id}/parts`, { cache: 'no-store' })
       const usageJson = await usageRes.json()
       if (usageRes.ok) {
         setPartsUsed(usageJson.partsUsed || [])
         setPartsTotalCost(usageJson.totalPartsCost || 0)
       }
-    } catch {
-      // silent
+    } catch (err) {
+      setPartsError(err.message || 'Failed to remove part.')
     }
   }
 
@@ -464,6 +475,28 @@ function AdminRepairOrderInner({ quoteId }) {
       setMessageError(err.message || 'Unable to mark messages as read.')
     } finally {
       setMarkingMessagesRead(false)
+    }
+  }
+
+  const handleSaveNotes = async (e) => {
+    e.preventDefault()
+    setNotesSaving(true)
+    setNotesError('')
+    setNotesSuccess(false)
+    try {
+      const res = await fetch(`/admin/api/orders/${record.order.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: internalNotes }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to save notes.')
+      setNotesSuccess(true)
+      setTimeout(() => setNotesSuccess(false), 3000)
+    } catch (err) {
+      setNotesError(err.message || 'Failed to save notes.')
+    } finally {
+      setNotesSaving(false)
     }
   }
 
@@ -1147,6 +1180,28 @@ function AdminRepairOrderInner({ quoteId }) {
                   </div>
                 </form>
               </div>
+            )}
+
+            {record.order && (
+              <form className='policy-card' onSubmit={handleSaveNotes}>
+                <div className='kicker'>Internal</div>
+                <h3>Staff notes</h3>
+                <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginTop: 4, marginBottom: 12 }}>
+                  Private notes visible only to staff — not shared with the customer.
+                </p>
+                <textarea
+                  value={internalNotes}
+                  onChange={(e) => setInternalNotes(e.target.value)}
+                  rows={4}
+                  placeholder='Add internal notes about this repair…'
+                  style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', marginBottom: 10 }}
+                />
+                {notesError && <p className='notice notice-error' style={{ marginBottom: 8 }}>{notesError}</p>}
+                {notesSuccess && <p className='notice notice-success' style={{ marginBottom: 8 }}>Notes saved.</p>}
+                <button type='submit' className='button' disabled={notesSaving}>
+                  {notesSaving ? 'Saving…' : 'Save notes'}
+                </button>
+              </form>
             )}
 
             <div className='policy-card'>

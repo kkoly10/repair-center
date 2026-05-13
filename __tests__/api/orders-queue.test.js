@@ -6,13 +6,18 @@
  *  - GET always scopes queries by organization_id
  *  - PATCH verifies order ownership before mutating (cross-org attempt → 404)
  *  - PATCH update query always includes organization_id filter
+ *  - PATCH supports notes field; writes audit entry
+ *  - PATCH fires sendRepairStatusNotification for customer-facing status transitions
+ *  - PATCH does NOT notify for non-customer-facing status transitions
  */
 
 jest.mock('../../lib/admin/getSessionOrgId')
 jest.mock('../../lib/supabase/admin')
+jest.mock('../../lib/notifications')
 
 const { getSessionOrgId, getSessionContext } = require('../../lib/admin/getSessionOrgId')
 const { getSupabaseAdmin } = require('../../lib/supabase/admin')
+const { sendRepairStatusNotification } = require('../../lib/notifications')
 const { GET } = require('../../app/admin/api/orders/route')
 const { PATCH } = require('../../app/admin/api/orders/[orderId]/route')
 
@@ -40,6 +45,7 @@ function makeChain({
     is: jest.fn().mockReturnThis(),
     in: jest.fn().mockReturnThis(),
     ilike: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
     order: jest.fn().mockReturnThis(),
     range: jest.fn().mockResolvedValue(rangeResult),
     single: jest.fn().mockResolvedValue(singleResult),
@@ -160,6 +166,8 @@ describe('PATCH /admin/api/orders/[orderId]', () => {
             current_status: 'inspection',
             priority: 'normal',
             due_at: null,
+            notes: null,
+            quote_request_id: 'qr-1',
             assigned_technician_user_id: null,
             intake_received_at: null,
             repair_started_at: null,
@@ -234,6 +242,8 @@ describe('PATCH /admin/api/orders/[orderId]', () => {
             current_status: 'repairing',
             priority: 'normal',
             due_at: null,
+            notes: null,
+            quote_request_id: 'qr-1',
             assigned_technician_user_id: null,
             intake_received_at: null,
             repair_started_at: null,
@@ -268,5 +278,134 @@ describe('PATCH /admin/api/orders/[orderId]', () => {
         expect.objectContaining({ event_type: 'due_date_changed', new_value: '2026-05-15T00:00:00Z' }),
       ])
     )
+  })
+
+  it('saves notes and writes a note_updated audit entry', async () => {
+    const { chain } = makeChain({
+      maybySingleQueue: [
+        {
+          data: {
+            id: 'ro-1',
+            order_number: 'RCO-001',
+            current_status: 'repairing',
+            priority: 'normal',
+            due_at: null,
+            notes: 'old note',
+            quote_request_id: 'qr-1',
+            assigned_technician_user_id: null,
+            intake_received_at: null,
+            repair_started_at: null,
+            repair_completed_at: null,
+            shipped_at: null,
+            delivered_at: null,
+          },
+          error: null,
+        },
+      ],
+      singleResult: {
+        data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'repairing', priority: 'normal', due_at: null, notes: 'new note', assigned_technician_user_id: null },
+        error: null,
+      },
+    })
+    getSupabaseAdmin.mockReturnValue(chain)
+    getSessionContext.mockResolvedValue({ orgId: 'org-a', userId: 'user-1' })
+
+    const res = await PATCH(makeRequest({ notes: 'new note' }), makeCtx('ro-1'))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(chain.insert).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ event_type: 'note_updated', old_value: 'old note', new_value: 'new note' }),
+      ])
+    )
+  })
+
+  it('fires sendRepairStatusNotification for customer-facing status transitions', async () => {
+    sendRepairStatusNotification.mockResolvedValue({ ok: true })
+
+    const { chain } = makeChain({
+      maybySingleQueue: [
+        // order fetch
+        {
+          data: {
+            id: 'ro-1',
+            order_number: 'RCO-001',
+            current_status: 'repairing',
+            priority: 'normal',
+            due_at: null,
+            notes: null,
+            quote_request_id: 'qr-1',
+            assigned_technician_user_id: null,
+            intake_received_at: null,
+            repair_started_at: null,
+            repair_completed_at: null,
+            shipped_at: null,
+            delivered_at: null,
+          },
+          error: null,
+        },
+        // status history fetch (for dedup key)
+        { data: { id: 'hist-1' }, error: null },
+      ],
+      singleResult: {
+        data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'awaiting_balance_payment', priority: 'normal', due_at: null, notes: null, assigned_technician_user_id: null },
+        error: null,
+      },
+    })
+    getSupabaseAdmin.mockReturnValue(chain)
+    getSessionContext.mockResolvedValue({ orgId: 'org-a', userId: 'user-1' })
+
+    const res = await PATCH(makeRequest({ status: 'awaiting_balance_payment' }), makeCtx('ro-1'))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(sendRepairStatusNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        quoteRequestId: 'qr-1',
+        repairOrderId: 'ro-1',
+        historyId: 'hist-1',
+        status: 'awaiting_balance_payment',
+      })
+    )
+  })
+
+  it('does NOT fire sendRepairStatusNotification for internal-only status transitions', async () => {
+    sendRepairStatusNotification.mockResolvedValue({ ok: true })
+
+    const { chain } = makeChain({
+      maybySingleQueue: [
+        {
+          data: {
+            id: 'ro-1',
+            order_number: 'RCO-001',
+            current_status: 'received',
+            priority: 'normal',
+            due_at: null,
+            notes: null,
+            quote_request_id: 'qr-1',
+            assigned_technician_user_id: null,
+            intake_received_at: null,
+            repair_started_at: null,
+            repair_completed_at: null,
+            shipped_at: null,
+            delivered_at: null,
+          },
+          error: null,
+        },
+      ],
+      singleResult: {
+        data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'waiting_parts', priority: 'normal', due_at: null, notes: null, assigned_technician_user_id: null },
+        error: null,
+      },
+    })
+    getSupabaseAdmin.mockReturnValue(chain)
+    getSessionContext.mockResolvedValue({ orgId: 'org-a', userId: 'user-1' })
+
+    await PATCH(makeRequest({ status: 'waiting_parts' }), makeCtx('ro-1'))
+
+    expect(sendRepairStatusNotification).not.toHaveBeenCalled()
   })
 })

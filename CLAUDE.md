@@ -283,8 +283,9 @@ All data comes from existing tables: `payments`, `repair_orders`, `quote_request
 
 ## Sprint 12 — Inventory & Parts ✅ COMPLETE
 
-### Migration applied to production
-- `20260512_010_inventory.sql` — `suppliers`, `parts`, `repair_order_parts` tables with org-scoped RLS (`is_staff(organization_id)` FOR ALL)
+### Migrations applied to production
+- `20260512_010_inventory.sql` — `suppliers`, `parts`, `repair_order_parts` tables with org-scoped RLS; **originally used `is_staff(organization_id)` (a no-arg legacy function — bug), migration was corrected to `is_org_member(organization_id)` before applying**
+- `20260513_011_fix_inventory_rls.sql` — corrective migration: drops and recreates the three inventory RLS policies using `is_org_member(organization_id)`; also applied migration 010 correctly for the first time (original apply had failed silently due to the bad function call, leaving tables non-existent)
 
 ### What was done
 - **`GET /admin/api/parts`** — lists all org parts with nested `suppliers(name)` join; `is_low_stock` computed in JS (PostgREST column-to-column comparison not supported); `lowStockCount` returned; `?low_stock=1` filter post-fetch
@@ -304,8 +305,137 @@ All data comes from existing tables: `payments`, `repair_orders`, `quote_request
 
 ---
 
+## Sprint 13 — Quick Wins: Hardening to 10/10 ✅ COMPLETE
+
+### Migrations applied to production
+- `20260513_012_revoke_anon_helpers.sql` — `REVOKE EXECUTE FROM anon` on all six SECURITY DEFINER RLS helper functions (`is_org_member`, `has_org_role`, `get_user_org_id`, `is_staff`, `is_admin`, `current_user_role`); prevents unauthenticated callers from enumerating org membership via Supabase RPC endpoint
+
+### What was done
+- **`proxy.js`** — added org status enforcement: membership query now joins `organizations(status)`; if status ≠ `'active'`, redirects to `/admin/suspended` (allows `/admin/suspended` itself through to avoid redirect loop)
+- **`app/admin/suspended/page.js`** (new) — placeholder suspended/access-restricted page; Sprint 14 (billing) will replace with full billing management flow
+- **`lib/admin/org.js`** — removed module-level `_cachedOrgId` cache from `getDefaultOrgId()`; caching the first org ID globally was incorrect in multi-tenant context (warm Node.js process would serve one org's fallback to all tenants); also added `.eq('status', 'active')` filter so suspended orgs are excluded from fallback resolution
+- **`app/admin/api/analytics/route.js`** — analytics funnel is now period-specific: added `funnelResult` (range-filtered quote_requests) and `prevFunnelResult` (prev period quote count) to the Promise.all; `totalQuotes` now reflects the selected date range; `funnel.prevTotalQuotes` returned for trend comparison on dashboard
+- **`components/AdminAnalyticsDashboard.js`** — Total Quotes KPI card now shows prev-period percentage trend (same pattern as Revenue card); Conversion Rate card shows prev period rate as secondary stat
+- **`__tests__/api/analytics.test.js`** — updated mock to handle 4 `quote_requests` calls (allQuotes, funnel, prevFunnel, recent); 2 new tests: `prevTotalQuotes` returned correctly, funnel query applies `created_at` range filter; 11 tests total in suite
+
+### What this sprint fixed (gap → resolved)
+| Gap | Fix |
+|---|---|
+| `REVOKE EXECUTE FROM anon` not done on helper functions | Migration 012 applied to production |
+| `organizations.status` not enforced — suspended orgs could log in | `proxy.js` now gates on org status |
+| `getDefaultOrgId()` had a process-lifetime cache | Cache removed; `status=active` filter added |
+| Analytics prev-period comparison only on Revenue KPI | Now also on Total Quotes and Conversion Rate |
+
+### Test suite after Sprint 13
+82 tests across 10 suites — all passing.
+
+---
+
+## Sprint 14 — Platform Subscription Billing ✅ COMPLETE
+
+### Migration applied to production
+- `20260513_013_billing_subscriptions.sql` — adds `stripe_customer_id` (text, nullable) to `organizations`; creates `organization_subscriptions` table (PK: `organization_id`, columns: `stripe_customer_id`, `stripe_subscription_id`, `stripe_price_id`, `plan_key`, `status`, `trial_ends_at`, `current_period_end`, `cancel_at_period_end`, `created_at`, `updated_at`) with RLS (`is_org_member(organization_id)` for SELECT; service role only for writes)
+
+### What was done
+- **`proxy.js`** — fixed critical status gate bug from Sprint 13: changed `orgStatus !== 'active'` to `BLOCKED_STATUSES.has(orgStatus)` where `BLOCKED_STATUSES = new Set(['suspended', 'cancelled'])`; allows `'trialing'` and `'past_due'` through (Sprint 13 had locked out every new signup since `create-org` sets `status: 'trialing'`)
+- **`app/api/auth/create-org/route.js`** — now sets `trial_ends_at = now() + 14 days` on org creation
+- **`GET /admin/api/billing`** — returns `billing.{status, planKey, trialEndsAt, trialDaysLeft, currentPeriodEnd, cancelAtPeriodEnd, hasActiveSubscription, stripeCustomerId}` from `organizations` + `organization_subscriptions` join
+- **`POST /admin/api/billing/checkout`** — creates or reuses Stripe customer; creates Checkout session in `subscription` mode with `STRIPE_BILLING_PRICE_ID`; persists `stripe_customer_id` to `organizations` row on first use; returns `{ url }`
+- **`POST /admin/api/billing/portal`** — looks up `stripe_customer_id` from org or subscription row; creates Stripe Customer Portal session; returns `{ url }`; 400 if no subscription found
+- **`POST /api/billing/webhook`** — verifies `stripe-signature` with `STRIPE_BILLING_WEBHOOK_SECRET`; handles: `checkout.session.completed` (retrieves full subscription, upserts to `organization_subscriptions`, syncs org status), `customer.subscription.updated/deleted` (same upsert), `invoice.payment_succeeded` (same), `invoice.payment_failed` (marks org `past_due`)
+- **`components/AdminBillingPage.js`** + **`app/admin/billing/page.js`** — plan status card with trial countdown / renewal date / past-due warning / cancel warning; action buttons: "Upgrade to Pro" (→ checkout) for non-subscribers, "Manage Subscription" (→ portal) for existing subscribers; plan FAQ section
+- **`app/admin/suspended/page.js`** — updated: added "View billing & subscription" button linking to `/admin/billing`
+- **`__tests__/api/billing.test.js`** (new) — 12 tests: GET billing 401/trialing shape/active+sub shape; POST checkout 401/no-price-id-500/happy-path; POST portal 401/no-customer-400/happy-path; webhook bad-signature/checkout.completed upsert/missing-secret-500
+
+### Required env vars (new)
+- `STRIPE_BILLING_PRICE_ID` — Stripe price ID for the Pro plan (monthly/annual)
+- `STRIPE_BILLING_WEBHOOK_SECRET` — webhook signing secret for `/api/billing/webhook` (separate from `STRIPE_WEBHOOK_SECRET` used for repair payments)
+
+### Test suite after Sprint 14
+94 tests across 11 suites — all passing.
+
+---
+
+## Sprint 15 — Billing Enforcement + Admin Navigation ✅ COMPLETE
+
+### Migrations applied to production
+- `20260513_014_trial_warning_sent_at.sql` — adds `trial_warning_sent_at` (timestamptz, nullable) to `organizations`; used by cron to avoid sending duplicate warning emails
+
+### What was done
+- **`proxy.js`** — two hardening improvements:
+  1. Lazy trial expiry enforcement: if `status === 'trialing'` AND `trial_ends_at < now()`, user is redirected to `/admin/suspended` (same as suspended/cancelled); fires on every request without a separate cron DB write
+  2. Extended blocked-status bypass: now covers both `/admin/suspended` AND `/admin/billing/*` so expired/suspended users can reach billing to subscribe and restore access
+  Also adds `trial_ends_at` to the org join (`organizations(status, trial_ends_at)`)
+- **`components/AdminNav.js`** (new) — shared client-side nav component: sticky top bar with links to all 9 admin sections; active page highlighted; fetches `/admin/api/billing` on mount to show trial countdown banner (yellow < 7 days, red ≤ 3 days / expired) and past-due banner; orange dot on Billing nav link when urgency is active; sign-out button
+- **`app/admin/layout.js`** — wires `AdminNav` above the page Suspense boundary so every admin page has the nav
+- **`lib/email.js`** — added `sendTrialExpiryWarningEmail({ to, orgName, daysLeft, billingUrl })` + `trialExpiryWarningHtml()` template (urgent color coding, "Upgrade Now" CTA button)
+- **`GET /api/cron/trial-check`** — daily cron endpoint (authorized via `CRON_SECRET` Bearer token if set):
+  - Fetches all `status = 'trialing'` orgs with `trial_ends_at` set
+  - **Expires** overdue trials: updates `status = 'suspended'` + sends expiry email to org owner
+  - **Warns** orgs with ≤ 3 days left: sends warning email (3d and 1d thresholds); throttled to once per 20h via `trial_warning_sent_at`
+  - Returns `{ ok, processed, expired, warned, errors }`
+
+### New env vars
+- `CRON_SECRET` — optional; if set, `GET /api/cron/trial-check` requires `Authorization: Bearer $CRON_SECRET`
+
+### How to schedule
+Add to `vercel.json` (Vercel Cron) or call from an external scheduler daily:
+```json
+{
+  "crons": [{ "path": "/api/cron/trial-check", "schedule": "0 8 * * *" }]
+}
+```
+
+### Test suite after Sprint 15
+94 tests across 11 suites — all passing (no new test suite; enforcement is covered by existing billing + proxy logic).
+
+---
+
+## Sprint 16 — Global Search, SLA Dashboard & Production Fixes ✅ COMPLETE
+
+### Migrations applied to production
+- `20260513_015_profiles_email.sql` — **Critical fix**: `profiles` table was missing an `email` column; added `email text`, backfilled from `auth.users`, updated `handle_new_auth_user()` trigger to copy email on signup (required for trial warning emails to reach org owners)
+
+### What was done
+1. **`profiles.email` migration** — Trial warning cron was silently dropping emails because `getOwnerEmail()` selected `profiles(email)` but the column didn't exist
+2. **`vercel.json`** — added Vercel Cron schedule `0 9 * * *` for `/api/cron/trial-check`
+3. **`GET /admin/api/search?q=`** — cross-table search across `quote_requests`, `repair_orders`, `customers`; all org-scoped; returns empty for `q.length < 2`; results shaped as `{ type, id, title, subtitle, meta, status, href, createdAt }`; sorted by most recent `createdAt`
+4. **`components/AdminNav.js`** — sticky nav bar now includes debounced search box (300ms) with dropdown results; fetches `/admin/api/billing` on mount for trial/past-due banners; `searchFocused` state + derived `dropdownOpen = searchFocused && query.length >= 2` (avoids `react-hooks/set-state-in-effect` lint error)
+5. **`components/AdminSLAPage.js`** + **`app/admin/sla/page.js`** — SLA dashboard renders `/admin/api/sla` data (endpoint already existed); KPI cards for compliance %, overdue count, stuck count; overdue and stuck order tables; avg turnaround by repair type table
+6. **`__tests__/api/search.test.js`** — 8 tests: 401, empty for short query, empty for blank query, queries all 3 tables with org filter, quote/order/customer result shapes with correct hrefs, sorted by most recent
+
+### Lint fixes
+- `AdminNav.js` was using `setSearchOpen` (synchronous setState in effect) — replaced with `searchFocused` state + `dropdownOpen` derived constant; all state updates moved inside async `setTimeout` callback
+
+### Test suite after Sprint 16
+102 tests across 12 suites — all passing.
+
+---
+
+## Sprint 17 — Internal Order Notes & Auto Customer Notifications ✅ COMPLETE
+
+### Migration applied to production
+- `20260513_016_order_notes.sql` — adds `notes text` (nullable) to `repair_orders` for internal staff use
+
+### What was done
+- **`PATCH /admin/api/orders/[orderId]`** — three additions:
+  1. Added `notes` to patchable fields; writes `note_updated` audit log entry (old_value / new_value)
+  2. Added `quote_request_id` to the initial SELECT (needed for notification lookup)
+  3. After a status change to a customer-facing status, fetches the latest `repair_order_status_history` row (written by DB trigger) to get a stable `historyId` for deduplication, then fires `sendRepairStatusNotification` fire-and-forget — customer gets email + SMS without blocking the response
+- **`CUSTOMER_NOTIFY_STATUSES`** — statuses that trigger customer notification: `inspection`, `repairing`, `awaiting_balance_payment`, `ready_to_ship`, `shipped`, `delivered`, `cancelled`, `returned_unrepaired`, `beyond_economical_repair`, `no_fault_found`
+- **`components/AdminRepairOrderPage.js`** — added "Staff notes" section: textarea + Save button; loads existing notes on mount (`result.order?.notes`); PATCH to `/admin/api/orders/{orderId}` with `{ notes }` body; success/error feedback
+- **`__tests__/api/orders-queue.test.js`** — 3 new tests: notes saves + audit entry, notification fires for customer-facing status, notification suppressed for internal-only status; also fixed missing `limit()` on mock chain
+
+### Test suite after Sprint 17
+105 tests across 12 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
 - Service role key in `SUPABASE_SERVICE_ROLE_KEY` — used by `lib/supabase/admin.js`
-- Stripe webhook secret in `STRIPE_WEBHOOK_SECRET`
+- Stripe webhook secret for repair payments: `STRIPE_WEBHOOK_SECRET`
+- Stripe webhook secret for billing: `STRIPE_BILLING_WEBHOOK_SECRET`
+- Stripe billing price ID: `STRIPE_BILLING_PRICE_ID`
+- Cron secret for `/api/cron/trial-check`: `CRON_SECRET` (optional)

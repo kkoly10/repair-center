@@ -4,12 +4,13 @@
  * Invariants:
  *  - Requires authentication (401 if not)
  *  - Payments filtered by organization_id
- *  - Uses 'kind' column (not 'payment_kind') and 'created_at' (not 'paid_at')
+ *  - Uses 'payment_kind' column and 'created_at' (not 'paid_at')
  *  - Revenue total computed from paid payments
  *  - Revenue by repair type aggregated via payment → order → quote join
  *  - Revenue by technician aggregated via payment → order → member join
  *  - Repeat customer rate computed from orders-per-customer
  *  - Range param forwarded in response
+ *  - Funnel is period-specific; prevTotalQuotes returned for trend comparison
  */
 
 jest.mock('../../lib/admin/getSessionOrgId')
@@ -27,7 +28,9 @@ function makeSupabaseMock({
   paymentsData = [],
   prevData = [],
   ordersData = [],
-  quotesData = [],
+  quotesData = [],      // all-time quotes (device popularity, join lookup)
+  funnelData = null,    // range-filtered funnel quotes (defaults to quotesData)
+  prevFunnelData = [],  // prev period funnel quotes
   recentData = [],
   membersData = [],
   customersData = [],
@@ -45,12 +48,15 @@ function makeSupabaseMock({
   }
 
   let paymentsCallCount = 0
+  // quote_requests is called 4 times: allQuotes, funnel, prevFunnel, recent
   let quotesCallCount = 0
 
   const paidChain = makeListChain({ data: paymentsData, error: null })
   const prevChain = makeListChain({ data: prevData, error: null })
   const ordersChain = makeListChain({ data: ordersData, error: null })
   const quotesChain = makeListChain({ data: quotesData, error: null })
+  const funnelChain = makeListChain({ data: funnelData ?? quotesData, error: null })
+  const prevFunnelChain = makeListChain({ data: prevFunnelData, error: null })
   const recentChain = makeListChain({ data: recentData, error: null })
   const membersChain = makeListChain({ data: membersData, error: null })
   const customersChain = makeListChain({ data: customersData, error: null })
@@ -64,14 +70,17 @@ function makeSupabaseMock({
       if (table === 'repair_orders') return ordersChain
       if (table === 'quote_requests') {
         quotesCallCount++
-        return quotesCallCount === 1 ? quotesChain : recentChain
+        if (quotesCallCount === 1) return quotesChain      // all-time quotes
+        if (quotesCallCount === 2) return funnelChain      // range-filtered funnel
+        if (quotesCallCount === 3) return prevFunnelChain  // prev period funnel
+        return recentChain                                 // recent 10
       }
       if (table === 'organization_members') return membersChain
       if (table === 'customers') return customersChain
       return makeListChain({ data: [], error: null })
     }),
   }
-  return { supabase, paidChain }
+  return { supabase, paidChain, funnelChain }
 }
 
 describe('GET /admin/api/analytics', () => {
@@ -97,8 +106,8 @@ describe('GET /admin/api/analytics', () => {
   it('computes total revenue from paid payment amounts', async () => {
     const { supabase } = makeSupabaseMock({
       paymentsData: [
-        { id: 'p-1', kind: 'inspection_deposit', amount: '100.00', repair_order_id: null },
-        { id: 'p-2', kind: 'final_balance', amount: '250.50', repair_order_id: null },
+        { id: 'p-1', payment_kind: 'inspection_deposit', amount: '100.00', repair_order_id: null },
+        { id: 'p-2', payment_kind: 'final_balance', amount: '250.50', repair_order_id: null },
       ],
     })
     getSupabaseAdmin.mockReturnValue(supabase)
@@ -113,12 +122,12 @@ describe('GET /admin/api/analytics', () => {
     expect(body.revenue.balances).toBeCloseTo(250.5)
   })
 
-  it('splits revenue correctly by kind (not payment_kind)', async () => {
+  it('splits revenue correctly by payment_kind', async () => {
     const { supabase } = makeSupabaseMock({
       paymentsData: [
-        { id: 'p-1', kind: 'inspection_deposit', amount: '75', repair_order_id: null },
-        { id: 'p-2', kind: 'final_balance', amount: '125', repair_order_id: null },
-        { id: 'p-3', kind: 'final_balance', amount: '50', repair_order_id: null },
+        { id: 'p-1', payment_kind: 'inspection_deposit', amount: '75', repair_order_id: null },
+        { id: 'p-2', payment_kind: 'final_balance', amount: '125', repair_order_id: null },
+        { id: 'p-3', payment_kind: 'final_balance', amount: '50', repair_order_id: null },
       ],
     })
     getSupabaseAdmin.mockReturnValue(supabase)
@@ -134,9 +143,9 @@ describe('GET /admin/api/analytics', () => {
   it('aggregates revenue by repair type via payment→order→quote join', async () => {
     const { supabase } = makeSupabaseMock({
       paymentsData: [
-        { id: 'p-1', kind: 'final_balance', amount: '150', repair_order_id: 'o-1' },
-        { id: 'p-2', kind: 'final_balance', amount: '200', repair_order_id: 'o-2' },
-        { id: 'p-3', kind: 'inspection_deposit', amount: '50', repair_order_id: 'o-1' },
+        { id: 'p-1', payment_kind: 'final_balance', amount: '150', repair_order_id: 'o-1' },
+        { id: 'p-2', payment_kind: 'final_balance', amount: '200', repair_order_id: 'o-2' },
+        { id: 'p-3', payment_kind: 'inspection_deposit', amount: '50', repair_order_id: 'o-1' },
       ],
       ordersData: [
         { id: 'o-1', current_status: 'delivered', customer_id: null, assigned_technician_id: null, quote_request_id: 'qr-1', intake_received_at: null, shipped_at: null },
@@ -158,15 +167,14 @@ describe('GET /admin/api/analytics', () => {
     const battery = body.revenueByType.find((r) => r.repairType === 'battery_replacement')
     expect(screen.amount).toBe(200) // 150 + 50
     expect(battery.amount).toBe(200)
-    // sorted descending by amount (tied, so order is stable)
     expect(body.revenueByType[0].amount).toBeGreaterThanOrEqual(body.revenueByType[1].amount)
   })
 
   it('aggregates revenue by technician using member profile names', async () => {
     const { supabase } = makeSupabaseMock({
       paymentsData: [
-        { id: 'p-1', kind: 'final_balance', amount: '300', repair_order_id: 'o-1' },
-        { id: 'p-2', kind: 'final_balance', amount: '150', repair_order_id: 'o-2' },
+        { id: 'p-1', payment_kind: 'final_balance', amount: '300', repair_order_id: 'o-1' },
+        { id: 'p-2', payment_kind: 'final_balance', amount: '150', repair_order_id: 'o-2' },
       ],
       ordersData: [
         { id: 'o-1', current_status: 'delivered', customer_id: null, assigned_technician_id: 'u-1', quote_request_id: null, intake_received_at: null, shipped_at: null },
@@ -223,15 +231,45 @@ describe('GET /admin/api/analytics', () => {
     expect((await res90d.json()).range).toBe('90d')
   })
 
-  it('applies date range filter to paid payments query', async () => {
+  it('applies date range filter to paid payments query (created_at not paid_at)', async () => {
     const { supabase, paidChain } = makeSupabaseMock()
     getSupabaseAdmin.mockReturnValue(supabase)
     getSessionOrgId.mockResolvedValue('org-a')
 
     await GET(makeRequest('7d'))
 
-    // gte should be called with 'created_at' (not 'paid_at') and a date string
     const gteCalls = paidChain.gte.mock.calls
+    expect(gteCalls.some(([col]) => col === 'created_at')).toBe(true)
+  })
+
+  it('returns prevTotalQuotes from prev period funnel query', async () => {
+    const { supabase } = makeSupabaseMock({
+      funnelData: [
+        { id: 'q-1', status: 'estimate_sent' },
+        { id: 'q-2', status: 'delivered' },
+      ],
+      prevFunnelData: [
+        { id: 'q-old-1' },
+      ],
+    })
+    getSupabaseAdmin.mockReturnValue(supabase)
+    getSessionOrgId.mockResolvedValue('org-a')
+
+    const res = await GET(makeRequest('30d'))
+    const body = await res.json()
+
+    expect(body.funnel.totalQuotes).toBe(2)
+    expect(body.funnel.prevTotalQuotes).toBe(1)
+  })
+
+  it('applies date range filter to funnel query (created_at)', async () => {
+    const { supabase, funnelChain } = makeSupabaseMock()
+    getSupabaseAdmin.mockReturnValue(supabase)
+    getSessionOrgId.mockResolvedValue('org-a')
+
+    await GET(makeRequest('30d'))
+
+    const gteCalls = funnelChain.gte.mock.calls
     expect(gteCalls.some(([col]) => col === 'created_at')).toBe(true)
   })
 })
