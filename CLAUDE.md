@@ -592,12 +592,12 @@ Full gap audit performed against all 24 sprints. Key findings:
 - **`app/api/review/[quoteId]/route.js`** — added `checkRateLimit` (20 req/hr per IP) at top of POST handler
 - **`__tests__/api/appointments.test.js`** — added `jest.mock('../../lib/rateLimiter', ...)` to prevent rate limiter from consuming mock Supabase calls
 - **`__tests__/api/reviews.test.js`** — same mock + added `headers: { get: () => null }` to `makePostRequest`
-- **`supabase/migrations/20260514_020_replace_is_staff_policies.sql`** — migration written to rewrite all 13 `is_staff()` RLS policies to use `is_org_member(organization_id)` and then drop the no-arg `is_staff()` function; **not yet applied to production — requires staging validation first**
+- **`supabase/migrations/20260514_020_replace_is_staff_policies.sql`** — rewrites all 13 `is_staff()` RLS policies to use `is_org_member(organization_id)` and drops the no-arg `is_staff()` function; **applied to production ✅**
 
 ### Known remaining gaps (tracked)
 | Gap | Status | Notes |
 |-----|--------|-------|
-| `is_staff()` policy rewrite | Pending production apply | Migration 020 written; must test on staging first |
+| `is_staff()` policy rewrite | ✅ Applied | Migration 020 applied to production; `is_staff()` dropped |
 | `getDefaultOrgId()` in `customer-portal` + `quote-requests` | Intentional | Legacy single-tenant routes; remove when all shops have slugs |
 | RLS integration tests | Not started | Requires local Supabase CLI setup |
 | `AdminRepairOrderPage.js` refactor (1300+ lines) | Not started | Extract sections one at a time |
