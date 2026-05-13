@@ -10,7 +10,7 @@ function formatEstimateDecisionLabel(status) {
   return 'Decision'
 }
 
-export default function CustomerEstimateReviewPage({ quoteId, orgSlug }) {
+export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -44,6 +44,7 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug }) {
           email,
           action: 'view',
           ...(orgSlug ? { orgSlug } : {}),
+          ...(tok ? { tok } : {}),
         }),
       })
 
@@ -78,6 +79,7 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug }) {
           email,
           action,
           ...(orgSlug ? { orgSlug } : {}),
+          ...(tok ? { tok } : {}),
         }),
       })
 

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 
-export default function MailInInstructionsPage({ quoteId, orgSlug }) {
+export default function MailInInstructionsPage({ quoteId, orgSlug, tok }) {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -20,7 +20,7 @@ export default function MailInInstructionsPage({ quoteId, orgSlug }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, ...(orgSlug ? { orgSlug } : {}) }),
+        body: JSON.stringify({ email, ...(orgSlug ? { orgSlug } : {}), ...(tok ? { tok } : {}) }),
       })
 
       const result = await response.json()

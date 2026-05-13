@@ -20,44 +20,7 @@ const { getSupabaseAdmin } = require('../../lib/supabase/admin')
 const { sendRepairStatusNotification } = require('../../lib/notifications')
 const { GET } = require('../../app/admin/api/orders/route')
 const { PATCH } = require('../../app/admin/api/orders/[orderId]/route')
-
-// Chain mock that handles GET (range) and PATCH (maybySingle + single + insert) flows.
-// maybySingleQueue: sequential return values for .maybySingle() calls in order.
-// rangeResult: returned by .range() (GET list endpoint).
-// singleResult: returned by .single() (PATCH update).
-function makeChain({
-  maybySingleQueue = [],
-  rangeResult = { data: [], error: null, count: 0 },
-  singleResult = { data: null, error: null },
-  insertError = null,
-} = {}) {
-  const eqFilters = []
-  const updateArgs = []
-  let maybySingleCall = 0
-
-  const chain = {
-    from: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    update: jest.fn().mockImplementation((data) => { updateArgs.push(data); return chain }),
-    insert: jest.fn().mockResolvedValue({ error: insertError }),
-    eq: jest.fn().mockImplementation((col, val) => { eqFilters.push({ col, val }); return chain }),
-    not: jest.fn().mockReturnThis(),
-    is: jest.fn().mockReturnThis(),
-    in: jest.fn().mockReturnThis(),
-    ilike: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockReturnThis(),
-    order: jest.fn().mockReturnThis(),
-    range: jest.fn().mockResolvedValue(rangeResult),
-    single: jest.fn().mockResolvedValue(singleResult),
-    maybeSingle: jest.fn().mockImplementation(() => {
-      const result = maybySingleQueue[maybySingleCall] ?? { data: null, error: null }
-      maybySingleCall++
-      return Promise.resolve(result)
-    }),
-  }
-
-  return { chain, eqFilters, updateArgs }
-}
+const { createSupabaseMock, getChain } = require('../helpers/supabaseMock')
 
 function makeCtx(orderId) {
   return { params: Promise.resolve({ orderId }) }
@@ -81,18 +44,19 @@ describe('GET /admin/api/orders', () => {
   })
 
   it('always includes organization_id filter in the list query', async () => {
-    const { chain, eqFilters } = makeChain()
-    getSupabaseAdmin.mockReturnValue(chain)
+    const supabase = createSupabaseMock({ repair_orders: { data: [], error: null, count: 0 } })
+    getSupabaseAdmin.mockReturnValue(supabase)
     getSessionOrgId.mockResolvedValue('org-a')
 
     await GET({ url: 'http://localhost/admin/api/orders' })
 
-    expect(eqFilters).toContainEqual({ col: 'organization_id', val: 'org-a' })
+    const ordersChain = getChain(supabase, 'repair_orders', 0)
+    expect(ordersChain.eq).toHaveBeenCalledWith('organization_id', 'org-a')
   })
 
   it('returns ok:true with an orders array on success', async () => {
-    const { chain } = makeChain({
-      rangeResult: {
+    const supabase = createSupabaseMock({
+      repair_orders: {
         data: [
           {
             id: 'ro-1',
@@ -114,7 +78,7 @@ describe('GET /admin/api/orders', () => {
         count: 1,
       },
     })
-    getSupabaseAdmin.mockReturnValue(chain)
+    getSupabaseAdmin.mockReturnValue(supabase)
     getSessionOrgId.mockResolvedValue('org-a')
 
     const res = await GET({ url: 'http://localhost/admin/api/orders' })
@@ -143,10 +107,8 @@ describe('PATCH /admin/api/orders/[orderId]', () => {
   })
 
   it('returns 404 when the order does not belong to the session org', async () => {
-    const { chain } = makeChain({
-      maybySingleQueue: [{ data: null, error: null }], // order not found for this org
-    })
-    getSupabaseAdmin.mockReturnValue(chain)
+    const supabase = createSupabaseMock({ repair_orders: { data: null, error: null } })
+    getSupabaseAdmin.mockReturnValue(supabase)
     getSessionContext.mockResolvedValue({ orgId: 'org-a', userId: 'user-1' })
 
     const res = await PATCH(makeRequest({ status: 'repairing' }), makeCtx('ro-org-b'))
@@ -156,54 +118,46 @@ describe('PATCH /admin/api/orders/[orderId]', () => {
     expect(body.error).toMatch(/not found/i)
   })
 
-  it('includes organization_id filter on the update query', async () => {
-    const { chain, eqFilters } = makeChain({
-      maybySingleQueue: [
-        {
-          data: {
-            id: 'ro-1',
-            order_number: 'RCO-001',
-            current_status: 'inspection',
-            priority: 'normal',
-            due_at: null,
-            notes: null,
-            quote_request_id: 'qr-1',
-            assigned_technician_user_id: null,
-            intake_received_at: null,
-            repair_started_at: null,
-            repair_completed_at: null,
-            shipped_at: null,
-            delivered_at: null,
-          },
-          error: null,
-        },
+  it('includes organization_id filter on both the fetch and update queries', async () => {
+    const orderData = {
+      id: 'ro-1',
+      order_number: 'RCO-001',
+      current_status: 'inspection',
+      priority: 'normal',
+      due_at: null,
+      notes: null,
+      quote_request_id: 'qr-1',
+      assigned_technician_user_id: null,
+      intake_received_at: null,
+      repair_started_at: null,
+      repair_completed_at: null,
+      shipped_at: null,
+      delivered_at: null,
+    }
+    const updatedOrder = { id: 'ro-1', order_number: 'RCO-001', current_status: 'repairing', priority: 'normal', due_at: null, assigned_technician_user_id: null }
+    const supabase = createSupabaseMock({
+      repair_orders: [
+        { data: orderData, error: null }, // fetch (maybySingle)
+        { data: updatedOrder, error: null }, // update (single)
       ],
-      singleResult: {
-        data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'repairing', priority: 'normal', due_at: null, assigned_technician_user_id: null },
-        error: null,
-      },
+      repair_order_audit_log: { data: null, error: null },
     })
-    getSupabaseAdmin.mockReturnValue(chain)
+    getSupabaseAdmin.mockReturnValue(supabase)
     getSessionContext.mockResolvedValue({ orgId: 'org-a', userId: 'user-1' })
 
     await PATCH(makeRequest({ status: 'repairing' }), makeCtx('ro-1'))
 
-    // organization_id must appear both in the fetch and the update
-    const orgFilters = eqFilters.filter((f) => f.col === 'organization_id')
-    expect(orgFilters.length).toBeGreaterThanOrEqual(2)
-    expect(orgFilters.every((f) => f.val === 'org-a')).toBe(true)
+    const fetchChain = getChain(supabase, 'repair_orders', 0)
+    const updateChain = getChain(supabase, 'repair_orders', 1)
+    expect(fetchChain.eq).toHaveBeenCalledWith('organization_id', 'org-a')
+    expect(updateChain.eq).toHaveBeenCalledWith('organization_id', 'org-a')
   })
 
   it('returns 400 for invalid status value', async () => {
-    const { chain } = makeChain({
-      maybySingleQueue: [
-        {
-          data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'inspection', priority: 'normal', due_at: null, assigned_technician_user_id: null },
-          error: null,
-        },
-      ],
+    const supabase = createSupabaseMock({
+      repair_orders: { data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'inspection', priority: 'normal', due_at: null, assigned_technician_user_id: null }, error: null },
     })
-    getSupabaseAdmin.mockReturnValue(chain)
+    getSupabaseAdmin.mockReturnValue(supabase)
     getSessionContext.mockResolvedValue({ orgId: 'org-a', userId: 'user-1' })
 
     const res = await PATCH(makeRequest({ status: 'hacked_status' }), makeCtx('ro-1'))
@@ -214,15 +168,10 @@ describe('PATCH /admin/api/orders/[orderId]', () => {
   })
 
   it('returns 400 for invalid priority value', async () => {
-    const { chain } = makeChain({
-      maybySingleQueue: [
-        {
-          data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'inspection', priority: 'normal', due_at: null, assigned_technician_user_id: null },
-          error: null,
-        },
-      ],
+    const supabase = createSupabaseMock({
+      repair_orders: { data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'inspection', priority: 'normal', due_at: null, assigned_technician_user_id: null }, error: null },
     })
-    getSupabaseAdmin.mockReturnValue(chain)
+    getSupabaseAdmin.mockReturnValue(supabase)
     getSessionContext.mockResolvedValue({ orgId: 'org-a', userId: 'user-1' })
 
     const res = await PATCH(makeRequest({ priority: 'critical' }), makeCtx('ro-1'))
@@ -233,33 +182,29 @@ describe('PATCH /admin/api/orders/[orderId]', () => {
   })
 
   it('happy path: priority + due_at update returns ok and writes audit entries', async () => {
-    const { chain } = makeChain({
-      maybySingleQueue: [
-        {
-          data: {
-            id: 'ro-1',
-            order_number: 'RCO-001',
-            current_status: 'repairing',
-            priority: 'normal',
-            due_at: null,
-            notes: null,
-            quote_request_id: 'qr-1',
-            assigned_technician_user_id: null,
-            intake_received_at: null,
-            repair_started_at: null,
-            repair_completed_at: null,
-            shipped_at: null,
-            delivered_at: null,
-          },
-          error: null,
-        },
+    const orderData = {
+      id: 'ro-1',
+      order_number: 'RCO-001',
+      current_status: 'repairing',
+      priority: 'normal',
+      due_at: null,
+      notes: null,
+      quote_request_id: 'qr-1',
+      assigned_technician_user_id: null,
+      intake_received_at: null,
+      repair_started_at: null,
+      repair_completed_at: null,
+      shipped_at: null,
+      delivered_at: null,
+    }
+    const supabase = createSupabaseMock({
+      repair_orders: [
+        { data: orderData, error: null }, // fetch
+        { data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'repairing', priority: 'high', due_at: '2026-05-15T00:00:00Z', assigned_technician_user_id: null }, error: null }, // update
       ],
-      singleResult: {
-        data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'repairing', priority: 'high', due_at: '2026-05-15T00:00:00Z', assigned_technician_user_id: null },
-        error: null,
-      },
+      repair_order_audit_log: { data: null, error: null },
     })
-    getSupabaseAdmin.mockReturnValue(chain)
+    getSupabaseAdmin.mockReturnValue(supabase)
     getSessionContext.mockResolvedValue({ orgId: 'org-a', userId: 'user-1' })
 
     const res = await PATCH(
@@ -271,8 +216,8 @@ describe('PATCH /admin/api/orders/[orderId]', () => {
     expect(res.status).toBe(200)
     expect(body.ok).toBe(true)
     expect(body.order.priority).toBe('high')
-    // Audit entries written for priority_changed and due_date_changed
-    expect(chain.insert).toHaveBeenCalledWith(
+    const auditChain = getChain(supabase, 'repair_order_audit_log', 0)
+    expect(auditChain.insert).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({ event_type: 'priority_changed', old_value: 'normal', new_value: 'high' }),
         expect.objectContaining({ event_type: 'due_date_changed', new_value: '2026-05-15T00:00:00Z' }),
@@ -281,33 +226,29 @@ describe('PATCH /admin/api/orders/[orderId]', () => {
   })
 
   it('saves notes and writes a note_updated audit entry', async () => {
-    const { chain } = makeChain({
-      maybySingleQueue: [
-        {
-          data: {
-            id: 'ro-1',
-            order_number: 'RCO-001',
-            current_status: 'repairing',
-            priority: 'normal',
-            due_at: null,
-            notes: 'old note',
-            quote_request_id: 'qr-1',
-            assigned_technician_user_id: null,
-            intake_received_at: null,
-            repair_started_at: null,
-            repair_completed_at: null,
-            shipped_at: null,
-            delivered_at: null,
-          },
-          error: null,
-        },
+    const orderData = {
+      id: 'ro-1',
+      order_number: 'RCO-001',
+      current_status: 'repairing',
+      priority: 'normal',
+      due_at: null,
+      notes: 'old note',
+      quote_request_id: 'qr-1',
+      assigned_technician_user_id: null,
+      intake_received_at: null,
+      repair_started_at: null,
+      repair_completed_at: null,
+      shipped_at: null,
+      delivered_at: null,
+    }
+    const supabase = createSupabaseMock({
+      repair_orders: [
+        { data: orderData, error: null }, // fetch
+        { data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'repairing', priority: 'normal', due_at: null, notes: 'new note', assigned_technician_user_id: null }, error: null }, // update
       ],
-      singleResult: {
-        data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'repairing', priority: 'normal', due_at: null, notes: 'new note', assigned_technician_user_id: null },
-        error: null,
-      },
+      repair_order_audit_log: { data: null, error: null },
     })
-    getSupabaseAdmin.mockReturnValue(chain)
+    getSupabaseAdmin.mockReturnValue(supabase)
     getSessionContext.mockResolvedValue({ orgId: 'org-a', userId: 'user-1' })
 
     const res = await PATCH(makeRequest({ notes: 'new note' }), makeCtx('ro-1'))
@@ -315,7 +256,8 @@ describe('PATCH /admin/api/orders/[orderId]', () => {
 
     expect(res.status).toBe(200)
     expect(body.ok).toBe(true)
-    expect(chain.insert).toHaveBeenCalledWith(
+    const auditChain = getChain(supabase, 'repair_order_audit_log', 0)
+    expect(auditChain.insert).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({ event_type: 'note_updated', old_value: 'old note', new_value: 'new note' }),
       ])
@@ -325,36 +267,30 @@ describe('PATCH /admin/api/orders/[orderId]', () => {
   it('fires sendRepairStatusNotification for customer-facing status transitions', async () => {
     sendRepairStatusNotification.mockResolvedValue({ ok: true })
 
-    const { chain } = makeChain({
-      maybySingleQueue: [
-        // order fetch
-        {
-          data: {
-            id: 'ro-1',
-            order_number: 'RCO-001',
-            current_status: 'repairing',
-            priority: 'normal',
-            due_at: null,
-            notes: null,
-            quote_request_id: 'qr-1',
-            assigned_technician_user_id: null,
-            intake_received_at: null,
-            repair_started_at: null,
-            repair_completed_at: null,
-            shipped_at: null,
-            delivered_at: null,
-          },
-          error: null,
-        },
-        // status history fetch (for dedup key)
-        { data: { id: 'hist-1' }, error: null },
+    const orderData = {
+      id: 'ro-1',
+      order_number: 'RCO-001',
+      current_status: 'repairing',
+      priority: 'normal',
+      due_at: null,
+      notes: null,
+      quote_request_id: 'qr-1',
+      assigned_technician_user_id: null,
+      intake_received_at: null,
+      repair_started_at: null,
+      repair_completed_at: null,
+      shipped_at: null,
+      delivered_at: null,
+    }
+    const supabase = createSupabaseMock({
+      repair_orders: [
+        { data: orderData, error: null }, // fetch
+        { data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'awaiting_balance_payment', priority: 'normal', due_at: null, notes: null, assigned_technician_user_id: null }, error: null }, // update
       ],
-      singleResult: {
-        data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'awaiting_balance_payment', priority: 'normal', due_at: null, notes: null, assigned_technician_user_id: null },
-        error: null,
-      },
+      repair_order_audit_log: { data: null, error: null },
+      repair_order_status_history: { data: { id: 'hist-1' }, error: null }, // history fetch for dedup key
     })
-    getSupabaseAdmin.mockReturnValue(chain)
+    getSupabaseAdmin.mockReturnValue(supabase)
     getSessionContext.mockResolvedValue({ orgId: 'org-a', userId: 'user-1' })
 
     const res = await PATCH(makeRequest({ status: 'awaiting_balance_payment' }), makeCtx('ro-1'))
@@ -375,33 +311,29 @@ describe('PATCH /admin/api/orders/[orderId]', () => {
   it('does NOT fire sendRepairStatusNotification for internal-only status transitions', async () => {
     sendRepairStatusNotification.mockResolvedValue({ ok: true })
 
-    const { chain } = makeChain({
-      maybySingleQueue: [
-        {
-          data: {
-            id: 'ro-1',
-            order_number: 'RCO-001',
-            current_status: 'received',
-            priority: 'normal',
-            due_at: null,
-            notes: null,
-            quote_request_id: 'qr-1',
-            assigned_technician_user_id: null,
-            intake_received_at: null,
-            repair_started_at: null,
-            repair_completed_at: null,
-            shipped_at: null,
-            delivered_at: null,
-          },
-          error: null,
-        },
+    const orderData = {
+      id: 'ro-1',
+      order_number: 'RCO-001',
+      current_status: 'received',
+      priority: 'normal',
+      due_at: null,
+      notes: null,
+      quote_request_id: 'qr-1',
+      assigned_technician_user_id: null,
+      intake_received_at: null,
+      repair_started_at: null,
+      repair_completed_at: null,
+      shipped_at: null,
+      delivered_at: null,
+    }
+    const supabase = createSupabaseMock({
+      repair_orders: [
+        { data: orderData, error: null }, // fetch
+        { data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'waiting_parts', priority: 'normal', due_at: null, notes: null, assigned_technician_user_id: null }, error: null }, // update
       ],
-      singleResult: {
-        data: { id: 'ro-1', order_number: 'RCO-001', current_status: 'waiting_parts', priority: 'normal', due_at: null, notes: null, assigned_technician_user_id: null },
-        error: null,
-      },
+      repair_order_audit_log: { data: null, error: null },
     })
-    getSupabaseAdmin.mockReturnValue(chain)
+    getSupabaseAdmin.mockReturnValue(supabase)
     getSessionContext.mockResolvedValue({ orgId: 'org-a', userId: 'user-1' })
 
     await PATCH(makeRequest({ status: 'waiting_parts' }), makeCtx('ro-1'))

@@ -19,6 +19,7 @@ jest.mock('../../lib/supabase/admin')
 const { getSessionOrgId } = require('../../lib/admin/getSessionOrgId')
 const { getSupabaseAdmin } = require('../../lib/supabase/admin')
 const { GET } = require('../../app/admin/api/analytics/route')
+const { createSupabaseMock, getChain } = require('../helpers/supabaseMock')
 
 function makeRequest(range = '30d') {
   return { url: `http://localhost/admin/api/analytics?range=${range}` }
@@ -28,59 +29,30 @@ function makeSupabaseMock({
   paymentsData = [],
   prevData = [],
   ordersData = [],
-  quotesData = [],      // all-time quotes (device popularity, join lookup)
-  funnelData = null,    // range-filtered funnel quotes (defaults to quotesData)
-  prevFunnelData = [],  // prev period funnel quotes
+  quotesData = [],
+  funnelData = null,
+  prevFunnelData = [],
   recentData = [],
   membersData = [],
   customersData = [],
 } = {}) {
-  function makeListChain(result) {
-    return {
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      gte: jest.fn().mockReturnThis(),
-      lt: jest.fn().mockReturnThis(),
-      not: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue(result),
-    }
-  }
-
-  let paymentsCallCount = 0
-  // quote_requests is called 4 times: allQuotes, funnel, prevFunnel, recent
-  let quotesCallCount = 0
-
-  const paidChain = makeListChain({ data: paymentsData, error: null })
-  const prevChain = makeListChain({ data: prevData, error: null })
-  const ordersChain = makeListChain({ data: ordersData, error: null })
-  const quotesChain = makeListChain({ data: quotesData, error: null })
-  const funnelChain = makeListChain({ data: funnelData ?? quotesData, error: null })
-  const prevFunnelChain = makeListChain({ data: prevFunnelData, error: null })
-  const recentChain = makeListChain({ data: recentData, error: null })
-  const membersChain = makeListChain({ data: membersData, error: null })
-  const customersChain = makeListChain({ data: customersData, error: null })
-
-  const supabase = {
-    from: jest.fn().mockImplementation((table) => {
-      if (table === 'payments') {
-        paymentsCallCount++
-        return paymentsCallCount === 1 ? paidChain : prevChain
-      }
-      if (table === 'repair_orders') return ordersChain
-      if (table === 'quote_requests') {
-        quotesCallCount++
-        if (quotesCallCount === 1) return quotesChain      // all-time quotes
-        if (quotesCallCount === 2) return funnelChain      // range-filtered funnel
-        if (quotesCallCount === 3) return prevFunnelChain  // prev period funnel
-        return recentChain                                 // recent 10
-      }
-      if (table === 'organization_members') return membersChain
-      if (table === 'customers') return customersChain
-      return makeListChain({ data: [], error: null })
-    }),
-  }
-  return { supabase, paidChain, funnelChain }
+  // quote_requests: [allQuotes, funnel, prevFunnel, recent]
+  // payments: [paidCurrent, paidPrev]
+  return createSupabaseMock({
+    payments: [
+      { data: paymentsData, error: null },
+      { data: prevData, error: null },
+    ],
+    quote_requests: [
+      { data: quotesData, error: null },
+      { data: funnelData ?? quotesData, error: null },
+      { data: prevFunnelData, error: null },
+      { data: recentData, error: null },
+    ],
+    repair_orders: { data: ordersData, error: null },
+    organization_members: { data: membersData, error: null },
+    customers: { data: customersData, error: null },
+  })
 }
 
 describe('GET /admin/api/analytics', () => {
@@ -93,18 +65,19 @@ describe('GET /admin/api/analytics', () => {
   })
 
   it('filters paid payments by organization_id', async () => {
-    const { supabase, paidChain } = makeSupabaseMock()
+    const supabase = makeSupabaseMock()
     getSupabaseAdmin.mockReturnValue(supabase)
     getSessionOrgId.mockResolvedValue('org-a')
 
     await GET(makeRequest())
 
+    const paidChain = getChain(supabase, 'payments', 0)
     expect(paidChain.eq).toHaveBeenCalledWith('organization_id', 'org-a')
     expect(paidChain.eq).toHaveBeenCalledWith('status', 'paid')
   })
 
   it('computes total revenue from paid payment amounts', async () => {
-    const { supabase } = makeSupabaseMock({
+    const supabase = makeSupabaseMock({
       paymentsData: [
         { id: 'p-1', payment_kind: 'inspection_deposit', amount: '100.00', repair_order_id: null },
         { id: 'p-2', payment_kind: 'final_balance', amount: '250.50', repair_order_id: null },
@@ -123,7 +96,7 @@ describe('GET /admin/api/analytics', () => {
   })
 
   it('splits revenue correctly by payment_kind', async () => {
-    const { supabase } = makeSupabaseMock({
+    const supabase = makeSupabaseMock({
       paymentsData: [
         { id: 'p-1', payment_kind: 'inspection_deposit', amount: '75', repair_order_id: null },
         { id: 'p-2', payment_kind: 'final_balance', amount: '125', repair_order_id: null },
@@ -141,7 +114,7 @@ describe('GET /admin/api/analytics', () => {
   })
 
   it('aggregates revenue by repair type via payment→order→quote join', async () => {
-    const { supabase } = makeSupabaseMock({
+    const supabase = makeSupabaseMock({
       paymentsData: [
         { id: 'p-1', payment_kind: 'final_balance', amount: '150', repair_order_id: 'o-1' },
         { id: 'p-2', payment_kind: 'final_balance', amount: '200', repair_order_id: 'o-2' },
@@ -171,7 +144,7 @@ describe('GET /admin/api/analytics', () => {
   })
 
   it('aggregates revenue by technician using member profile names', async () => {
-    const { supabase } = makeSupabaseMock({
+    const supabase = makeSupabaseMock({
       paymentsData: [
         { id: 'p-1', payment_kind: 'final_balance', amount: '300', repair_order_id: 'o-1' },
         { id: 'p-2', payment_kind: 'final_balance', amount: '150', repair_order_id: 'o-2' },
@@ -200,7 +173,7 @@ describe('GET /admin/api/analytics', () => {
   })
 
   it('computes repeat customer rate from orders per customer', async () => {
-    const { supabase } = makeSupabaseMock({
+    const supabase = makeSupabaseMock({
       ordersData: [
         { id: 'o-1', current_status: 'delivered', customer_id: 'c-1', assigned_technician_user_id: null, quote_request_id: null, intake_received_at: null, shipped_at: null },
         { id: 'o-2', current_status: 'delivered', customer_id: 'c-1', assigned_technician_user_id: null, quote_request_id: null, intake_received_at: null, shipped_at: null },
@@ -220,11 +193,13 @@ describe('GET /admin/api/analytics', () => {
   })
 
   it('includes range in response and defaults to 30d', async () => {
-    const { supabase } = makeSupabaseMock()
-    getSupabaseAdmin.mockReturnValue(supabase)
+    const supabase30 = makeSupabaseMock()
+    const supabase90 = makeSupabaseMock()
+    getSupabaseAdmin.mockReturnValue(supabase30)
     getSessionOrgId.mockResolvedValue('org-a')
-
     const res30d = await GET(makeRequest('30d'))
+
+    getSupabaseAdmin.mockReturnValue(supabase90)
     const res90d = await GET(makeRequest('90d'))
 
     expect((await res30d.json()).range).toBe('30d')
@@ -232,18 +207,19 @@ describe('GET /admin/api/analytics', () => {
   })
 
   it('applies date range filter to paid payments query (created_at not paid_at)', async () => {
-    const { supabase, paidChain } = makeSupabaseMock()
+    const supabase = makeSupabaseMock()
     getSupabaseAdmin.mockReturnValue(supabase)
     getSessionOrgId.mockResolvedValue('org-a')
 
     await GET(makeRequest('7d'))
 
+    const paidChain = getChain(supabase, 'payments', 0)
     const gteCalls = paidChain.gte.mock.calls
     expect(gteCalls.some(([col]) => col === 'created_at')).toBe(true)
   })
 
   it('returns prevTotalQuotes from prev period funnel query', async () => {
-    const { supabase } = makeSupabaseMock({
+    const supabase = makeSupabaseMock({
       funnelData: [
         { id: 'q-1', status: 'estimate_sent' },
         { id: 'q-2', status: 'delivered' },
@@ -263,12 +239,14 @@ describe('GET /admin/api/analytics', () => {
   })
 
   it('applies date range filter to funnel query (created_at)', async () => {
-    const { supabase, funnelChain } = makeSupabaseMock()
+    const supabase = makeSupabaseMock()
     getSupabaseAdmin.mockReturnValue(supabase)
     getSessionOrgId.mockResolvedValue('org-a')
 
     await GET(makeRequest('30d'))
 
+    // quote_requests call index 1 is the funnel (range-filtered) query
+    const funnelChain = getChain(supabase, 'quote_requests', 1)
     const gteCalls = funnelChain.gte.mock.calls
     expect(gteCalls.some(([col]) => col === 'created_at')).toBe(true)
   })

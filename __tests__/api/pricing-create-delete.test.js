@@ -49,6 +49,7 @@ describe('GET /admin/api/catalog', () => {
         if (table === 'repair_catalog_models') {
           return {
             select: jest.fn().mockReturnThis(),
+            or: jest.fn().mockReturnThis(),
             eq: jest.fn().mockReturnThis(),
             order: jest.fn().mockResolvedValue({ data: models, error: null }),
           }
@@ -56,6 +57,7 @@ describe('GET /admin/api/catalog', () => {
         if (table === 'repair_types') {
           return {
             select: jest.fn().mockReturnThis(),
+            or: jest.fn().mockReturnThis(),
             order: jest.fn().mockResolvedValue({ data: repairTypes, error: null }),
           }
         }
@@ -81,10 +83,10 @@ describe('GET /admin/api/catalog', () => {
     getSupabaseAdmin.mockReturnValue({
       from: jest.fn((table) => {
         if (table === 'repair_catalog_models') {
-          return { select: jest.fn().mockReturnThis(), eq: jest.fn().mockReturnThis(), order: jest.fn().mockResolvedValue({ data: [], error: null }) }
+          return { select: jest.fn().mockReturnThis(), or: jest.fn().mockReturnThis(), eq: jest.fn().mockReturnThis(), order: jest.fn().mockResolvedValue({ data: [], error: null }) }
         }
         if (table === 'repair_types') {
-          return { select: jest.fn().mockReturnThis(), order: jest.fn().mockResolvedValue({ data: [], error: null }) }
+          return { select: jest.fn().mockReturnThis(), or: jest.fn().mockReturnThis(), order: jest.fn().mockResolvedValue({ data: [], error: null }) }
         }
         return {
           select: jest.fn().mockReturnThis(),

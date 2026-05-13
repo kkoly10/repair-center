@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
 import { sendMailInReadyNotification } from '../../../../lib/notifications'
+import { verifyToken } from '../../../../lib/hmacToken'
 
 export const runtime = 'nodejs'
 
@@ -14,6 +15,11 @@ export async function POST(request, context) {
     const email = (body?.email || '').toString().trim().toLowerCase()
     const action = (body?.action || 'view').toString().trim()
     const orgSlug = (body?.orgSlug || '').toString().trim()
+    const tok = (body?.tok || '').toString().trim()
+
+    if (!verifyToken(quoteId, tok)) {
+      return NextResponse.json({ error: 'Invalid or expired link.' }, { status: 403 })
+    }
 
     if (!quoteId || !email) {
       return NextResponse.json(

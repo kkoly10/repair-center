@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function CustomerReviewPage({ quoteId, firstName, device, initialRating }) {
   const [selectedRating, setSelectedRating] = useState(initialRating || 0)
@@ -9,11 +9,11 @@ export default function CustomerReviewPage({ quoteId, firstName, device, initial
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [autoSubmitted, setAutoSubmitted] = useState(false)
+  const autoSubmittedRef = useRef(false)
 
   useEffect(() => {
-    if (initialRating && !autoSubmitted) {
-      setAutoSubmitted(true)
+    if (initialRating && !autoSubmittedRef.current) {
+      autoSubmittedRef.current = true
       submitReview(initialRating, null, 'email_link')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -73,7 +73,7 @@ export default function CustomerReviewPage({ quoteId, firstName, device, initial
           How was your repair?
         </h1>
         <p style={{ margin: '0 0 28px', color: '#666', lineHeight: 1.6 }}>
-          Hi {firstName}, we hope you're enjoying your repaired {device}. Tap a star to rate your experience.
+          Hi {firstName}, we hope you&apos;re enjoying your repaired {device}. Tap a star to rate your experience.
         </p>
 
         <form onSubmit={handleManualSubmit}>

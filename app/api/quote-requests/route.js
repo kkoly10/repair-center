@@ -44,7 +44,17 @@ export async function POST(request) {
       orgId = org.id
     }
   }
+  if (!orgId && process.env.DEFAULT_ORG_SLUG) {
+    const { data: envOrg } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('slug', process.env.DEFAULT_ORG_SLUG)
+      .eq('status', 'active')
+      .maybeSingle()
+    if (envOrg) orgId = envOrg.id
+  }
   if (!orgId) {
+    console.warn('[quote-requests] falling back to getDefaultOrgId() — set DEFAULT_ORG_SLUG env var to remove this DB query')
     orgId = await getDefaultOrgId()
   }
 

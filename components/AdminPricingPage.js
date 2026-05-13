@@ -156,13 +156,13 @@ function AdminPricingPageInner() {
 
   // Catalog selectors derived from fetched catalog
   const existingKeys = useMemo(() => new Set(catalog?.existingKeys || []), [catalog])
-  const catalogModels = catalog?.models || []
   const catalogRepairTypes = catalog?.repairTypes || []
 
   // Group models by category then brand for the add form selector
   const modelGroups = useMemo(() => {
+    const models = catalog?.models || []
     const map = {}
-    for (const m of catalogModels) {
+    for (const m of models) {
       const cat = m.category || 'Other'
       const brand = m.repair_catalog_brands?.brand_name || 'Unknown'
       const key = `${cat} — ${brand}`
@@ -170,7 +170,7 @@ function AdminPricingPageInner() {
       map[key].push(m)
     }
     return map
-  }, [catalogModels])
+  }, [catalog])
 
   const addRepairTypeId = addDraft.repairTypeId
   const addModelId = addDraft.modelId

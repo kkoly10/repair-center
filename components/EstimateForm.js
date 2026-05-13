@@ -20,7 +20,7 @@ const yesNoMaybe = ['Yes', 'No', 'Not sure']
 
 export default function EstimateForm({ orgSlug }) {
   const searchParams = useSearchParams()
-  const resolvedOrgSlug = orgSlug || searchParams.get('shop') || ''
+  const resolvedOrgSlug = orgSlug || searchParams.get('shop') || process.env.NEXT_PUBLIC_DEFAULT_ORG_SLUG || ''
   const [category, setCategory] = useState(searchParams.get('category') || 'phone')
   const [brand, setBrand] = useState(searchParams.get('brand') || 'Apple')
   const [modelKey, setModelKey] = useState(searchParams.get('modelKey') || 'iphone-13')

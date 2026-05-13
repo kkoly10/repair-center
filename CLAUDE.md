@@ -511,6 +511,155 @@ Add to `vercel.json` (Vercel Cron) or call from an external scheduler daily:
 
 ---
 
+## Sprint 23 — Appointment Scheduling ✅ COMPLETE
+
+### Migration applied to production
+- `20260514_018_appointments.sql` — `appointments` table: org-scoped, status enum (`pending`/`confirmed`/`cancelled`/`no_show`/`converted`), `preferred_at`, customer fields, optional `customer_id` + `quote_request_id` FKs; `updated_at` trigger; RLS via `is_org_member`
+
+### What was done
+- **`POST /api/appointments`** — public endpoint; resolves org by slug + active status check; validates future datetime; inserts appointment; fires `sendAppointmentConfirmationEmail` fire-and-forget
+- **`GET /admin/api/appointments`** — auth-gated; returns all org appointments ordered by `preferred_at`; supports `?status=`, `?from=`, `?to=` query params
+- **`PATCH /admin/api/appointments/[appointmentId]`** — auth-gated; verifies org ownership; updates `status`, `notes`, `preferred_at`, `cancellation_reason`; auto-sets `confirmed_at` and `cancelled_at` on status transitions; 400 on invalid status
+- **`lib/email.js`** — added `sendAppointmentConfirmationEmail({ to, orgName, firstName, preferredAt, device, repairDescription })`
+- **`components/BookingPage.js`** (new) — public booking form: name, email, phone, device brand/model, repair description, datetime picker (min = 1 hour from now); success state with email confirmation message
+- **`app/shop/[orgSlug]/book/page.js`** (new) — server component wrapper for `BookingPage`
+- **`components/AdminAppointmentsPage.js`** (new) — summary cards (pending, upcoming, total); status filter tabs with counts; table with confirm/no-show/cancel/convert-to-quote actions; status badges; PATCH on each action button
+- **`app/admin/appointments/page.js`** (new) — wrapper
+- **`components/AdminNav.js`** — "Appointments" link added; orange badge when pending count > 0 (fetches `/admin/api/appointments?status=pending` on mount)
+- **`app/shop/[orgSlug]/page.js`** — "Book Appointment" card added alongside estimate and track cards
+
+### Route added to public shop
+| URL | Description |
+|-----|-------------|
+| `/shop/[slug]/book` | Appointment booking form |
+
+### Test suite after Sprint 23
+165 tests across 18 suites — all passing.
+
+---
+
+## Sprint 24 — Repair Catalog Management ✅ COMPLETE
+
+### Migration applied to production
+- `20260514_019_org_catalog.sql` — adds nullable `organization_id` to `repair_catalog_brands`, `repair_catalog_models`, `repair_types` (`NULL` = global platform item; non-null = org-specific custom item); replaces global unique constraints on `slug`/`model_key`/`repair_key` with partial unique indexes (global items unique globally, org items unique per org); updates RLS: SELECT = global OR org member; INSERT/UPDATE/DELETE = org members on their own items only; indexes on `organization_id WHERE NOT NULL`
+
+### What was done
+- **`GET /admin/api/catalog/brands`** — returns global + org brands; marks each with `is_org_owned`
+- **`POST /admin/api/catalog/brands`** — creates org-specific brand; auto-generates slug from name + org ID prefix; validates category
+- **`PATCH /admin/api/catalog/brands/[brandId]`** — updates org-owned brand (name, category, active); 404 for global/cross-org items
+- **`DELETE /admin/api/catalog/brands/[brandId]`** — hard-deletes org-owned brand (cascades to models + pricing rules via DB FKs)
+- **`GET /admin/api/catalog/models`** — returns global + org models with brand join; `is_org_owned` flag
+- **`POST /admin/api/catalog/models`** — creates org-specific model; verifies brand is accessible (global or org-owned); auto-generates `model_key`
+- **`PATCH /admin/api/catalog/models/[modelId]`** — updates org-owned model; 404 for global/cross-org
+- **`DELETE /admin/api/catalog/models/[modelId]`** — hard-deletes org-owned model (cascades pricing rules)
+- **`GET /admin/api/catalog/repair-types`** — returns global + org repair types; `is_org_owned` flag
+- **`POST /admin/api/catalog/repair-types`** — creates org-specific repair type; auto-generates `repair_key`; validates price_mode_default
+- **`PATCH /admin/api/catalog/repair-types/[typeId]`** — updates org-owned repair type; 404 for global/cross-org
+- **`DELETE /admin/api/catalog/repair-types/[typeId]`** — hard-deletes (cascades pricing rules)
+- **`app/admin/api/catalog/route.js` (updated)** — GET now includes org-specific models and repair types in addition to global items (used by pricing rule creation form)
+- **`components/AdminCatalogPage.js`** (new) — three-tab admin page (Brands / Models / Repair Types); global items shown read-only with "Global" badge; org items have "Custom" badge + Edit/Delete buttons; inline edit rows; `+ Add` forms per tab; model tab includes brand selector and search
+- **`app/admin/catalog/page.js`** (new) — wrapper
+- **`components/AdminNav.js`** — "Catalog" link added between Parts and Staff
+- **`__tests__/api/catalog-management.test.js`** (new) — 17 tests: GET brands 401/org-filter/is_org_owned; POST brands 401/400-missing-name/400-bad-category/201-org-scoped; PATCH brands 404-cross-org/200-updates; DELETE brands 404-cross-org/200-deletes; POST models 400-no-brand/404-bad-brand/201-org-scoped; POST repair-types 400/201; DELETE repair-types 404/200
+- **`__tests__/api/pricing-create-delete.test.js` (updated)** — added `.or()` to catalog mock chains to match updated route
+
+### Key design decisions
+- Global catalog items are read-only for org admins — modifications require platform team action
+- Org-specific items coexist with global items in all selectors (pricing rule form, booking form)
+- Deleting org items cascades via existing DB FKs (brand → models → pricing_rules)
+- Slug/key auto-generation appends 8-char org ID prefix to avoid collisions with global items
+
+### Test suite after Sprint 24
+182 tests across 19 suites — all passing.
+
+---
+
+## Sprint 25 — Gap Audit & Hardening ✅ COMPLETE
+
+### Investigation findings
+Full gap audit performed against all 24 sprints. Key findings:
+
+1. **`getDefaultOrgId()` call sites**: Only two intentional fallback paths remain (`customer-portal`, `quote-requests`) — both serve legacy single-tenant routes (`/portal`, `/estimate`). A third call site in `lib/admin/quotes.js` was dead code.
+2. **`is_staff()` legacy function**: Still used by 13 RLS policies across 9 tables — cannot drop without rewriting all policies first. Migration 020 written but **not yet applied** — requires testing against staging DB.
+3. **Rate limiting**: `quote-requests` already had it. `appointments` and `review/[quoteId]` were missing it.
+4. **Notifications observability**: Already complete — `notifications` table records `queued → sent/failed` with `error_message`; SMS errors logged.
+5. **`profiles.email` nulls**: Zero null-email profiles confirmed via DB query — migration 015 backfill held.
+6. **`lib/admin/quotes.js` dead code**: `listQuoteRequests`, `getQuoteRequestDetail`, `buildStatusCounts` were exported but never called; both used `getDefaultOrgId()`.
+
+### What was done
+- **`lib/admin/quotes.js`** — removed `listQuoteRequests`, `getQuoteRequestDetail`, `buildStatusCounts`, and the `getDefaultOrgId` import; retained `QUOTE_STATUS_OPTIONS`, `formatQuotePrice`, `formatStatusLabel`
+- **`app/api/appointments/route.js`** — added `checkRateLimit` (10 req/hr per IP) at top of POST handler
+- **`app/api/review/[quoteId]/route.js`** — added `checkRateLimit` (20 req/hr per IP) at top of POST handler
+- **`__tests__/api/appointments.test.js`** — added `jest.mock('../../lib/rateLimiter', ...)` to prevent rate limiter from consuming mock Supabase calls
+- **`__tests__/api/reviews.test.js`** — same mock + added `headers: { get: () => null }` to `makePostRequest`
+- **`supabase/migrations/20260514_020_replace_is_staff_policies.sql`** — rewrites all 13 `is_staff()` RLS policies to use `is_org_member(organization_id)` and drops the no-arg `is_staff()` function; **applied to production ✅**
+
+### Known remaining gaps (tracked)
+| Gap | Status | Notes |
+|-----|--------|-------|
+| `is_staff()` policy rewrite | ✅ Applied | Migration 020 applied to production; `is_staff()` dropped |
+| `getDefaultOrgId()` in `customer-portal` + `quote-requests` | Intentional | Legacy single-tenant routes; remove when all shops have slugs |
+| RLS integration tests | Not started | Requires local Supabase CLI setup |
+| `AdminRepairOrderPage.js` refactor (1300+ lines) | Not started | Extract sections one at a time |
+| Inline styles → CSS Modules | Not started | Future priority |
+| Customer account login | Not started | Sprint 27+ backlog |
+
+### Test suite after Sprint 25
+190 tests across 19 suites — all passing.
+
+---
+
+## Sprint 26 — Hardening: ThemeProvider, HMAC Tokens, Mock Factory, Migration Script ✅ COMPLETE
+
+### No migration needed
+
+### What was done
+
+1. **Fixed build regression** — `AdminRepairOrderPage.js` had a stray `</div>` closing tag left from the Sprint 25 component extraction; removed to restore clean build
+
+2. **`__tests__/helpers/supabaseMock.js`** (new) — Proxy-based Supabase mock factory:
+   - `createSupabaseMock(responses)` — per-table response config; arrays for sequential calls; Proxy catch-all prevents future method-not-found test breaks
+   - `getChain(supabase, table, n)` — helper to retrieve the nth chain created for a given table after route execution
+   - Exported as `{ createSupabaseMock, getChain }`
+
+3. **Test migrations to proxy mock factory** — eliminated all `callCount`-based patterns:
+   - **`__tests__/api/analytics.test.js`** — replaced custom `makeSupabaseMock` with `createSupabaseMock`; `payments` and `quote_requests` use arrays for sequential responses; chain-specific assertions use `getChain()`
+   - **`__tests__/api/orders-queue.test.js`** — fully migrated; `maybySingleQueue` replaced with table arrays; `eqFilters` spy replaced with `getChain(supabase, 'repair_orders', N).eq` assertions
+   - **`__tests__/api/catalog-management.test.js`** — all 17 tests migrated; `let call = 0` counters eliminated; `insert` assertions use `getChain()` pattern
+
+4. **`components/ThemeProvider.js`** (new) — `'use client'` component; injects `--blue`/`--blue-strong` (from `primary_color`) and `--accent` (from `accent_color`) as `:root` CSS custom properties via `<style>` tag; no wrapper element so layout is unaffected
+   - **`app/admin/layout.js`** — converted to async server component; fetches `organization_branding` using session org; passes colors to `ThemeProvider` (gracefully skips on auth failure)
+   - **`app/shop/[orgSlug]/layout.js`** (new) — async server component layout for all shop pages; fetches branding by slug; injects `ThemeProvider`
+
+5. **`lib/hmacToken.js`** (new) — HMAC-SHA256 token helpers using `EMAIL_LINK_SECRET` env var:
+   - `generateToken(quoteId)` — returns hex token or `null` if secret not configured
+   - `verifyToken(quoteId, token)` — returns `true` if: secret not set, token absent (backward compat), or token matches; returns `false` only when secret is set and token is present but wrong
+   - **`lib/notifications.js`** — `buildSecureUrl()` helper appends `?tok=...` to review/track/mail-in URLs when `EMAIL_LINK_SECRET` is configured
+   - **6 page components updated** to accept `searchParams` and pass `tok` down: `app/estimate-review/[quoteId]/page.js`, `app/shop/.../estimate-review/[quoteId]/page.js`, `app/track/[quoteId]/page.js`, `app/shop/.../track/[quoteId]/page.js`, `app/mail-in/[quoteId]/page.js`, `app/shop/.../mail-in/[quoteId]/page.js`
+   - **3 client components updated** to accept and forward `tok` in API POST bodies: `CustomerEstimateReviewPage`, `CustomerTrackingPage`, `MailInInstructionsPage`
+   - **3 API routes updated** to verify token at top of handler: `app/api/estimate-review/[quoteId]/route.js`, `app/api/track/[quoteId]/route.js`, `app/api/mail-in/[quoteId]/route.js` — returns 403 if secret set and token wrong; allows through if no secret or no token
+
+6. **`scripts/apply-migration.sh`** (new) — safe migration workflow script:
+   - Usage: `./scripts/apply-migration.sh <migration-file> [project-id]`
+   - Reads `SUPABASE_ACCESS_TOKEN` from env or `.claude/settings.json`
+   - POSTs SQL to `https://api.supabase.com/v1/projects/{id}/database/query`
+   - Exits non-zero on HTTP failure; suitable for CI use
+
+### New env var
+- `EMAIL_LINK_SECRET` — server-side secret for HMAC token generation/verification; optional but recommended in production; rotate to invalidate all existing email links
+
+### Staging environment setup
+To create a staging environment:
+1. Create a second Supabase project (free tier) and note its Project ID
+2. Apply all migrations in order: `for f in supabase/migrations/*.sql; do ./scripts/apply-migration.sh "$f" <staging-project-id>; done`
+3. Set `SUPABASE_PROJECT_ID=<staging-id>` when running the script against staging
+4. Add staging project's env vars to a `.env.staging` file (gitignored)
+
+### Test suite after Sprint 26
+190 tests across 19 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
@@ -519,3 +668,5 @@ Add to `vercel.json` (Vercel Cron) or call from an external scheduler daily:
 - Stripe webhook secret for billing: `STRIPE_BILLING_WEBHOOK_SECRET`
 - Stripe billing price ID: `STRIPE_BILLING_PRICE_ID`
 - Cron secret for `/api/cron/trial-check`: `CRON_SECRET` (optional)
+- HMAC token secret for email links: `EMAIL_LINK_SECRET` (optional but recommended; rotate to invalidate old links)
+- Default shop slug for legacy single-tenant routes: `NEXT_PUBLIC_DEFAULT_ORG_SLUG` / `DEFAULT_ORG_SLUG` (used by `EstimateForm` to fetch org-scoped pricing on the generic `/estimate` route)

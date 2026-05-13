@@ -68,6 +68,20 @@ export default async function ShopLandingPage({ params }) {
           </div>
 
           <div className='policy-card'>
+            <div className='kicker'>Walk-in or drop-off</div>
+            <h3>Book an appointment</h3>
+            <p>
+              Prefer to drop off your device in person? Request a convenient time and we&apos;ll
+              have you in and out quickly.
+            </p>
+            <div className='inline-actions'>
+              <Link href={`/shop/${orgSlug}/book`} className='button button-primary'>
+                Book Appointment
+              </Link>
+            </div>
+          </div>
+
+          <div className='policy-card'>
             <div className='kicker'>Already submitted?</div>
             <h3>Track your repair</h3>
             <p>

@@ -18,11 +18,13 @@ export async function GET() {
     supabase
       .from('repair_catalog_models')
       .select('id, model_key, model_name, category, family_name, repair_catalog_brands(brand_name, category)')
+      .or(`organization_id.is.null,organization_id.eq.${orgId}`)
       .eq('active', true)
       .order('model_name', { ascending: true }),
     supabase
       .from('repair_types')
       .select('id, repair_key, repair_name, category, price_mode_default')
+      .or(`organization_id.is.null,organization_id.eq.${orgId}`)
       .order('repair_name', { ascending: true }),
     supabase
       .from('pricing_rules')

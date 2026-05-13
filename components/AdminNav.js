@@ -8,11 +8,13 @@ import AdminSignOutButton from './AdminSignOutButton'
 const NAV_LINKS = [
   { href: '/admin/quotes', label: 'Quotes' },
   { href: '/admin/orders', label: 'Orders' },
+  { href: '/admin/appointments', label: 'Appointments' },
   { href: '/admin/customers', label: 'Customers' },
   { href: '/admin/reviews', label: 'Reviews' },
   { href: '/admin/analytics', label: 'Analytics' },
   { href: '/admin/sla', label: 'SLA' },
   { href: '/admin/parts', label: 'Parts' },
+  { href: '/admin/catalog', label: 'Catalog' },
   { href: '/admin/staff', label: 'Staff' },
   { href: '/admin/settings', label: 'Settings' },
   { href: '/admin/team', label: 'Team' },
@@ -27,6 +29,7 @@ export default function AdminNav() {
   const router = useRouter()
   const [billing, setBilling] = useState(null)
   const [unreviewedCount, setUnreviewedCount] = useState(0)
+  const [pendingAppointments, setPendingAppointments] = useState(0)
 
   // Search state
   const [query, setQuery] = useState('')
@@ -44,6 +47,10 @@ export default function AdminNav() {
     fetch('/admin/api/quotes/unreviewed-count')
       .then((r) => r.json())
       .then((json) => { if (typeof json.count === 'number') setUnreviewedCount(json.count) })
+      .catch(() => {})
+    fetch('/admin/api/appointments/count')
+      .then((r) => r.json())
+      .then((json) => { if (typeof json.count === 'number') setPendingAppointments(json.count) })
       .catch(() => {})
   }, [])
 
@@ -208,6 +215,23 @@ export default function AdminNav() {
                     display: 'inline-block',
                   }}>
                     {unreviewedCount > 99 ? '99+' : unreviewedCount}
+                  </span>
+                )}
+                {label === 'Appointments' && pendingAppointments > 0 && (
+                  <span style={{
+                    marginLeft: 5,
+                    background: 'var(--warn, #d97706)',
+                    color: '#fff',
+                    borderRadius: 10,
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    padding: '2px 5px',
+                    minWidth: 16,
+                    textAlign: 'center',
+                    display: 'inline-block',
+                  }}>
+                    {pendingAppointments > 99 ? '99+' : pendingAppointments}
                   </span>
                 )}
                 {label === 'Billing' && showUrgentBanner && (

@@ -1,6 +1,12 @@
 import CustomerTrackingPage from '../../../components/CustomerTrackingPage'
 
-export default async function TrackQuoteRoute({ params }) {
+export default async function TrackQuoteRoute({ params, searchParams }) {
   const resolvedParams = await params
-  return <CustomerTrackingPage quoteId={resolvedParams.quoteId} />
+  const resolvedSearch = await searchParams
+  return (
+    <CustomerTrackingPage
+      quoteId={resolvedParams.quoteId}
+      tok={resolvedSearch?.tok || ''}
+    />
+  )
 }
