@@ -21,7 +21,6 @@ export async function GET(request) {
 
   const supabase = getSupabaseAdmin()
   const pattern = `%${q}%`
-  const ilike = (col) => `.ilike.${pattern}`
 
   const [quotesResult, ordersResult, customersResult] = await Promise.all([
     // Quote requests: search by quote_id, first_name, last_name, email, brand_name, model_name
