@@ -101,7 +101,7 @@ function AdminAnalyticsDashboardInner() {
 
   const revenueTrend = revenue.prev > 0
     ? (((revenue.total - revenue.prev) / revenue.prev) * 100).toFixed(1)
-    : revenue.total > 0 ? '+100' : '0'
+    : revenue.total > 0 ? '100' : '0'
 
   const trendSign = Number(revenueTrend) >= 0 ? '+' : ''
   const trendColor = Number(revenueTrend) >= 0 ? '#16a34a' : '#ef4444'
@@ -179,9 +179,9 @@ function AdminAnalyticsDashboardInner() {
           <h3 style={{ marginBottom: 16 }}>Deposits vs Final Balances</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[
-              { label: 'Inspection Deposits', amount: revenue.deposits, rate: revenue.depositRate, color: '#2d6bff' },
-              { label: 'Final Balances', amount: revenue.balances, rate: revenue.balanceRate, color: '#16a34a' },
-            ].map(({ label, amount, rate, color }) => {
+              { label: 'Inspection Deposits', amount: revenue.deposits, color: '#2d6bff' },
+              { label: 'Final Balances', amount: revenue.balances, color: '#16a34a' },
+            ].map(({ label, amount, color }) => {
               const maxAmt = Math.max(revenue.deposits, revenue.balances, 1)
               return (
                 <div key={label}>
@@ -189,9 +189,6 @@ function AdminAnalyticsDashboardInner() {
                     <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{label}</span>
                     <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
                       {fmt(amount)}
-                      <span className='muted' style={{ fontWeight: 400, fontSize: '0.82rem', marginLeft: 8 }}>
-                        ({rate}% of orders)
-                      </span>
                     </span>
                   </div>
                   <div style={{ background: 'var(--border)', borderRadius: 6, height: 24, overflow: 'hidden' }}>
@@ -460,6 +457,7 @@ function fmt(amount) {
 }
 
 function fmtKey(key) {
-  if (!key || key === 'unknown' || key === 'N/A') return key || 'Unknown'
+  if (!key || key === 'N/A') return key || 'Unknown'
+  if (key === 'unknown') return 'Unknown'
   return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
