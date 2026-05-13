@@ -301,20 +301,25 @@ function AdminRepairOrderInner({ quoteId }) {
 
   const handleRemovePart = async (usageId) => {
     if (!record?.order?.id) return
+    setPartsError('')
     try {
       const res = await fetch(
         `/admin/api/orders/${record.order.id}/parts?usageId=${usageId}`,
         { method: 'DELETE' }
       )
-      if (!res.ok) return
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        setPartsError(json.error || 'Failed to remove part.')
+        return
+      }
       const usageRes = await fetch(`/admin/api/orders/${record.order.id}/parts`, { cache: 'no-store' })
       const usageJson = await usageRes.json()
       if (usageRes.ok) {
         setPartsUsed(usageJson.partsUsed || [])
         setPartsTotalCost(usageJson.totalPartsCost || 0)
       }
-    } catch {
-      // silent
+    } catch (err) {
+      setPartsError(err.message || 'Failed to remove part.')
     }
   }
 

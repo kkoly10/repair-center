@@ -92,9 +92,11 @@ function AdminPartsPageInner() {
 
       // Reload parts
       const reloadRes = await fetch('/admin/api/parts')
-      const reloadJson = await reloadRes.json()
-      setParts(reloadJson.parts || [])
-      setLowStockCount(reloadJson.lowStockCount || 0)
+      if (reloadRes.ok) {
+        const reloadJson = await reloadRes.json()
+        setParts(reloadJson.parts || [])
+        setLowStockCount(reloadJson.lowStockCount || 0)
+      }
       setAddForm(EMPTY_FORM)
       setShowAddForm(false)
     } catch (err) {
