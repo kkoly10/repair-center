@@ -24,7 +24,7 @@ export async function GET() {
       priority,
       due_at,
       created_at,
-      inspection_deposit_required,
+      assigned_technician_user_id,
       quote_requests(
         quote_id,
         first_name,
@@ -44,29 +44,35 @@ export async function GET() {
   }
 
   const orderIds = (orders || []).map((o) => o.id)
+  const techUserIds = [...new Set((orders || []).map((o) => o.assigned_technician_user_id).filter(Boolean))]
   let paymentsByOrder = {}
-  let techByOrder = {}
+  let techByUserId = {}
 
   if (orderIds.length > 0) {
-    const [paymentsResult, techResult] = await Promise.all([
+    const queries = [
       supabase
         .from('payments')
         .select('repair_order_id, amount')
         .eq('organization_id', orgId)
         .eq('status', 'paid')
         .in('repair_order_id', orderIds),
-      supabase
-        .from('repair_orders')
-        .select('id, assigned_technician_user_id, organization_members(profiles(full_name))')
-        .eq('organization_id', orgId)
-        .in('id', orderIds),
-    ])
+    ]
+    if (techUserIds.length > 0) {
+      queries.push(
+        supabase
+          .from('organization_members')
+          .select('user_id, profiles(full_name)')
+          .eq('organization_id', orgId)
+          .in('user_id', techUserIds)
+      )
+    }
+    const [paymentsResult, techResult] = await Promise.all(queries)
 
     for (const p of paymentsResult.data || []) {
       paymentsByOrder[p.repair_order_id] = (paymentsByOrder[p.repair_order_id] || 0) + Number(p.amount || 0)
     }
-    for (const o of techResult.data || []) {
-      techByOrder[o.id] = o.organization_members?.profiles?.full_name || ''
+    for (const m of techResult?.data || []) {
+      techByUserId[m.user_id] = m.profiles?.full_name || ''
     }
   }
 
@@ -95,7 +101,7 @@ export async function GET() {
       repairType,
       o.current_status || '',
       o.priority || 'normal',
-      techByOrder[o.id] || '',
+      techByUserId[o.assigned_technician_user_id] || '',
       fmtDate(o.due_at),
       fmtAmount(paymentsByOrder[o.id] || 0),
       fmtDate(o.created_at),
