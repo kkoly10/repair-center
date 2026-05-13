@@ -26,7 +26,6 @@ const { GET } = require('../../app/admin/api/reviews/route')
 // ──── POST /api/review/[quoteId] ────
 
 function makePostSupabase({ quoteData = null, quoteError = null, repairOrderData = null, insertError = null } = {}) {
-  let callIndex = 0
   const supabase = {
     from: jest.fn().mockImplementation((table) => {
       if (table === 'quote_requests') {

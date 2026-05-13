@@ -70,13 +70,18 @@ export async function GET(request) {
   warrantyWindowEnd.setDate(warrantyWindowEnd.getDate() + WARRANTY_REMINDER_DAYS_BEFORE)
 
   // Fetch orders with warranty_days set and repair_completed_at set
-  // Filter in JS since PostgREST can't do date arithmetic across columns
+  // Filter in JS since PostgREST can't do date arithmetic across columns.
+  // Lower bound: max realistic warranty (365 days) + reminder window to avoid scanning all history.
+  const warrantyQueryLowerBound = new Date(now)
+  warrantyQueryLowerBound.setDate(warrantyQueryLowerBound.getDate() - (365 + WARRANTY_REMINDER_DAYS_BEFORE))
+
   const { data: warrantyCandidates, error: warrantyQueryError } = await supabase
     .from('repair_orders')
     .select('id, quote_request_id, organization_id, repair_completed_at, warranty_days')
     .not('repair_completed_at', 'is', null)
     .not('warranty_days', 'is', null)
     .gt('warranty_days', 0)
+    .gte('repair_completed_at', warrantyQueryLowerBound.toISOString())
     .in('current_status', ['shipped', 'delivered'])
 
   if (warrantyQueryError) {
