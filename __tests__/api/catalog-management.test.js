@@ -195,6 +195,176 @@ describe('DELETE /admin/api/catalog/brands/[brandId]', () => {
 })
 
 // ─────────────────────────────────────────────
+// GET /admin/api/catalog/models
+// ─────────────────────────────────────────────
+describe('GET /admin/api/catalog/models', () => {
+  const { GET } = require('../../app/admin/api/catalog/models/route')
+
+  beforeEach(() => {
+    getSessionOrgId.mockReset()
+    getSupabaseAdmin.mockReset()
+  })
+
+  it('returns 401 when unauthenticated', async () => {
+    getSessionOrgId.mockRejectedValue(Object.assign(new Error('Unauthorized'), { status: 401 }))
+    const res = await GET()
+    expect(res.status).toBe(401)
+  })
+
+  it('returns global + org models with is_org_owned flag', async () => {
+    getSessionOrgId.mockResolvedValue(ORG_ID)
+    const rows = [
+      { id: MODEL_ID, model_name: 'iPhone 15', organization_id: null, repair_catalog_brands: { id: BRAND_ID, brand_name: 'Apple', category: 'phone' } },
+      { id: 'model-2', model_name: 'Custom Phone', organization_id: ORG_ID, repair_catalog_brands: { id: BRAND_ID, brand_name: 'Apple', category: 'phone' } },
+    ]
+    const chain = {
+      select: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      then: (resolve) => resolve({ data: rows, error: null }),
+    }
+    getSupabaseAdmin.mockReturnValue({ from: jest.fn(() => chain) })
+    const res = await GET()
+    const body = await res.json()
+    expect(body.ok).toBe(true)
+    expect(body.models[0].is_org_owned).toBe(false)
+    expect(body.models[1].is_org_owned).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────
+// PATCH /admin/api/catalog/models/[modelId]
+// ─────────────────────────────────────────────
+describe('PATCH /admin/api/catalog/models/[modelId]', () => {
+  const { PATCH } = require('../../app/admin/api/catalog/models/[modelId]/route')
+
+  beforeEach(() => {
+    getSessionOrgId.mockReset()
+    getSupabaseAdmin.mockReset()
+  })
+
+  it('returns 404 for cross-org model', async () => {
+    getSessionOrgId.mockResolvedValue(ORG_ID)
+    const chain = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+    }
+    getSupabaseAdmin.mockReturnValue({ from: jest.fn(() => chain) })
+    const res = await PATCH(makeReq({ modelName: 'Edited' }), makeCtx({ modelId: MODEL_ID }))
+    expect(res.status).toBe(404)
+  })
+
+  it('updates org-owned model', async () => {
+    getSessionOrgId.mockResolvedValue(ORG_ID)
+    const updated = { id: MODEL_ID, model_key: 'apple-edited-org-111', model_name: 'Edited', family_name: null, category: 'phone', active: true, organization_id: ORG_ID, repair_catalog_brands: { id: BRAND_ID, brand_name: 'Apple', category: 'phone' } }
+    const lookupChain = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data: { id: MODEL_ID }, error: null }),
+    }
+    const updateChain = {
+      update: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: updated, error: null }),
+    }
+    let call = 0
+    getSupabaseAdmin.mockReturnValue({ from: jest.fn(() => call++ === 0 ? lookupChain : updateChain) })
+    const res = await PATCH(makeReq({ modelName: 'Edited' }), makeCtx({ modelId: MODEL_ID }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.model.model_name).toBe('Edited')
+    expect(body.model.is_org_owned).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────
+// GET /admin/api/catalog/repair-types
+// ─────────────────────────────────────────────
+describe('GET /admin/api/catalog/repair-types', () => {
+  const { GET } = require('../../app/admin/api/catalog/repair-types/route')
+
+  beforeEach(() => {
+    getSessionOrgId.mockReset()
+    getSupabaseAdmin.mockReset()
+  })
+
+  it('returns 401 when unauthenticated', async () => {
+    getSessionOrgId.mockRejectedValue(Object.assign(new Error('Unauthorized'), { status: 401 }))
+    const res = await GET()
+    expect(res.status).toBe(401)
+  })
+
+  it('returns global + org repair types with is_org_owned flag', async () => {
+    getSessionOrgId.mockResolvedValue(ORG_ID)
+    const rows = [
+      { id: TYPE_ID, repair_name: 'Screen Replacement', organization_id: null },
+      { id: 'type-2', repair_name: 'Mobo Repair', organization_id: ORG_ID },
+    ]
+    const chain = {
+      select: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      then: (resolve) => resolve({ data: rows, error: null }),
+    }
+    getSupabaseAdmin.mockReturnValue({ from: jest.fn(() => chain) })
+    const res = await GET()
+    const body = await res.json()
+    expect(body.ok).toBe(true)
+    expect(body.repairTypes[0].is_org_owned).toBe(false)
+    expect(body.repairTypes[1].is_org_owned).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────
+// PATCH /admin/api/catalog/repair-types/[typeId]
+// ─────────────────────────────────────────────
+describe('PATCH /admin/api/catalog/repair-types/[typeId]', () => {
+  const { PATCH } = require('../../app/admin/api/catalog/repair-types/[typeId]/route')
+
+  beforeEach(() => {
+    getSessionOrgId.mockReset()
+    getSupabaseAdmin.mockReset()
+  })
+
+  it('returns 404 for cross-org repair type', async () => {
+    getSessionOrgId.mockResolvedValue(ORG_ID)
+    const chain = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+    }
+    getSupabaseAdmin.mockReturnValue({ from: jest.fn(() => chain) })
+    const res = await PATCH(makeReq({ repairName: 'Edited' }), makeCtx({ typeId: TYPE_ID }))
+    expect(res.status).toBe(404)
+  })
+
+  it('updates org-owned repair type', async () => {
+    getSessionOrgId.mockResolvedValue(ORG_ID)
+    const updated = { id: TYPE_ID, repair_key: 'edited_org-111', repair_name: 'Edited', category: null, price_mode_default: 'manual', warranty_days_default: null, active: true, organization_id: ORG_ID }
+    const lookupChain = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data: { id: TYPE_ID }, error: null }),
+    }
+    const updateChain = {
+      update: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: updated, error: null }),
+    }
+    let call = 0
+    getSupabaseAdmin.mockReturnValue({ from: jest.fn(() => call++ === 0 ? lookupChain : updateChain) })
+    const res = await PATCH(makeReq({ repairName: 'Edited' }), makeCtx({ typeId: TYPE_ID }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.repairType.repair_name).toBe('Edited')
+    expect(body.repairType.is_org_owned).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────
 // POST /admin/api/catalog/models
 // ─────────────────────────────────────────────
 describe('POST /admin/api/catalog/models', () => {

@@ -35,7 +35,7 @@ function BrandsTab() {
   useEffect(() => {
     fetch('/admin/api/catalog/brands')
       .then((r) => r.json())
-      .then((d) => { if (d.ok) setBrands(d.brands || []); setLoading(false) })
+      .then((d) => { if (d.ok) setBrands(d.brands || []); else setError(d.error || 'Failed to load brands.'); setLoading(false) })
       .catch(() => { setError('Failed to load brands.'); setLoading(false) })
   }, [])
 
@@ -185,7 +185,7 @@ function ModelsTab() {
       fetch('/admin/api/catalog/models').then((r) => r.json()),
       fetch('/admin/api/catalog/brands').then((r) => r.json()),
     ]).then(([mRes, bRes]) => {
-      if (mRes.ok) setModels(mRes.models || [])
+      if (mRes.ok) setModels(mRes.models || []); else setError(mRes.error || 'Failed to load models.')
       if (bRes.ok) setBrands(bRes.brands || [])
       setLoading(false)
     }).catch(() => { setError('Failed to load.'); setLoading(false) })
@@ -362,8 +362,8 @@ function RepairTypesTab() {
   useEffect(() => {
     fetch('/admin/api/catalog/repair-types')
       .then((r) => r.json())
-      .then((d) => { if (d.ok) setRepairTypes(d.repairTypes || []); setLoading(false) })
-      .catch(() => { setError('Failed to load.'); setLoading(false) })
+      .then((d) => { if (d.ok) setRepairTypes(d.repairTypes || []); else setError(d.error || 'Failed to load repair types.'); setLoading(false) })
+      .catch(() => { setError('Failed to load repair types.'); setLoading(false) })
   }, [])
 
   async function handleAdd(e) {
@@ -541,7 +541,7 @@ export default function AdminCatalogPage() {
           <p>View the global device catalog and add custom brands, models, and repair types for your shop. Custom items are available alongside global ones when creating pricing rules.</p>
         </div>
 
-        <div className='notice-info' style={{ fontSize: 13 }}>
+        <div className='notice notice-warn' style={{ fontSize: 13 }}>
           <strong>Global items</strong> are maintained by the platform and are read-only. <strong>Custom items</strong> belong to your shop — you can edit or delete them.
         </div>
 

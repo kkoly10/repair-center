@@ -5,7 +5,7 @@ import { getSessionOrgId } from '../../../../../lib/admin/getSessionOrgId'
 export const runtime = 'nodejs'
 
 function slugify(name, orgId) {
-  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'brand'
   return `${base}-${orgId.slice(0, 8)}`
 }
 
