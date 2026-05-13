@@ -281,6 +281,29 @@ All data comes from existing tables: `payments`, `repair_orders`, `quote_request
 
 ---
 
+## Sprint 12 — Inventory & Parts ✅ COMPLETE
+
+### Migration applied to production
+- `20260512_010_inventory.sql` — `suppliers`, `parts`, `repair_order_parts` tables with org-scoped RLS (`is_staff(organization_id)` FOR ALL)
+
+### What was done
+- **`GET /admin/api/parts`** — lists all org parts with nested `suppliers(name)` join; `is_low_stock` computed in JS (PostgREST column-to-column comparison not supported); `lowStockCount` returned; `?low_stock=1` filter post-fetch
+- **`POST /admin/api/parts`** — creates part scoped to session org; validates name
+- **`GET /admin/api/parts/[partId]`** — single part, org-scoped, 404 if not found
+- **`PATCH /admin/api/parts/[partId]`** — verifies org ownership first; allowlist of fields; validates name; sets `updated_at`
+- **`DELETE /admin/api/parts/[partId]`** — **soft-delete** (`active: false`); preserves `repair_order_parts` foreign key references
+- **`GET /admin/api/orders/[orderId]/parts`** — order-scoped usage list with nested `parts(name, sku)`, per-row `total_cost`, `totalPartsCost`
+- **`POST /admin/api/orders/[orderId]/parts`** — validates part + order org membership; 409 if insufficient stock; inserts usage + decrements `quantity_on_hand` in `Promise.all`
+- **`DELETE /admin/api/orders/[orderId]/parts?usageId=`** — removes usage record + restores stock via fetch-then-update
+- **`components/AdminPartsPage.js`** + **`app/admin/parts/page.js`** — full CRUD: low-stock banner, add form, inline edit rows, deactivate button; search (name/SKU/desc), show inactive checkbox, show low stock only toggle
+- **`components/AdminRepairOrderPage.js`** — added "Parts & materials" section: loads parts used + active catalog on order open; table of parts used with remove button; add-part form (select part from catalog, qty, optional notes); parts total displayed
+- **`__tests__/api/parts.test.js`** — 15 tests: 401/org-filter for list, `is_low_stock` flag, POST name validation + org insert, PATCH cross-org 404 + update, DELETE soft-delete + cross-org 404, order parts GET 401/404/data, order parts POST 401/409 insufficient stock/insert+decrement
+
+### Test suite after Sprint 12
+80 tests across 10 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
