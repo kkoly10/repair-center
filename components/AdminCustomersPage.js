@@ -60,6 +60,7 @@ function AdminCustomersInner() {
               <p>All customers who have submitted a repair request.</p>
             </div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <a href='/admin/api/export/customers' className='button button-secondary' download>Export CSV</a>
               <Link href='/admin/orders' className='button button-secondary'>Repair queue</Link>
               <AdminSignOutButton />
             </div>

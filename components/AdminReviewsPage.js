@@ -42,7 +42,10 @@ export default function AdminReviewsPage() {
 
   return (
     <div style={{ padding: '32px 24px', maxWidth: 960, margin: '0 auto' }}>
-      <h1 style={{ margin: '0 0 24px', fontSize: '1.5rem', fontWeight: 700 }}>Customer Reviews</h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, gap: 12, flexWrap: 'wrap' }}>
+        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>Customer Reviews</h1>
+        <a href='/admin/api/export/reviews' download style={{ fontSize: '0.875rem', padding: '7px 14px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: 'var(--text)', textDecoration: 'none', whiteSpace: 'nowrap' }}>Export CSV</a>
+      </div>
 
       {loading ? (
         <p style={{ color: 'var(--muted)' }}>Loading…</p>
