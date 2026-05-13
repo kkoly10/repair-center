@@ -1,10 +1,24 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../lib/supabase/admin'
 import { sendAppointmentConfirmationEmail } from '../../../lib/email'
+import { checkRateLimit } from '../../../lib/rateLimiter'
 
 export const runtime = 'nodejs'
 
 export async function POST(request) {
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    'unknown'
+
+  const { allowed } = await checkRateLimit(ip, { maxRequests: 10, windowMs: 60 * 60 * 1000 })
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please wait a while before trying again.' },
+      { status: 429 }
+    )
+  }
+
   const supabase = getSupabaseAdmin()
 
   let body

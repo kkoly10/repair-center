@@ -10,6 +10,7 @@
 jest.mock('../../lib/supabase/admin', () => ({ getSupabaseAdmin: jest.fn() }))
 jest.mock('../../lib/admin/getSessionOrgId', () => ({ getSessionOrgId: jest.fn() }))
 jest.mock('../../lib/email', () => ({ sendAppointmentConfirmationEmail: jest.fn().mockResolvedValue(undefined) }))
+jest.mock('../../lib/rateLimiter', () => ({ checkRateLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 9 }) }))
 
 const { getSupabaseAdmin } = require('../../lib/supabase/admin')
 const { getSessionOrgId } = require('../../lib/admin/getSessionOrgId')

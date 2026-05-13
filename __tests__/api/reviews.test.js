@@ -17,6 +17,7 @@
 
 jest.mock('../../lib/supabase/admin')
 jest.mock('../../lib/admin/getSessionOrgId')
+jest.mock('../../lib/rateLimiter', () => ({ checkRateLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 9 }) }))
 
 const { getSupabaseAdmin } = require('../../lib/supabase/admin')
 const { getSessionOrgId } = require('../../lib/admin/getSessionOrgId')
@@ -56,6 +57,7 @@ function makePostSupabase({ quoteData = null, quoteError = null, repairOrderData
 function makePostRequest(body) {
   return {
     json: jest.fn().mockResolvedValue(body),
+    headers: { get: () => null },
   }
 }
 

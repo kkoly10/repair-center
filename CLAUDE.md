@@ -574,6 +574,43 @@ Add to `vercel.json` (Vercel Cron) or call from an external scheduler daily:
 
 ---
 
+## Sprint 25 — Gap Audit & Hardening ✅ COMPLETE
+
+### Investigation findings
+Full gap audit performed against all 24 sprints. Key findings:
+
+1. **`getDefaultOrgId()` call sites**: Only two intentional fallback paths remain (`customer-portal`, `quote-requests`) — both serve legacy single-tenant routes (`/portal`, `/estimate`). A third call site in `lib/admin/quotes.js` was dead code.
+2. **`is_staff()` legacy function**: Still used by 13 RLS policies across 9 tables — cannot drop without rewriting all policies first. Migration 020 written but **not yet applied** — requires testing against staging DB.
+3. **Rate limiting**: `quote-requests` already had it. `appointments` and `review/[quoteId]` were missing it.
+4. **Notifications observability**: Already complete — `notifications` table records `queued → sent/failed` with `error_message`; SMS errors logged.
+5. **`profiles.email` nulls**: Zero null-email profiles confirmed via DB query — migration 015 backfill held.
+6. **`lib/admin/quotes.js` dead code**: `listQuoteRequests`, `getQuoteRequestDetail`, `buildStatusCounts` were exported but never called; both used `getDefaultOrgId()`.
+
+### What was done
+- **`lib/admin/quotes.js`** — removed `listQuoteRequests`, `getQuoteRequestDetail`, `buildStatusCounts`, and the `getDefaultOrgId` import; retained `QUOTE_STATUS_OPTIONS`, `formatQuotePrice`, `formatStatusLabel`
+- **`app/api/appointments/route.js`** — added `checkRateLimit` (10 req/hr per IP) at top of POST handler
+- **`app/api/review/[quoteId]/route.js`** — added `checkRateLimit` (20 req/hr per IP) at top of POST handler
+- **`__tests__/api/appointments.test.js`** — added `jest.mock('../../lib/rateLimiter', ...)` to prevent rate limiter from consuming mock Supabase calls
+- **`__tests__/api/reviews.test.js`** — same mock + added `headers: { get: () => null }` to `makePostRequest`
+- **`supabase/migrations/20260514_020_replace_is_staff_policies.sql`** — migration written to rewrite all 13 `is_staff()` RLS policies to use `is_org_member(organization_id)` and then drop the no-arg `is_staff()` function; **not yet applied to production — requires staging validation first**
+
+### Known remaining gaps (tracked)
+| Gap | Status | Notes |
+|-----|--------|-------|
+| `is_staff()` policy rewrite | Pending production apply | Migration 020 written; must test on staging first |
+| `getDefaultOrgId()` in `customer-portal` + `quote-requests` | Intentional | Legacy single-tenant routes; remove when all shops have slugs |
+| RLS integration tests | Not started | Requires local Supabase CLI setup |
+| `AdminRepairOrderPage.js` refactor (1300+ lines) | Not started | Extract sections one at a time |
+| Inline styles → CSS Modules | Not started | ThemeProvider approach planned; not yet prioritized |
+| Customer account login | Not started | Sprint 26+ backlog |
+| Staging environment | Not started | Second Supabase project + `apply-migration.sh` script |
+| Proxy-based test mock factory | Not started | Eliminate brittle `callCount`-based chains |
+
+### Test suite after Sprint 25
+190 tests across 19 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
