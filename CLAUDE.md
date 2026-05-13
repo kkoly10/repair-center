@@ -356,6 +356,41 @@ All data comes from existing tables: `payments`, `repair_orders`, `quote_request
 
 ---
 
+## Sprint 15 — Billing Enforcement + Admin Navigation ✅ COMPLETE
+
+### Migrations applied to production
+- `20260513_014_trial_warning_sent_at.sql` — adds `trial_warning_sent_at` (timestamptz, nullable) to `organizations`; used by cron to avoid sending duplicate warning emails
+
+### What was done
+- **`proxy.js`** — two hardening improvements:
+  1. Lazy trial expiry enforcement: if `status === 'trialing'` AND `trial_ends_at < now()`, user is redirected to `/admin/suspended` (same as suspended/cancelled); fires on every request without a separate cron DB write
+  2. Extended blocked-status bypass: now covers both `/admin/suspended` AND `/admin/billing/*` so expired/suspended users can reach billing to subscribe and restore access
+  Also adds `trial_ends_at` to the org join (`organizations(status, trial_ends_at)`)
+- **`components/AdminNav.js`** (new) — shared client-side nav component: sticky top bar with links to all 9 admin sections; active page highlighted; fetches `/admin/api/billing` on mount to show trial countdown banner (yellow < 7 days, red ≤ 3 days / expired) and past-due banner; orange dot on Billing nav link when urgency is active; sign-out button
+- **`app/admin/layout.js`** — wires `AdminNav` above the page Suspense boundary so every admin page has the nav
+- **`lib/email.js`** — added `sendTrialExpiryWarningEmail({ to, orgName, daysLeft, billingUrl })` + `trialExpiryWarningHtml()` template (urgent color coding, "Upgrade Now" CTA button)
+- **`GET /api/cron/trial-check`** — daily cron endpoint (authorized via `CRON_SECRET` Bearer token if set):
+  - Fetches all `status = 'trialing'` orgs with `trial_ends_at` set
+  - **Expires** overdue trials: updates `status = 'suspended'` + sends expiry email to org owner
+  - **Warns** orgs with ≤ 3 days left: sends warning email (3d and 1d thresholds); throttled to once per 20h via `trial_warning_sent_at`
+  - Returns `{ ok, processed, expired, warned, errors }`
+
+### New env vars
+- `CRON_SECRET` — optional; if set, `GET /api/cron/trial-check` requires `Authorization: Bearer $CRON_SECRET`
+
+### How to schedule
+Add to `vercel.json` (Vercel Cron) or call from an external scheduler daily:
+```json
+{
+  "crons": [{ "path": "/api/cron/trial-check", "schedule": "0 8 * * *" }]
+}
+```
+
+### Test suite after Sprint 15
+94 tests across 11 suites — all passing (no new test suite; enforcement is covered by existing billing + proxy logic).
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
@@ -363,3 +398,4 @@ All data comes from existing tables: `payments`, `repair_orders`, `quote_request
 - Stripe webhook secret for repair payments: `STRIPE_WEBHOOK_SECRET`
 - Stripe webhook secret for billing: `STRIPE_BILLING_WEBHOOK_SECRET`
 - Stripe billing price ID: `STRIPE_BILLING_PRICE_ID`
+- Cron secret for `/api/cron/trial-check`: `CRON_SECRET` (optional)

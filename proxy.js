@@ -58,7 +58,7 @@ export async function proxy(request) {
 
   const { data: membership } = await supabase
     .from('organization_members')
-    .select('role, organization_id, organizations(status)')
+    .select('role, organization_id, organizations(status, trial_ends_at)')
     .eq('user_id', user.id)
     .eq('status', 'active')
     .in('role', ['owner', 'admin', 'tech'])
@@ -72,7 +72,12 @@ export async function proxy(request) {
 
   const BLOCKED_STATUSES = new Set(['suspended', 'cancelled'])
   const orgStatus = membership.organizations?.status
-  if (orgStatus && BLOCKED_STATUSES.has(orgStatus) && !isBlockedStatusBypass) {
+  const trialEndsAt = membership.organizations?.trial_ends_at
+
+  // Lazily expire trials: if org is still 'trialing' but trial_ends_at has passed, block access
+  const trialExpired = orgStatus === 'trialing' && trialEndsAt && new Date(trialEndsAt) < new Date()
+
+  if ((trialExpired || (orgStatus && BLOCKED_STATUSES.has(orgStatus))) && !isBlockedStatusBypass) {
     return NextResponse.redirect(new URL('/admin/suspended', request.url))
   }
 
