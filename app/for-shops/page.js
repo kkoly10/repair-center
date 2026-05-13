@@ -99,7 +99,7 @@ const compare = [
   { feature: 'Appointment booking', us: true, shopr: true, desk: true },
   { feature: 'Parts inventory', us: true, shopr: true, desk: true },
   { feature: 'Analytics dashboard', us: true, shopr: true, desk: true },
-  { feature: 'HMAC-secured email links', us: true, shopr: false, desk: false },
+  { feature: 'Tamper-proof customer links', us: true, shopr: false, desk: false },
   { feature: 'Starting price', us: `$${PRICE}/mo`, shopr: '$99/mo', desk: '$49/mo' },
   { feature: 'Free trial', us: '14 days', shopr: 'No card req.', desk: 'Limited' },
 ]
@@ -115,7 +115,7 @@ const faqs = [
   },
   {
     q: 'Can I bring my existing customers over?',
-    a: "Your customer records, repair history, and pricing rules all live in your account from day one. No migration fee and no lock-in.",
+    a: "New accounts start fresh — RepairCenter builds your history as jobs come in. Your pricing rules are set up during onboarding. If you need to migrate data from another platform, reach out and we will help.",
   },
   {
     q: "Do my customers need to create accounts?",
@@ -191,7 +191,7 @@ export default function ForShopsPage() {
                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#fbbf24' }} />
                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#34d399' }} />
                 <span style={{ marginLeft: 8, fontSize: '0.8rem', color: 'var(--muted)', fontFamily: 'monospace' }}>
-                  /admin/quotes
+                  your-shop.repaircenter.app/admin
                 </span>
               </div>
               {[
@@ -466,7 +466,7 @@ export default function ForShopsPage() {
                 Start free trial
               </Link>
               <Link href="/contact" className="button button-secondary">
-                Talk to us first
+                Get in touch
               </Link>
             </div>
           </div>
