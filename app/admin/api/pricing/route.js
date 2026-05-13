@@ -69,16 +69,18 @@ export async function POST(request) {
   if (!modelResult.data) return NextResponse.json({ error: 'Model not found.' }, { status: 404 })
   if (!repairTypeResult.data) return NextResponse.json({ error: 'Repair type not found.' }, { status: 404 })
 
+  const numOrNull = (v) => (v !== '' && v != null) ? Number(v) : null
+
   const insert = {
     organization_id: orgId,
     model_id: modelId,
     repair_type_id: repairTypeId,
     price_mode: priceMode,
-    public_price_fixed: priceMode === 'fixed' ? (Number(body.publicPriceFixed) || null) : null,
-    public_price_min: priceMode === 'range' ? (Number(body.publicPriceMin) || null) : null,
-    public_price_max: priceMode === 'range' ? (Number(body.publicPriceMax) || null) : null,
-    deposit_amount: Number(body.depositAmount) || null,
-    warranty_days: Number(body.warrantyDays) || null,
+    public_price_fixed: priceMode === 'fixed' ? numOrNull(body.publicPriceFixed) : null,
+    public_price_min: priceMode === 'range' ? numOrNull(body.publicPriceMin) : null,
+    public_price_max: priceMode === 'range' ? numOrNull(body.publicPriceMax) : null,
+    deposit_amount: numOrNull(body.depositAmount),
+    warranty_days: numOrNull(body.warrantyDays),
     active: body.active !== false,
   }
 

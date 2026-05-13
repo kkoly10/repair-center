@@ -95,17 +95,18 @@ function AdminPricingPageInner() {
           modelId: addDraft.modelId,
           repairTypeId: addDraft.repairTypeId,
           priceMode: addDraft.priceMode,
-          publicPriceFixed: addDraft.publicPriceFixed || null,
-          publicPriceMin: addDraft.publicPriceMin || null,
-          publicPriceMax: addDraft.publicPriceMax || null,
-          depositAmount: addDraft.depositAmount || null,
-          warrantyDays: addDraft.warrantyDays || null,
+          publicPriceFixed: addDraft.publicPriceFixed !== '' ? addDraft.publicPriceFixed : null,
+          publicPriceMin: addDraft.publicPriceMin !== '' ? addDraft.publicPriceMin : null,
+          publicPriceMax: addDraft.publicPriceMax !== '' ? addDraft.publicPriceMax : null,
+          depositAmount: addDraft.depositAmount !== '' ? addDraft.depositAmount : null,
+          warrantyDays: addDraft.warrantyDays !== '' ? addDraft.warrantyDays : null,
           active: true,
         }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Failed to create rule.')
       setRules((prev) => [...prev, json.rule])
+      setCatalog((prev) => prev ? { ...prev, existingKeys: [...(prev.existingKeys || []), `${addDraft.modelId}:${addDraft.repairTypeId}`] } : prev)
       closeAddForm()
     } catch (err) {
       setAddError(err.message)
