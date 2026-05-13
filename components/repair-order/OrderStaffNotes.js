@@ -1,13 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 export default function OrderStaffNotes({ orderId, initialNotes }) {
   const [notes, setNotes] = useState(initialNotes || '')
-
-  useEffect(() => {
-    setNotes(initialNotes || '')
-  }, [orderId])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)

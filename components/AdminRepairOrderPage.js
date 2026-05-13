@@ -888,6 +888,7 @@ function AdminRepairOrderInner({ quoteId }) {
 
             {record.order && (
               <OrderStaffNotes
+                key={record.order.id}
                 orderId={record.order.id}
                 initialNotes={record.order.notes || ''}
               />
