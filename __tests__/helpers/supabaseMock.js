@@ -57,6 +57,8 @@ function createSupabaseMock(responses = {}) {
       like: jest.fn().mockReturnThis(),
       order: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
+      // range() returns `this` so `await chain.range()` resolves via chain.then().
+      // Routes that use range() as a terminal method work correctly via the thenable protocol.
       range: jest.fn().mockReturnThis(),
       match: jest.fn().mockReturnThis(),
       contains: jest.fn().mockReturnThis(),
