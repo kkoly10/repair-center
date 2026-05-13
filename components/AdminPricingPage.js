@@ -27,6 +27,8 @@ function formatPrice(rule) {
   return '—'
 }
 
+const EMPTY_ADD = { modelId: '', repairTypeId: '', priceMode: 'manual', publicPriceFixed: '', publicPriceMin: '', publicPriceMax: '', depositAmount: '', warrantyDays: '' }
+
 function AdminPricingPageInner() {
   const [rules, setRules] = useState([])
   const [loading, setLoading] = useState(true)
@@ -39,12 +41,97 @@ function AdminPricingPageInner() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
 
+  // Add rule state
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [catalog, setCatalog] = useState(null)
+  const [catalogLoading, setCatalogLoading] = useState(false)
+  const [addDraft, setAddDraft] = useState(EMPTY_ADD)
+  const [addSaving, setAddSaving] = useState(false)
+  const [addError, setAddError] = useState('')
+
+  // Delete state
+  const [deletingId, setDeletingId] = useState(null)
+
   useEffect(() => {
     fetch('/admin/api/pricing')
       .then((r) => (r.ok ? r.json() : r.json().then((d) => Promise.reject(d.error || 'Failed'))))
       .then((data) => { setRules(data.rules || []); setLoading(false) })
       .catch((err) => { setLoadError(String(err)); setLoading(false) })
   }, [])
+
+  function openAddForm() {
+    setShowAddForm(true)
+    setAddDraft(EMPTY_ADD)
+    setAddError('')
+    if (!catalog) {
+      setCatalogLoading(true)
+      fetch('/admin/api/catalog')
+        .then((r) => r.json())
+        .then((json) => { if (json.ok) setCatalog(json) })
+        .catch(() => {})
+        .finally(() => setCatalogLoading(false))
+    }
+  }
+
+  function closeAddForm() {
+    setShowAddForm(false)
+    setAddDraft(EMPTY_ADD)
+    setAddError('')
+  }
+
+  async function submitAdd(e) {
+    e.preventDefault()
+    if (!addDraft.modelId || !addDraft.repairTypeId) {
+      setAddError('Please select a device model and repair type.')
+      return
+    }
+    setAddSaving(true)
+    setAddError('')
+    try {
+      const res = await fetch('/admin/api/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modelId: addDraft.modelId,
+          repairTypeId: addDraft.repairTypeId,
+          priceMode: addDraft.priceMode,
+          publicPriceFixed: addDraft.publicPriceFixed || null,
+          publicPriceMin: addDraft.publicPriceMin || null,
+          publicPriceMax: addDraft.publicPriceMax || null,
+          depositAmount: addDraft.depositAmount || null,
+          warrantyDays: addDraft.warrantyDays || null,
+          active: true,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to create rule.')
+      setRules((prev) => [...prev, json.rule])
+      closeAddForm()
+    } catch (err) {
+      setAddError(err.message)
+    } finally {
+      setAddSaving(false)
+    }
+  }
+
+  async function handleDelete(ruleId) {
+    if (!window.confirm('Delete this pricing rule? This cannot be undone.')) return
+    setDeletingId(ruleId)
+    try {
+      const res = await fetch(`/admin/api/pricing/${ruleId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const json = await res.json()
+        alert(json.error || 'Failed to delete rule.')
+        return
+      }
+      setRules((prev) => prev.filter((r) => r.id !== ruleId))
+      if (editingId === ruleId) { setEditingId(null); setEditDraft({}) }
+    } catch {
+      alert('Network error. Please try again.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const categories = useMemo(() => [...new Set(rules.map((r) => r.repair_catalog_models?.category).filter(Boolean))].sort(), [rules])
   const brands = useMemo(() => {
@@ -65,6 +152,28 @@ function AdminPricingPageInner() {
     }
     return list
   }, [rules, filterCategory, filterBrand, filterText])
+
+  // Catalog selectors derived from fetched catalog
+  const existingKeys = useMemo(() => new Set(catalog?.existingKeys || []), [catalog])
+  const catalogModels = catalog?.models || []
+  const catalogRepairTypes = catalog?.repairTypes || []
+
+  // Group models by category then brand for the add form selector
+  const modelGroups = useMemo(() => {
+    const map = {}
+    for (const m of catalogModels) {
+      const cat = m.category || 'Other'
+      const brand = m.repair_catalog_brands?.brand_name || 'Unknown'
+      const key = `${cat} — ${brand}`
+      if (!map[key]) map[key] = []
+      map[key].push(m)
+    }
+    return map
+  }, [catalogModels])
+
+  const addRepairTypeId = addDraft.repairTypeId
+  const addModelId = addDraft.modelId
+  const isDuplicate = addModelId && addRepairTypeId && existingKeys.has(`${addModelId}:${addRepairTypeId}`)
 
   function startEdit(rule) {
     setEditingId(rule.id)
@@ -126,18 +235,142 @@ function AdminPricingPageInner() {
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='info-card'>
-          <div className='kicker'>Admin — Pricing</div>
-          <h1>Pricing Rules</h1>
-          <p>
-            Edit the public price shown to customers for each device and repair type. Set
-            to <strong>Manual review</strong> to hide pricing and always require a custom quote.
-          </p>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <div className='kicker'>Admin — Pricing</div>
+              <h1>Pricing Rules</h1>
+              <p>
+                Edit the public price shown to customers for each device and repair type. Set
+                to <strong>Manual review</strong> to hide pricing and always require a custom quote.
+              </p>
+            </div>
+            <div>
+              <button type='button' className='button button-primary' onClick={openAddForm} style={{ marginTop: 4 }}>
+                + Add Rule
+              </button>
+            </div>
+          </div>
         </div>
 
         {rules.length > 0 && !hasActiveRules && (
           <div className='notice notice-warn'>
             No pricing rules are currently active. Customers will see every repair as requiring
             manual review. Activate at least one rule or set prices to make them visible.
+          </div>
+        )}
+
+        {/* Add Rule form */}
+        {showAddForm && (
+          <div className='policy-card'>
+            <h3 style={{ margin: '0 0 16px', fontSize: '1.05rem' }}>Add Pricing Rule</h3>
+            {catalogLoading ? (
+              <p style={{ color: 'var(--muted)' }}>Loading catalog…</p>
+            ) : (
+              <form onSubmit={submitAdd}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14, marginBottom: 16 }}>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Device model</label>
+                    <select
+                      value={addDraft.modelId}
+                      onChange={(e) => setAddDraft((d) => ({ ...d, modelId: e.target.value }))}
+                      style={inputStyle}
+                      required
+                    >
+                      <option value=''>Select a model…</option>
+                      {Object.entries(modelGroups).sort(([a], [b]) => a.localeCompare(b)).map(([groupLabel, models]) => (
+                        <optgroup key={groupLabel} label={groupLabel}>
+                          {models.map((m) => (
+                            <option key={m.id} value={m.id}>{m.model_name}</option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Repair type</label>
+                    <select
+                      value={addDraft.repairTypeId}
+                      onChange={(e) => setAddDraft((d) => ({ ...d, repairTypeId: e.target.value }))}
+                      style={inputStyle}
+                      required
+                    >
+                      <option value=''>Select a repair type…</option>
+                      {catalogRepairTypes.map((rt) => (
+                        <option key={rt.id} value={rt.id}>{rt.repair_name}</option>
+                      ))}
+                    </select>
+                    {isDuplicate && (
+                      <p style={{ margin: '6px 0 0', color: 'var(--warn, #d97706)', fontSize: '0.85rem' }}>
+                        A rule for this combination already exists. Edit it in the list below.
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Price mode</label>
+                    <select
+                      value={addDraft.priceMode}
+                      onChange={(e) => setAddDraft((d) => ({ ...d, priceMode: e.target.value }))}
+                      style={inputStyle}
+                    >
+                      <option value='fixed'>Fixed</option>
+                      <option value='range'>Range</option>
+                      <option value='manual'>Manual review</option>
+                    </select>
+                  </div>
+
+                  {addDraft.priceMode === 'fixed' && (
+                    <div>
+                      <label style={labelStyle}>Fixed price ($)</label>
+                      <input type='number' min='0' step='0.01' value={addDraft.publicPriceFixed}
+                        onChange={(e) => setAddDraft((d) => ({ ...d, publicPriceFixed: e.target.value }))}
+                        style={inputStyle} placeholder='0.00' />
+                    </div>
+                  )}
+
+                  {addDraft.priceMode === 'range' && (
+                    <>
+                      <div>
+                        <label style={labelStyle}>Min price ($)</label>
+                        <input type='number' min='0' step='0.01' value={addDraft.publicPriceMin}
+                          onChange={(e) => setAddDraft((d) => ({ ...d, publicPriceMin: e.target.value }))}
+                          style={inputStyle} placeholder='0.00' />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Max price ($)</label>
+                        <input type='number' min='0' step='0.01' value={addDraft.publicPriceMax}
+                          onChange={(e) => setAddDraft((d) => ({ ...d, publicPriceMax: e.target.value }))}
+                          style={inputStyle} placeholder='0.00' />
+                      </div>
+                    </>
+                  )}
+
+                  <div>
+                    <label style={labelStyle}>Deposit ($)</label>
+                    <input type='number' min='0' step='0.01' value={addDraft.depositAmount}
+                      onChange={(e) => setAddDraft((d) => ({ ...d, depositAmount: e.target.value }))}
+                      style={inputStyle} placeholder='0.00' />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Warranty (days)</label>
+                    <input type='number' min='0' step='1' value={addDraft.warrantyDays}
+                      onChange={(e) => setAddDraft((d) => ({ ...d, warrantyDays: e.target.value }))}
+                      style={inputStyle} placeholder='90' />
+                  </div>
+                </div>
+
+                {addError && <div className='notice notice-warn' style={{ marginBottom: 14 }}>{addError}</div>}
+
+                <div className='inline-actions'>
+                  <button type='submit' className='button button-primary' disabled={addSaving || !!isDuplicate}>
+                    {addSaving ? 'Adding…' : 'Add Rule'}
+                  </button>
+                  <button type='button' className='button button-secondary' onClick={closeAddForm}>Cancel</button>
+                </div>
+              </form>
+            )}
           </div>
         )}
 
@@ -190,6 +423,7 @@ function AdminPricingPageInner() {
               const repairType = rule.repair_types || {}
               const brand = model.repair_catalog_brands?.brand_name || '—'
               const isEditing = editingId === rule.id
+              const isDeleting = deletingId === rule.id
 
               return (
                 <div key={rule.id} className='policy-card'>
@@ -202,9 +436,20 @@ function AdminPricingPageInner() {
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       {!rule.active && <span className='mini-chip' style={{ background: 'var(--border)' }}>Inactive</span>}
                       {!isEditing && (
-                        <button type='button' className='button button-secondary button-compact' onClick={() => startEdit(rule)}>
-                          Edit
-                        </button>
+                        <>
+                          <button type='button' className='button button-secondary button-compact' onClick={() => startEdit(rule)}>
+                            Edit
+                          </button>
+                          <button
+                            type='button'
+                            className='button button-secondary button-compact'
+                            style={{ color: 'var(--danger, #dc2626)', borderColor: 'var(--danger, #dc2626)' }}
+                            disabled={isDeleting}
+                            onClick={() => handleDelete(rule.id)}
+                          >
+                            {isDeleting ? '…' : 'Delete'}
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
