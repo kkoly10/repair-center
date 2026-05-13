@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '../../../lib/supabase/admin'
 import { getDefaultOrgId } from '../../../lib/admin/org'
 import { checkRateLimit } from '../../../lib/rateLimiter'
 import { ALLOWED_PHOTO_MIME, MAX_PHOTO_BYTES, MAX_PHOTO_COUNT, extensionForMime } from '../../../lib/photoMime'
+import { sendNewQuoteAlertEmail } from '../../../lib/email'
 
 export const runtime = 'nodejs'
 
@@ -240,6 +241,37 @@ export async function POST(request) {
         photoWarnings.push(`${file.name}: ${photoError.message}`)
       }
     }
+
+    // Fire-and-forget: alert org admins/owners of new quote submission
+    ;(async () => {
+      try {
+        const [orgResult, membersResult] = await Promise.all([
+          supabase.from('organizations').select('name').eq('id', orgId).maybeSingle(),
+          supabase
+            .from('organization_members')
+            .select('profiles(email)')
+            .eq('organization_id', orgId)
+            .in('role', ['owner', 'admin'])
+            .eq('status', 'active'),
+        ])
+        const orgName = orgResult.data?.name || 'Repair Center'
+        const adminEmails = (membersResult.data || [])
+          .map((m) => m.profiles?.email)
+          .filter(Boolean)
+        if (adminEmails.length > 0) {
+          await sendNewQuoteAlertEmail({
+            to: adminEmails,
+            orgName,
+            quoteId: quoteRequest.quote_id,
+            customerName: [firstName, lastName].filter(Boolean).join(' '),
+            device: [brand, model.model_name].filter(Boolean).join(' '),
+            repairType: repairType.repair_name,
+          })
+        }
+      } catch (alertError) {
+        console.error('[quote-requests] admin alert email failed:', alertError)
+      }
+    })()
 
     return NextResponse.json({
       ok: true,
