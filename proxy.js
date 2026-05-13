@@ -37,7 +37,8 @@ export async function proxy(request) {
   const pathname = request.nextUrl.pathname
   const isAdminPath = pathname.startsWith('/admin')
   const isAdminLogin = pathname === '/admin/login'
-  const isAdminSuspended = pathname === '/admin/suspended'
+  // Allow suspended/billing through so blocked users can manage their subscription
+  const isBlockedStatusBypass = pathname === '/admin/suspended' || pathname.startsWith('/admin/billing')
 
   if (!isAdminPath) return response
 
@@ -71,7 +72,7 @@ export async function proxy(request) {
 
   const BLOCKED_STATUSES = new Set(['suspended', 'cancelled'])
   const orgStatus = membership.organizations?.status
-  if (orgStatus && BLOCKED_STATUSES.has(orgStatus) && !isAdminSuspended) {
+  if (orgStatus && BLOCKED_STATUSES.has(orgStatus) && !isBlockedStatusBypass) {
     return NextResponse.redirect(new URL('/admin/suspended', request.url))
   }
 

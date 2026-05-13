@@ -71,14 +71,15 @@ export async function POST(request) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object
-        if (session.mode !== 'subscription') break
+        if (session.mode !== 'subscription' || !session.subscription) break
 
-        const orgId = session.subscription_data?.metadata?.organization_id
+        // Retrieve subscription first — its metadata is the authoritative source of orgId
+        const subscription = await stripe.subscriptions.retrieve(session.subscription)
+        const orgId = subscription.metadata?.organization_id
+          || session.subscription_data?.metadata?.organization_id
           || session.metadata?.organization_id
         if (!orgId) break
 
-        // Retrieve full subscription to get all fields
-        const subscription = await stripe.subscriptions.retrieve(session.subscription)
         await upsertSubscription(supabase, orgId, subscription)
         break
       }
