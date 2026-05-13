@@ -20,7 +20,6 @@ const NAV_LINKS = [
 export default function AdminNav() {
   const pathname = usePathname()
   const [billing, setBilling] = useState(null)
-  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     fetch('/admin/api/billing')
