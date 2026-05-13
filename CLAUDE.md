@@ -305,6 +305,32 @@ All data comes from existing tables: `payments`, `repair_orders`, `quote_request
 
 ---
 
+## Sprint 13 — Quick Wins: Hardening to 10/10 ✅ COMPLETE
+
+### Migrations applied to production
+- `20260513_012_revoke_anon_helpers.sql` — `REVOKE EXECUTE FROM anon` on all six SECURITY DEFINER RLS helper functions (`is_org_member`, `has_org_role`, `get_user_org_id`, `is_staff`, `is_admin`, `current_user_role`); prevents unauthenticated callers from enumerating org membership via Supabase RPC endpoint
+
+### What was done
+- **`proxy.js`** — added org status enforcement: membership query now joins `organizations(status)`; if status ≠ `'active'`, redirects to `/admin/suspended` (allows `/admin/suspended` itself through to avoid redirect loop)
+- **`app/admin/suspended/page.js`** (new) — placeholder suspended/access-restricted page; Sprint 14 (billing) will replace with full billing management flow
+- **`lib/admin/org.js`** — removed module-level `_cachedOrgId` cache from `getDefaultOrgId()`; caching the first org ID globally was incorrect in multi-tenant context (warm Node.js process would serve one org's fallback to all tenants); also added `.eq('status', 'active')` filter so suspended orgs are excluded from fallback resolution
+- **`app/admin/api/analytics/route.js`** — analytics funnel is now period-specific: added `funnelResult` (range-filtered quote_requests) and `prevFunnelResult` (prev period quote count) to the Promise.all; `totalQuotes` now reflects the selected date range; `funnel.prevTotalQuotes` returned for trend comparison on dashboard
+- **`components/AdminAnalyticsDashboard.js`** — Total Quotes KPI card now shows prev-period percentage trend (same pattern as Revenue card); Conversion Rate card shows prev period rate as secondary stat
+- **`__tests__/api/analytics.test.js`** — updated mock to handle 4 `quote_requests` calls (allQuotes, funnel, prevFunnel, recent); 2 new tests: `prevTotalQuotes` returned correctly, funnel query applies `created_at` range filter; 11 tests total in suite
+
+### What this sprint fixed (gap → resolved)
+| Gap | Fix |
+|---|---|
+| `REVOKE EXECUTE FROM anon` not done on helper functions | Migration 012 applied to production |
+| `organizations.status` not enforced — suspended orgs could log in | `proxy.js` now gates on org status |
+| `getDefaultOrgId()` had a process-lifetime cache | Cache removed; `status=active` filter added |
+| Analytics prev-period comparison only on Revenue KPI | Now also on Total Quotes and Conversion Rate |
+
+### Test suite after Sprint 13
+82 tests across 10 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)

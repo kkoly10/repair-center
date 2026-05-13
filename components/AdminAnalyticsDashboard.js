@@ -106,6 +106,16 @@ function AdminAnalyticsDashboardInner() {
   const trendSign = Number(revenueTrend) >= 0 ? '+' : ''
   const trendColor = Number(revenueTrend) >= 0 ? '#16a34a' : '#ef4444'
 
+  const quoteTrend = funnel.prevTotalQuotes > 0
+    ? (((funnel.totalQuotes - funnel.prevTotalQuotes) / funnel.prevTotalQuotes) * 100).toFixed(1)
+    : funnel.totalQuotes > 0 ? '100' : '0'
+  const quoteTrendSign = Number(quoteTrend) >= 0 ? '+' : ''
+  const quoteTrendColor = Number(quoteTrend) >= 0 ? '#16a34a' : '#ef4444'
+
+  const prevConversionRate = funnel.prevTotalQuotes > 0
+    ? ((funnel.approved / funnel.prevTotalQuotes) * 100).toFixed(1)
+    : null
+
   const funnelSteps = [
     { label: 'Submitted', count: funnel.totalQuotes },
     { label: 'Estimate Sent', count: funnel.estimatesSent },
@@ -153,15 +163,28 @@ function AdminAnalyticsDashboardInner() {
           <div className='feature-card'>
             <div className='kicker'>Total Quotes</div>
             <h3>{funnel.totalQuotes}</h3>
-            <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
-              {revenue.totalPayments} payments collected
-            </p>
+            {funnel.prevTotalQuotes > 0 && (
+              <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
+                vs prev period{' '}
+                <span style={{ color: quoteTrendColor, fontWeight: 600 }}>
+                  {quoteTrendSign}{quoteTrend}%
+                </span>
+              </p>
+            )}
+            {!funnel.prevTotalQuotes && (
+              <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
+                {revenue.totalPayments} payments collected
+              </p>
+            )}
           </div>
           <div className='feature-card'>
             <div className='kicker'>Conversion Rate</div>
             <h3>{conversionRate}%</h3>
             <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
-              {funnel.approved} approved of {funnel.totalQuotes}
+              {funnel.approved} approved
+              {prevConversionRate !== null && (
+                <span> · prev {prevConversionRate}%</span>
+              )}
             </p>
           </div>
           <div className='feature-card'>

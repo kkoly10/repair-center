@@ -37,6 +37,8 @@ export async function GET(request) {
       prevResult,
       ordersResult,
       quotesResult,
+      funnelResult,
+      prevFunnelResult,
       recentResult,
       membersResult,
       customersResult,
@@ -72,13 +74,34 @@ export async function GET(request) {
         .limit(5000)
         .order('created_at', { ascending: false }),
 
-      // Quote requests — all fields for funnel + device popularity + repair type demand + join
+      // All quote requests — for device popularity, repair type demand, and join lookup
       supabase
         .from('quote_requests')
         .select('id, status, device_category, brand_name, model_name, repair_type_key')
         .eq('organization_id', orgId)
         .limit(10000)
         .order('created_at', { ascending: false }),
+
+      // Range-filtered quote requests — for period-specific funnel metrics
+      (() => {
+        let q = supabase
+          .from('quote_requests')
+          .select('id, status')
+          .eq('organization_id', orgId)
+        if (rangeStart) q = q.gte('created_at', rangeStart)
+        return q.order('created_at', { ascending: false })
+      })(),
+
+      // Previous period quote requests — for trend comparison on Total Quotes
+      prevStart
+        ? supabase
+            .from('quote_requests')
+            .select('id')
+            .eq('organization_id', orgId)
+            .gte('created_at', prevStart)
+            .lt('created_at', rangeStart)
+            .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
 
       // Recent 10 quotes for activity feed
       supabase
@@ -107,6 +130,8 @@ export async function GET(request) {
     if (prevResult.error) throw prevResult.error
     if (ordersResult.error) throw ordersResult.error
     if (quotesResult.error) throw quotesResult.error
+    if (funnelResult.error) throw funnelResult.error
+    if (prevFunnelResult.error) throw prevFunnelResult.error
     if (recentResult.error) throw recentResult.error
     if (membersResult.error) throw membersResult.error
     if (customersResult.error) throw customersResult.error
@@ -175,10 +200,13 @@ export async function GET(request) {
     const depositRate = totalOrders > 0 ? Math.round((depositOrderIds.size / totalOrders) * 1000) / 10 : 0
     const balanceRate = totalOrders > 0 ? Math.round((balanceOrderIds.size / totalOrders) * 1000) / 10 : 0
 
-    // --- Conversion Funnel ---
-    const totalQuotes = quotes.length
+    // --- Conversion Funnel (period-specific) ---
+    const periodQuotes = funnelResult.data || []
+    const prevPeriodQuotes = prevFunnelResult.data || []
+    const totalQuotes = periodQuotes.length
+    const prevTotalQuotes = prevPeriodQuotes.length
     const statusCounts = {}
-    for (const q of quotes) {
+    for (const q of periodQuotes) {
       statusCounts[q.status] = (statusCounts[q.status] || 0) + 1
     }
     const estimatesSent = (statusCounts.estimate_sent || 0)
@@ -267,6 +295,7 @@ export async function GET(request) {
       revenueByTech,
       funnel: {
         totalQuotes,
+        prevTotalQuotes,
         estimatesSent,
         approved: statusCounts.approved_for_mail_in || 0,
         declined: statusCounts.declined || 0,

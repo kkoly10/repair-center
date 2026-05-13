@@ -37,6 +37,7 @@ export async function proxy(request) {
   const pathname = request.nextUrl.pathname
   const isAdminPath = pathname.startsWith('/admin')
   const isAdminLogin = pathname === '/admin/login'
+  const isAdminSuspended = pathname === '/admin/suspended'
 
   if (!isAdminPath) return response
 
@@ -56,7 +57,7 @@ export async function proxy(request) {
 
   const { data: membership } = await supabase
     .from('organization_members')
-    .select('role')
+    .select('role, organization_id, organizations(status)')
     .eq('user_id', user.id)
     .eq('status', 'active')
     .in('role', ['owner', 'admin', 'tech'])
@@ -66,6 +67,11 @@ export async function proxy(request) {
     const loginUrl = new URL('/admin/login', request.url)
     loginUrl.searchParams.set('error', 'unauthorized')
     return NextResponse.redirect(loginUrl)
+  }
+
+  const orgStatus = membership.organizations?.status
+  if (orgStatus && orgStatus !== 'active' && !isAdminSuspended) {
+    return NextResponse.redirect(new URL('/admin/suspended', request.url))
   }
 
   return response
