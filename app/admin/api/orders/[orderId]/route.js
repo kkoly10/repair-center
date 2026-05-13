@@ -143,7 +143,7 @@ export async function PATCH(request, context) {
     }
 
     if ('notes' in body) {
-      const newNotes = body.notes != null ? String(body.notes) : null
+      const newNotes = body.notes != null ? String(body.notes).trim() || null : null
       updatePayload.notes = newNotes
       auditEntries.push({
         organization_id: orgId,
@@ -151,7 +151,7 @@ export async function PATCH(request, context) {
         actor_user_id: userId,
         event_type: 'note_updated',
         old_value: order.notes || null,
-        new_value: newNotes || null,
+        new_value: newNotes,
       })
     }
 
