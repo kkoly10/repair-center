@@ -2,6 +2,31 @@
 
 import { useEffect, useState } from 'react'
 
+const STATUS_COLORS = {
+  active: 'var(--success)',
+  trialing: 'var(--info, #3b82f6)',
+  past_due: 'var(--warn, #f59e0b)',
+  suspended: 'var(--danger)',
+  cancelled: 'var(--muted)',
+}
+
+function StatusBadge({ status }) {
+  return (
+    <span style={{
+      display: 'inline-block',
+      padding: '2px 10px',
+      borderRadius: 9999,
+      background: STATUS_COLORS[status] || 'var(--muted)',
+      color: '#fff',
+      fontSize: '0.8rem',
+      fontWeight: 600,
+      textTransform: 'capitalize',
+    }}>
+      {status?.replace('_', ' ')}
+    </span>
+  )
+}
+
 export default function AdminBillingPage() {
   const [billing, setBilling] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -54,30 +79,6 @@ export default function AdminBillingPage() {
     } finally {
       setActionLoading(false)
     }
-  }
-
-  function StatusBadge({ status }) {
-    const colors = {
-      active: 'var(--success)',
-      trialing: 'var(--info, #3b82f6)',
-      past_due: 'var(--warn, #f59e0b)',
-      suspended: 'var(--danger)',
-      cancelled: 'var(--muted)',
-    }
-    return (
-      <span style={{
-        display: 'inline-block',
-        padding: '2px 10px',
-        borderRadius: 9999,
-        background: colors[status] || 'var(--muted)',
-        color: '#fff',
-        fontSize: '0.8rem',
-        fontWeight: 600,
-        textTransform: 'capitalize',
-      }}>
-        {status?.replace('_', ' ')}
-      </span>
-    )
   }
 
   if (loading) return <div className='site-shell' style={{ paddingTop: 40 }}><p>Loading billing…</p></div>
