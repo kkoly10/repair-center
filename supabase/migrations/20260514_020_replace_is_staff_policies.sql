@@ -1,16 +1,11 @@
 -- Sprint 25: Replace all RLS policies that reference the no-arg is_staff()
 -- with is_org_member(organization_id). The no-arg is_staff() checks membership
--- in ANY org, which is incorrect for multi-tenant isolation. is_org_member() takes
--- the row's organization_id and scopes the check to the correct org.
+-- in ANY org, which is incorrect for multi-tenant isolation.
 --
--- Tables with organization_id columns: use is_org_member(organization_id).
--- profiles: no organization_id column; use an EXISTS subquery on organization_members.
--- storage.objects: keep existing bucket guard; replace is_staff() with org membership check.
---   Storage objects don't have organization_id, so we check membership in ANY org (same
---   effective behavior as is_staff(), but the SECURITY DEFINER path is explicit).
---
--- NOTE: storage.objects policies require the path convention orgs/{orgId}/... established
--- in Sprint 5. Policies for storage objects use a regex on the object name to extract orgId.
+-- pricing_rule_conditions: no organization_id column; join to pricing_rules.
+-- storage.objects: two path formats exist in production:
+--   • New (Sprint 5+): orgs/{orgId}/quotes/...  → extract orgId from position 2
+--   • Legacy (pre-Sprint 5): {quoteId}/file     → allow any authenticated org member
 
 -- ── customer_addresses ──────────────────────────────────────────────────────
 DROP POLICY IF EXISTS customer_addresses_update_policy ON public.customer_addresses;
@@ -41,14 +36,23 @@ CREATE POLICY device_intake_reports_org_member ON public.device_intake_reports
   WITH CHECK (is_org_member(organization_id));
 
 -- ── pricing_rule_conditions ─────────────────────────────────────────────────
+-- No organization_id column; scope via pricing_rules join.
 DROP POLICY IF EXISTS pricing_rule_conditions_staff_only ON public.pricing_rule_conditions;
 CREATE POLICY pricing_rule_conditions_org_member ON public.pricing_rule_conditions
   FOR ALL TO authenticated
-  USING (is_org_member(organization_id))
-  WITH CHECK (is_org_member(organization_id));
+  USING (EXISTS (
+    SELECT 1 FROM public.pricing_rules pr
+    WHERE pr.id = pricing_rule_conditions.pricing_rule_id
+      AND public.is_org_member(pr.organization_id)
+  ))
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.pricing_rules pr
+    WHERE pr.id = pricing_rule_conditions.pricing_rule_id
+      AND public.is_org_member(pr.organization_id)
+  ));
 
 -- ── profiles ────────────────────────────────────────────────────────────────
--- Allow users to see their own profile, or profiles of other members in their org.
+-- Allow users to see their own profile, or profiles of co-members in their org.
 DROP POLICY IF EXISTS profiles_select_own ON public.profiles;
 CREATE POLICY profiles_select_own ON public.profiles
   FOR SELECT TO authenticated
@@ -109,14 +113,18 @@ CREATE POLICY repair_order_status_history_insert_policy ON public.repair_order_s
   WITH CHECK (is_org_member(organization_id));
 
 -- ── storage.objects (repair-uploads bucket) ──────────────────────────────────
--- Paths follow the convention: orgs/{orgId}/quotes/... (set in Sprint 5).
--- Extract orgId from path position 2 (1-indexed after split on '/').
+-- New paths (Sprint 5+): orgs/{orgId}/quotes/... — extract orgId from segment 2.
+-- Legacy paths (pre-Sprint 5): {quoteId}/filename — allow any authenticated org member
+-- via get_user_org_id() which returns the caller's org (REVOKE'd from anon in migration 012).
 DROP POLICY IF EXISTS repair_uploads_staff_select ON storage.objects;
 CREATE POLICY repair_uploads_staff_select ON storage.objects
   FOR SELECT TO authenticated
   USING (
     bucket_id = 'repair-uploads'
-    AND is_org_member((string_to_array(name, '/'))[2]::uuid)
+    AND (
+      (name LIKE 'orgs/%' AND public.is_org_member((string_to_array(name, '/'))[2]::uuid))
+      OR (name NOT LIKE 'orgs/%' AND public.get_user_org_id() IS NOT NULL)
+    )
   );
 
 DROP POLICY IF EXISTS repair_uploads_staff_insert ON storage.objects;
@@ -124,7 +132,10 @@ CREATE POLICY repair_uploads_staff_insert ON storage.objects
   FOR INSERT TO authenticated
   WITH CHECK (
     bucket_id = 'repair-uploads'
-    AND is_org_member((string_to_array(name, '/'))[2]::uuid)
+    AND (
+      (name LIKE 'orgs/%' AND public.is_org_member((string_to_array(name, '/'))[2]::uuid))
+      OR (name NOT LIKE 'orgs/%' AND public.get_user_org_id() IS NOT NULL)
+    )
   );
 
 DROP POLICY IF EXISTS repair_uploads_staff_update ON storage.objects;
@@ -132,11 +143,17 @@ CREATE POLICY repair_uploads_staff_update ON storage.objects
   FOR UPDATE TO authenticated
   USING (
     bucket_id = 'repair-uploads'
-    AND is_org_member((string_to_array(name, '/'))[2]::uuid)
+    AND (
+      (name LIKE 'orgs/%' AND public.is_org_member((string_to_array(name, '/'))[2]::uuid))
+      OR (name NOT LIKE 'orgs/%' AND public.get_user_org_id() IS NOT NULL)
+    )
   )
   WITH CHECK (
     bucket_id = 'repair-uploads'
-    AND is_org_member((string_to_array(name, '/'))[2]::uuid)
+    AND (
+      (name LIKE 'orgs/%' AND public.is_org_member((string_to_array(name, '/'))[2]::uuid))
+      OR (name NOT LIKE 'orgs/%' AND public.get_user_org_id() IS NOT NULL)
+    )
   );
 
 DROP POLICY IF EXISTS repair_uploads_staff_delete ON storage.objects;
@@ -144,8 +161,11 @@ CREATE POLICY repair_uploads_staff_delete ON storage.objects
   FOR DELETE TO authenticated
   USING (
     bucket_id = 'repair-uploads'
-    AND is_org_member((string_to_array(name, '/'))[2]::uuid)
+    AND (
+      (name LIKE 'orgs/%' AND public.is_org_member((string_to_array(name, '/'))[2]::uuid))
+      OR (name NOT LIKE 'orgs/%' AND public.get_user_org_id() IS NOT NULL)
+    )
   );
 
--- ── Finally: drop the no-arg is_staff() function ────────────────────────────
+-- ── Drop the no-arg is_staff() function ─────────────────────────────────────
 DROP FUNCTION IF EXISTS public.is_staff();

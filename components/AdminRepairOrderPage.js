@@ -5,6 +5,9 @@ import { useEffect, useMemo, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 import AdminSignOutButton from './AdminSignOutButton'
 import AdminPaymentSummaryCard from './AdminPaymentSummaryCard'
+import OrderMessagesSection from './repair-order/OrderMessagesSection'
+import OrderPartsSection from './repair-order/OrderPartsSection'
+import OrderStaffNotes from './repair-order/OrderStaffNotes'
 
 const STATUS_OPTIONS = [
   'awaiting_mail_in',
@@ -83,30 +86,6 @@ function AdminRepairOrderInner({ quoteId }) {
   const [boardDamageFound, setBoardDamageFound] = useState(false)
   const [intakeNotes, setIntakeNotes] = useState('')
 
-  const [messages, setMessages] = useState([])
-  const [messagesLoading, setMessagesLoading] = useState(false)
-  const [messageBody, setMessageBody] = useState('')
-  const [messageInternalOnly, setMessageInternalOnly] = useState(false)
-  const [messageSending, setMessageSending] = useState(false)
-  const [messageError, setMessageError] = useState('')
-  const [unreadCustomerCount, setUnreadCustomerCount] = useState(0)
-  const [markingMessagesRead, setMarkingMessagesRead] = useState(false)
-
-  const [partsUsed, setPartsUsed] = useState([])
-  const [partsTotalCost, setPartsTotalCost] = useState(0)
-  const [partsLoading, setPartsLoading] = useState(false)
-  const [partsError, setPartsError] = useState('')
-  const [availableParts, setAvailableParts] = useState([])
-  const [addPartId, setAddPartId] = useState('')
-  const [addPartQty, setAddPartQty] = useState('1')
-  const [addPartNotes, setAddPartNotes] = useState('')
-  const [addPartSaving, setAddPartSaving] = useState(false)
-  const [addPartError, setAddPartError] = useState('')
-
-  const [internalNotes, setInternalNotes] = useState('')
-  const [notesSaving, setNotesSaving] = useState(false)
-  const [notesError, setNotesError] = useState('')
-  const [notesSuccess, setNotesSuccess] = useState(false)
 
   const [depositMarking, setDepositMarking] = useState(false)
   const [depositMarkError, setDepositMarkError] = useState('')
@@ -145,7 +124,6 @@ function AdminRepairOrderInner({ quoteId }) {
           setStatus(result.order?.current_status || 'awaiting_mail_in')
           setTechnicianNote(result.order?.technician_note || '')
           setTechnicianId(result.order?.assigned_technician_user_id || '')
-          setInternalNotes(result.order?.notes || '')
 
           const returnShipment = (result.shipments || []).find(
             (item) => item.shipment_type === 'return'
@@ -202,51 +180,7 @@ function AdminRepairOrderInner({ quoteId }) {
       }
     }
 
-    async function loadMessages() {
-      setMessagesLoading(true)
-      try {
-        const response = await fetch(`/admin/api/quotes/${quoteId}/messages`, { cache: 'no-store' })
-        const result = await response.json()
-        if (!ignore && result.ok) {
-          setMessages(result.messages || [])
-          setUnreadCustomerCount(result.unreadCustomerCount || 0)
-        }
-      } catch {
-        // non-blocking
-      } finally {
-        if (!ignore) setMessagesLoading(false)
-      }
-    }
-
-    async function loadParts() {
-      if (!record?.order?.id) return
-      setPartsLoading(true)
-      try {
-        const [usageRes, catalogRes] = await Promise.all([
-          fetch(`/admin/api/orders/${record.order.id}/parts`, { cache: 'no-store' }),
-          fetch('/admin/api/parts', { cache: 'no-store' }),
-        ])
-        const usageJson = await usageRes.json()
-        const catalogJson = await catalogRes.json()
-        if (!ignore) {
-          if (usageRes.ok) {
-            setPartsUsed(usageJson.partsUsed || [])
-            setPartsTotalCost(usageJson.totalPartsCost || 0)
-          }
-          if (catalogRes.ok) {
-            setAvailableParts((catalogJson.parts || []).filter((p) => p.active))
-          }
-        }
-      } catch {
-        // non-blocking
-      } finally {
-        if (!ignore) setPartsLoading(false)
-      }
-    }
-
     loadIntake()
-    loadMessages()
-    loadParts()
 
     return () => {
       ignore = true
@@ -338,65 +272,6 @@ function AdminRepairOrderInner({ quoteId }) {
     }
   }
 
-  const handleAddPart = async (e) => {
-    e.preventDefault()
-    if (!addPartId || !record?.order?.id) return
-    setAddPartSaving(true)
-    setAddPartError('')
-    try {
-      const res = await fetch(`/admin/api/orders/${record.order.id}/parts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          part_id: addPartId,
-          quantity_used: Number(addPartQty) || 1,
-          notes: addPartNotes.trim() || null,
-        }),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Failed to add part.')
-
-      // Reload usage list
-      const usageRes = await fetch(`/admin/api/orders/${record.order.id}/parts`, { cache: 'no-store' })
-      const usageJson = await usageRes.json()
-      if (usageRes.ok) {
-        setPartsUsed(usageJson.partsUsed || [])
-        setPartsTotalCost(usageJson.totalPartsCost || 0)
-      }
-      setAddPartId('')
-      setAddPartQty('1')
-      setAddPartNotes('')
-    } catch (err) {
-      setAddPartError(err.message || 'Failed to add part.')
-    } finally {
-      setAddPartSaving(false)
-    }
-  }
-
-  const handleRemovePart = async (usageId) => {
-    if (!record?.order?.id) return
-    setPartsError('')
-    try {
-      const res = await fetch(
-        `/admin/api/orders/${record.order.id}/parts?usageId=${usageId}`,
-        { method: 'DELETE' }
-      )
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}))
-        setPartsError(json.error || 'Failed to remove part.')
-        return
-      }
-      const usageRes = await fetch(`/admin/api/orders/${record.order.id}/parts`, { cache: 'no-store' })
-      const usageJson = await usageRes.json()
-      if (usageRes.ok) {
-        setPartsUsed(usageJson.partsUsed || [])
-        setPartsTotalCost(usageJson.totalPartsCost || 0)
-      }
-    } catch (err) {
-      setPartsError(err.message || 'Failed to remove part.')
-    }
-  }
-
   const handleSubmit = async (event) => {
     event.preventDefault()
     setSaving(true)
@@ -481,90 +356,6 @@ function AdminRepairOrderInner({ quoteId }) {
       setIntakeError(err.message || 'Unable to save intake report.')
     } finally {
       setIntakeSaving(false)
-    }
-  }
-
-  const handleSendMessage = async (event) => {
-    event.preventDefault()
-    if (!messageBody.trim()) return
-
-    setMessageSending(true)
-    setMessageError('')
-
-    try {
-      const response = await fetch(`/admin/api/quotes/${quoteId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          body: messageBody,
-          senderRole: 'admin',
-          internalOnly: messageInternalOnly,
-        }),
-      })
-
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Unable to send message.')
-
-      setMessages((current) => [...current, result.message])
-      setMessageBody('')
-    } catch (err) {
-      setMessageError(err.message || 'Unable to send message.')
-    } finally {
-      setMessageSending(false)
-    }
-  }
-
-  const handleMarkCustomerRepliesRead = async () => {
-    setMarkingMessagesRead(true)
-    setMessageError('')
-
-    try {
-      const response = await fetch(`/admin/api/quotes/${quoteId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'mark_customer_read',
-        }),
-      })
-
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Unable to mark messages as read.')
-
-      const now = new Date().toISOString()
-      setUnreadCustomerCount(0)
-      setMessages((current) =>
-        current.map((message) =>
-          message.sender_role === 'customer' && message.staff_read_at == null
-            ? { ...message, staff_read_at: now }
-            : message
-        )
-      )
-    } catch (err) {
-      setMessageError(err.message || 'Unable to mark messages as read.')
-    } finally {
-      setMarkingMessagesRead(false)
-    }
-  }
-
-  const handleSaveNotes = async (e) => {
-    e.preventDefault()
-    setNotesSaving(true)
-    setNotesError('')
-    setNotesSuccess(false)
-    try {
-      const res = await fetch(`/admin/api/orders/${record.order.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: internalNotes }),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Failed to save notes.')
-      setNotesSuccess(true)
-      setTimeout(() => setNotesSuccess(false), 3000)
-    } catch (err) {
-      setNotesError(err.message || 'Failed to save notes.')
-    } finally {
-      setNotesSaving(false)
     }
   }
 
@@ -1006,114 +797,7 @@ function AdminRepairOrderInner({ quoteId }) {
               </form>
             )}
 
-            {record.order?.id && (
-              <div className='policy-card'>
-                <div className='kicker'>Parts &amp; materials</div>
-                <h3>Parts used in this repair</h3>
-
-                {partsLoading ? (
-                  <p className='muted' style={{ marginTop: 12 }}>Loading…</p>
-                ) : (
-                  <>
-                    {partsUsed.length > 0 ? (
-                      <div style={{ overflowX: 'auto', marginTop: 12 }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-                          <thead>
-                            <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                              {['Part', 'Qty', 'Cost ea.', 'Total', ''].map((h) => (
-                                <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 700, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)' }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {partsUsed.map((row) => (
-                              <tr key={row.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                                <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                                  <span style={{ fontWeight: 600 }}>{row.part_name}</span>
-                                  {row.part_sku && <span className='muted' style={{ fontSize: '0.78rem', marginLeft: 6 }}>{row.part_sku}</span>}
-                                  {row.notes && <div className='muted' style={{ fontSize: '0.78rem' }}>{row.notes}</div>}
-                                </td>
-                                <td style={{ padding: '8px', verticalAlign: 'middle' }}>{row.quantity_used}</td>
-                                <td style={{ padding: '8px', verticalAlign: 'middle' }}>${Number(row.cost_at_use).toFixed(2)}</td>
-                                <td style={{ padding: '8px', verticalAlign: 'middle', fontWeight: 600 }}>${Number(row.total_cost).toFixed(2)}</td>
-                                <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                                  <button
-                                    className='button button-secondary button-compact'
-                                    style={{ fontSize: '0.78rem' }}
-                                    onClick={() => handleRemovePart(row.id)}
-                                  >
-                                    Remove
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        <div style={{ marginTop: 10, textAlign: 'right', fontWeight: 700, fontSize: '0.9rem' }}>
-                          Parts total: ${Number(partsTotalCost).toFixed(2)}
-                        </div>
-                      </div>
-                    ) : (
-                      <p className='muted' style={{ marginTop: 12 }}>No parts recorded yet.</p>
-                    )}
-
-                    {partsError && <p className='notice' style={{ marginTop: 8 }}>{partsError}</p>}
-
-                    {availableParts.length > 0 && (
-                      <form onSubmit={handleAddPart} style={{ marginTop: 16 }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, alignItems: 'end' }}>
-                          <div>
-                            <label className='label' style={{ fontSize: '0.82rem' }}>Add part</label>
-                            <select
-                              className='input'
-                              value={addPartId}
-                              onChange={(e) => setAddPartId(e.target.value)}
-                              required
-                            >
-                              <option value=''>— Select part —</option>
-                              {availableParts.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name}{p.sku ? ` (${p.sku})` : ''} — ${Number(p.cost_price).toFixed(2)} · {p.quantity_on_hand} in stock
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className='label' style={{ fontSize: '0.82rem' }}>Qty</label>
-                            <input
-                              className='input'
-                              type='number'
-                              min='1'
-                              step='1'
-                              style={{ width: 64 }}
-                              value={addPartQty}
-                              onChange={(e) => setAddPartQty(e.target.value)}
-                            />
-                          </div>
-                          <button
-                            className='button button-compact'
-                            type='submit'
-                            disabled={addPartSaving || !addPartId}
-                            style={{ alignSelf: 'flex-end' }}
-                          >
-                            {addPartSaving ? '…' : 'Add'}
-                          </button>
-                        </div>
-                        <div style={{ marginTop: 8 }}>
-                          <input
-                            className='input'
-                            placeholder='Notes (optional)'
-                            value={addPartNotes}
-                            onChange={(e) => setAddPartNotes(e.target.value)}
-                          />
-                        </div>
-                        {addPartError && <p className='notice' style={{ marginTop: 8, marginBottom: 0 }}>{addPartError}</p>}
-                      </form>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
+            {record.order?.id && <OrderPartsSection orderId={record.order.id} />}
 
             <div className='policy-card'>
               <div className='kicker'>Activity log</div>
@@ -1199,117 +883,14 @@ function AdminRepairOrderInner({ quoteId }) {
             </div>
 
             {record.order?.id && (
-              <div className='policy-card'>
-                <div className='kicker'>Messages</div>
-                <h3>
-                  Order communication log
-                  {unreadCustomerCount > 0 ? ` · ${unreadCustomerCount} unread customer repl${unreadCustomerCount === 1 ? 'y' : 'ies'}` : ''}
-                </h3>
-                <p style={{ marginBottom: 18 }}>
-                  Staff notes and customer-facing messages. Mark internal-only to keep a note
-                  visible only to staff.
-                </p>
-
-                <div className='preview-meta' style={{ marginTop: 0 }}>
-                  {messagesLoading ? (
-                    <div className='preview-meta-row'>
-                      <span>Loading messages…</span>
-                      <span>—</span>
-                    </div>
-                  ) : messages.length ? (
-                    messages.map((msg) => (
-                      <div key={msg.id} className='preview-meta-row'>
-                        <span>
-                          <strong>{msg.sender_role}</strong>
-                          {msg.internal_only ? ' (internal)' : ''}: {msg.body}
-                        </span>
-                        <span style={{ whiteSpace: 'nowrap' }}>
-                          {new Date(msg.created_at).toLocaleString()}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className='preview-meta-row'>
-                      <span>No messages yet.</span>
-                      <span>—</span>
-                    </div>
-                  )}
-                </div>
-
-                {unreadCustomerCount > 0 ? (
-                  <div className='inline-actions' style={{ marginTop: 14 }}>
-                    <button
-                      type='button'
-                      className='button button-secondary'
-                      onClick={handleMarkCustomerRepliesRead}
-                      disabled={markingMessagesRead}
-                    >
-                      {markingMessagesRead ? 'Marking…' : 'Mark Customer Replies Read'}
-                    </button>
-                  </div>
-                ) : null}
-
-                <form onSubmit={handleSendMessage} style={{ marginTop: 18 }}>
-                  <div className='field'>
-                    <label htmlFor='message-body'>New message</label>
-                    <textarea
-                      id='message-body'
-                      value={messageBody}
-                      onChange={(e) => setMessageBody(e.target.value)}
-                      placeholder='Type a message or internal note…'
-                    />
-                  </div>
-                  <label
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      marginTop: 10,
-                      cursor: 'pointer',
-                      fontSize: 14,
-                    }}
-                  >
-                    <input
-                      type='checkbox'
-                      checked={messageInternalOnly}
-                      onChange={(e) => setMessageInternalOnly(e.target.checked)}
-                    />
-                    Internal only (not visible to customer)
-                  </label>
-                  {messageError ? <div className='notice' style={{ marginTop: 10 }}>{messageError}</div> : null}
-                  <div className='inline-actions' style={{ marginTop: 12 }}>
-                    <button
-                      type='submit'
-                      className='button button-primary'
-                      disabled={messageSending || !messageBody.trim()}
-                    >
-                      {messageSending ? 'Sending…' : 'Send Message'}
-                    </button>
-                  </div>
-                </form>
-              </div>
+              <OrderMessagesSection quoteId={quoteId} />
             )}
 
             {record.order && (
-              <form className='policy-card' onSubmit={handleSaveNotes}>
-                <div className='kicker'>Internal</div>
-                <h3>Staff notes</h3>
-                <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginTop: 4, marginBottom: 12 }}>
-                  Private notes visible only to staff — not shared with the customer.
-                </p>
-                <textarea
-                  value={internalNotes}
-                  onChange={(e) => setInternalNotes(e.target.value)}
-                  rows={4}
-                  placeholder='Add internal notes about this repair…'
-                  style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', marginBottom: 10 }}
-                />
-                {notesError && <p className='notice notice-error' style={{ marginBottom: 8 }}>{notesError}</p>}
-                {notesSuccess && <p className='notice notice-success' style={{ marginBottom: 8 }}>Notes saved.</p>}
-                <button type='submit' className='button' disabled={notesSaving}>
-                  {notesSaving ? 'Saving…' : 'Save notes'}
-                </button>
-              </form>
+              <OrderStaffNotes
+                orderId={record.order.id}
+                initialNotes={record.order.notes || ''}
+              />
             )}
 
             <div className='policy-card'>

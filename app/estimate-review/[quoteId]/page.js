@@ -1,6 +1,12 @@
 import CustomerEstimateReviewPage from '../../../components/CustomerEstimateReviewPage'
 
-export default async function EstimateReviewRoute({ params }) {
+export default async function EstimateReviewRoute({ params, searchParams }) {
   const resolvedParams = await params
-  return <CustomerEstimateReviewPage quoteId={resolvedParams.quoteId} />
+  const resolvedSearch = await searchParams
+  return (
+    <CustomerEstimateReviewPage
+      quoteId={resolvedParams.quoteId}
+      tok={resolvedSearch?.tok || ''}
+    />
+  )
 }

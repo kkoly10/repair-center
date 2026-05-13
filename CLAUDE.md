@@ -601,12 +601,61 @@ Full gap audit performed against all 24 sprints. Key findings:
 | `getDefaultOrgId()` in `customer-portal` + `quote-requests` | Intentional | Legacy single-tenant routes; remove when all shops have slugs |
 | RLS integration tests | Not started | Requires local Supabase CLI setup |
 | `AdminRepairOrderPage.js` refactor (1300+ lines) | Not started | Extract sections one at a time |
-| Inline styles → CSS Modules | Not started | ThemeProvider approach planned; not yet prioritized |
-| Customer account login | Not started | Sprint 26+ backlog |
-| Staging environment | Not started | Second Supabase project + `apply-migration.sh` script |
-| Proxy-based test mock factory | Not started | Eliminate brittle `callCount`-based chains |
+| Inline styles → CSS Modules | Not started | Future priority |
+| Customer account login | Not started | Sprint 27+ backlog |
 
 ### Test suite after Sprint 25
+190 tests across 19 suites — all passing.
+
+---
+
+## Sprint 26 — Hardening: ThemeProvider, HMAC Tokens, Mock Factory, Migration Script ✅ COMPLETE
+
+### No migration needed
+
+### What was done
+
+1. **Fixed build regression** — `AdminRepairOrderPage.js` had a stray `</div>` closing tag left from the Sprint 25 component extraction; removed to restore clean build
+
+2. **`__tests__/helpers/supabaseMock.js`** (new) — Proxy-based Supabase mock factory:
+   - `createSupabaseMock(responses)` — per-table response config; arrays for sequential calls; Proxy catch-all prevents future method-not-found test breaks
+   - `getChain(supabase, table, n)` — helper to retrieve the nth chain created for a given table after route execution
+   - Exported as `{ createSupabaseMock, getChain }`
+
+3. **Test migrations to proxy mock factory** — eliminated all `callCount`-based patterns:
+   - **`__tests__/api/analytics.test.js`** — replaced custom `makeSupabaseMock` with `createSupabaseMock`; `payments` and `quote_requests` use arrays for sequential responses; chain-specific assertions use `getChain()`
+   - **`__tests__/api/orders-queue.test.js`** — fully migrated; `maybySingleQueue` replaced with table arrays; `eqFilters` spy replaced with `getChain(supabase, 'repair_orders', N).eq` assertions
+   - **`__tests__/api/catalog-management.test.js`** — all 17 tests migrated; `let call = 0` counters eliminated; `insert` assertions use `getChain()` pattern
+
+4. **`components/ThemeProvider.js`** (new) — `'use client'` component; injects `--blue`/`--blue-strong` (from `primary_color`) and `--accent` (from `accent_color`) as `:root` CSS custom properties via `<style>` tag; no wrapper element so layout is unaffected
+   - **`app/admin/layout.js`** — converted to async server component; fetches `organization_branding` using session org; passes colors to `ThemeProvider` (gracefully skips on auth failure)
+   - **`app/shop/[orgSlug]/layout.js`** (new) — async server component layout for all shop pages; fetches branding by slug; injects `ThemeProvider`
+
+5. **`lib/hmacToken.js`** (new) — HMAC-SHA256 token helpers using `EMAIL_LINK_SECRET` env var:
+   - `generateToken(quoteId)` — returns hex token or `null` if secret not configured
+   - `verifyToken(quoteId, token)` — returns `true` if: secret not set, token absent (backward compat), or token matches; returns `false` only when secret is set and token is present but wrong
+   - **`lib/notifications.js`** — `buildSecureUrl()` helper appends `?tok=...` to review/track/mail-in URLs when `EMAIL_LINK_SECRET` is configured
+   - **6 page components updated** to accept `searchParams` and pass `tok` down: `app/estimate-review/[quoteId]/page.js`, `app/shop/.../estimate-review/[quoteId]/page.js`, `app/track/[quoteId]/page.js`, `app/shop/.../track/[quoteId]/page.js`, `app/mail-in/[quoteId]/page.js`, `app/shop/.../mail-in/[quoteId]/page.js`
+   - **3 client components updated** to accept and forward `tok` in API POST bodies: `CustomerEstimateReviewPage`, `CustomerTrackingPage`, `MailInInstructionsPage`
+   - **3 API routes updated** to verify token at top of handler: `app/api/estimate-review/[quoteId]/route.js`, `app/api/track/[quoteId]/route.js`, `app/api/mail-in/[quoteId]/route.js` — returns 403 if secret set and token wrong; allows through if no secret or no token
+
+6. **`scripts/apply-migration.sh`** (new) — safe migration workflow script:
+   - Usage: `./scripts/apply-migration.sh <migration-file> [project-id]`
+   - Reads `SUPABASE_ACCESS_TOKEN` from env or `.claude/settings.json`
+   - POSTs SQL to `https://api.supabase.com/v1/projects/{id}/database/query`
+   - Exits non-zero on HTTP failure; suitable for CI use
+
+### New env var
+- `EMAIL_LINK_SECRET` — server-side secret for HMAC token generation/verification; optional but recommended in production; rotate to invalidate all existing email links
+
+### Staging environment setup
+To create a staging environment:
+1. Create a second Supabase project (free tier) and note its Project ID
+2. Apply all migrations in order: `for f in supabase/migrations/*.sql; do ./scripts/apply-migration.sh "$f" <staging-project-id>; done`
+3. Set `SUPABASE_PROJECT_ID=<staging-id>` when running the script against staging
+4. Add staging project's env vars to a `.env.staging` file (gitignored)
+
+### Test suite after Sprint 26
 190 tests across 19 suites — all passing.
 
 ---
@@ -619,3 +668,4 @@ Full gap audit performed against all 24 sprints. Key findings:
 - Stripe webhook secret for billing: `STRIPE_BILLING_WEBHOOK_SECRET`
 - Stripe billing price ID: `STRIPE_BILLING_PRICE_ID`
 - Cron secret for `/api/cron/trial-check`: `CRON_SECRET` (optional)
+- HMAC token secret for email links: `EMAIL_LINK_SECRET` (optional but recommended; rotate to invalidate old links)

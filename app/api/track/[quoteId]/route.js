@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
 import { resolveTrackingIdentifier } from '../../../../lib/resolveTrackingIdentifier'
+import { verifyToken } from '../../../../lib/hmacToken'
 
 export const runtime = 'nodejs'
 
@@ -24,6 +25,11 @@ export async function POST(request, context) {
     const body = await request.json()
     const email = (body?.email || '').toString().trim().toLowerCase()
     const orgSlug = (body?.orgSlug || '').toString().trim()
+    const tok = (body?.tok || '').toString().trim()
+
+    if (!verifyToken(identifier, tok)) {
+      return NextResponse.json({ error: 'Invalid or expired link.' }, { status: 403 })
+    }
 
     if (!identifier || !email) {
       return NextResponse.json(

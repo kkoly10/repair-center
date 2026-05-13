@@ -1,6 +1,12 @@
 import MailInInstructionsPage from '../../../components/MailInInstructionsPage'
 
-export default async function MailInRoute({ params }) {
+export default async function MailInRoute({ params, searchParams }) {
   const resolvedParams = await params
-  return <MailInInstructionsPage quoteId={resolvedParams.quoteId} />
+  const resolvedSearch = await searchParams
+  return (
+    <MailInInstructionsPage
+      quoteId={resolvedParams.quoteId}
+      tok={resolvedSearch?.tok || ''}
+    />
+  )
 }

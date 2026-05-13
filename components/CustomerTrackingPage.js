@@ -31,7 +31,7 @@ function formatSender(senderRole) {
   return 'System'
 }
 
-export default function CustomerTrackingPage({ quoteId, orgSlug }) {
+export default function CustomerTrackingPage({ quoteId, orgSlug, tok }) {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -59,7 +59,7 @@ export default function CustomerTrackingPage({ quoteId, orgSlug }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, ...(orgSlug ? { orgSlug } : {}) }),
+        body: JSON.stringify({ email, ...(orgSlug ? { orgSlug } : {}), ...(tok ? { tok } : {}) }),
       })
 
       const result = await response.json()
