@@ -219,7 +219,7 @@ function AdminAppointmentsInner() {
                 fontWeight: statusFilter === s ? 600 : 400,
               }}
             >
-              {s === 'all' ? 'All' : STATUS_LABELS[s]}{counts[s] ? ` (${counts[s]})` : ''}
+              {s === 'all' ? 'All' : statusPill(s).label}{counts[s] ? ` (${counts[s]})` : ''}
             </button>
           ))}
         </div>
@@ -228,7 +228,7 @@ function AdminAppointmentsInner() {
           <div className='policy-card' style={{ color: 'var(--muted)' }}>Loading appointments…</div>
         ) : filtered.length === 0 ? (
           <div className='policy-card' style={{ textAlign: 'center', color: '#aaa', padding: 40 }}>
-            No appointments{statusFilter !== 'all' ? ` with status "${STATUS_LABELS[statusFilter]}"` : ''}.
+            No appointments{statusFilter !== 'all' ? ` with status "${statusPill(statusFilter).label}"` : ''}.
           </div>
         ) : (
           <div className='policy-card' style={{ padding: 0, overflow: 'hidden' }}>
