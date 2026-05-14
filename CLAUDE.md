@@ -824,6 +824,46 @@ Three sections extracted from `AdminRepairOrderPage.js` into the existing `compo
 
 ---
 
+## Sprint 34 — Platform Admin Console ✅ COMPLETE
+
+### No migration needed
+All data comes from existing tables: `organizations`, `organization_subscriptions`, `organization_members`, `profiles`, `quote_requests`, `repair_orders`, `customers`.
+
+### What was done
+- **`lib/platform/getPlatformSession.js`** (new) — reads auth session via `@supabase/ssr`; checks user email against `PLATFORM_ADMIN_EMAILS` env var (comma-separated); throws 403 if not configured or email not in list
+- **`GET /platform/api/stats`** — platform-wide KPIs: total orgs, per-status counts, new signups last 30d, trial-urgent list (≤3 days), recent 10 signups
+- **`GET /platform/api/orgs`** — full org list merged with subscription and active member counts
+- **`GET /platform/api/orgs/[orgId]`** — single org detail: billing info, members (with profile join), usage counts (quotes/orders/customers), recent 5 quotes
+- **`PATCH /platform/api/orgs/[orgId]`** — three actions: `suspend` (sets status=suspended), `reactivate` (sets to active if sub exists, else trialing), `extend_trial` (extends trial_ends_at by 1–90 days, caps at 90)
+- **`components/PlatformNav.js`** — fixed dark top bar (`#0f172a`); Dashboard and Organizations links; active page highlight
+- **`components/PlatformDashboard.js`** — KPI cards, urgent-trial warning section, recent signups list
+- **`components/PlatformOrgsPage.js`** — searchable org table with status filter tabs, member count, plan, trial/renewal columns
+- **`components/PlatformOrgDetailPage.js`** — org header with status pill, usage stat cards, billing detail panel, members list with profile info, recent quotes panel; Suspend/Reactivate/+7d Trial action buttons
+- **`app/platform/layout.js`** — server component; calls `getPlatformSession()`; redirects to `/admin/quotes` on auth failure; wraps with `<PlatformNav />`
+- **`app/platform/page.js`**, **`app/platform/orgs/page.js`**, **`app/platform/orgs/[orgId]/page.js`** — page wrappers
+- **`lib/statusPills.js`** — added org lifecycle statuses: `active`, `trialing`, `past_due`, `suspended`, `cancelled`
+- **`__tests__/api/platform.test.js`** — 12 tests: 403 guards for all routes, stats count aggregation, trialUrgent flag, org list with member counts, org detail 404, org detail shape, PATCH 403/404/unknown-400/suspend/extend_trial
+
+### Route structure
+| URL | Description |
+|-----|-------------|
+| `/platform` | Dashboard — KPIs, recent signups, urgent trials |
+| `/platform/orgs` | All organizations with search + status filter |
+| `/platform/orgs/[orgId]` | Org detail — billing, members, usage, actions |
+
+### New env var
+- `PLATFORM_ADMIN_EMAILS` — comma-separated list of emails allowed to access `/platform/*`; if not set, the route redirects to `/admin/quotes`
+
+### Design decisions
+- Platform console uses its own dark top nav (not the per-org sidebar) since it is a distinct operational surface
+- All DB queries use the service role client — no RLS filtering; platform admin sees all orgs
+- Auth is email-allowlist only (no new DB table) — appropriate for a small operator team; can be upgraded to a DB role if needed
+
+### Test suite after Sprint 34
+203 tests across 20 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
@@ -834,3 +874,4 @@ Three sections extracted from `AdminRepairOrderPage.js` into the existing `compo
 - Cron secret for `/api/cron/trial-check`: `CRON_SECRET` (optional)
 - HMAC token secret for email links: `EMAIL_LINK_SECRET` (optional but recommended; rotate to invalidate old links)
 - Default shop slug for legacy single-tenant routes: `NEXT_PUBLIC_DEFAULT_ORG_SLUG` / `DEFAULT_ORG_SLUG` (used by `EstimateForm` to fetch org-scoped pricing on the generic `/estimate` route)
+- Platform admin emails: `PLATFORM_ADMIN_EMAILS` (comma-separated; gates `/platform/*`)
