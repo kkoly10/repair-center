@@ -34,9 +34,13 @@ function fmtDatetime(iso) {
 
 function AppointmentRow({ appt, onPatch }) {
   const [patching, setPatching] = useState(false)
+  const [patchError, setPatchError] = useState('')
+  const [cancelPending, setCancelPending] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
 
   async function patch(update) {
     setPatching(true)
+    setPatchError('')
     try {
       const res = await fetch(`/admin/api/appointments/${appt.id}`, {
         method: 'PATCH',
@@ -44,10 +48,31 @@ function AppointmentRow({ appt, onPatch }) {
         body: JSON.stringify(update),
       })
       const json = await res.json()
-      if (!res.ok) { alert(json.error || 'Failed to update.'); return }
+      if (!res.ok) { setPatchError(json.error || 'Failed to update.'); return }
       onPatch(json.appointment)
     } catch {
-      alert('Network error.')
+      setPatchError('Network error. Please try again.')
+    } finally {
+      setPatching(false)
+    }
+  }
+
+  async function confirmCancel() {
+    setPatching(true)
+    setPatchError('')
+    try {
+      const res = await fetch(`/admin/api/appointments/${appt.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled', cancellation_reason: cancelReason.trim() || null }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setPatchError(json.error || 'Failed to update.'); return }
+      onPatch(json.appointment)
+      setCancelPending(false)
+      setCancelReason('')
+    } catch {
+      setPatchError('Network error. Please try again.')
     } finally {
       setPatching(false)
     }
@@ -68,42 +93,69 @@ function AppointmentRow({ appt, onPatch }) {
       <td style={{ padding: '12px 8px', fontSize: 14, whiteSpace: 'nowrap' }}>{fmtDatetime(appt.preferred_at)}</td>
       <td style={{ padding: '12px 8px' }}><StatusBadge status={appt.status} /></td>
       <td style={{ padding: '12px 8px' }}>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {appt.status === 'pending' && (
-            <button
-              className='button button-small'
-              style={{ background: '#22c55e', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
-              disabled={patching}
-              onClick={() => patch({ status: 'confirmed' })}
-            >Confirm</button>
-          )}
-          {(appt.status === 'pending' || appt.status === 'confirmed') && (
-            <>
-              <button
-                className='button button-small'
-                style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
-                disabled={patching}
-                onClick={() => patch({ status: 'no_show' })}
-              >No-show</button>
+        {cancelPending ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <input
+              type='text'
+              className='input'
+              placeholder='Cancellation reason (optional)'
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              style={{ fontSize: 12, padding: '4px 8px' }}
+              autoFocus
+            />
+            <div style={{ display: 'flex', gap: 6 }}>
               <button
                 className='button button-small'
                 style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
                 disabled={patching}
-                onClick={() => {
-                  const reason = prompt('Cancellation reason (optional):')
-                  if (reason === null) return
-                  patch({ status: 'cancelled', cancellation_reason: reason || null })
-                }}
-              >Cancel</button>
-            </>
-          )}
-          {appt.status === 'confirmed' && !appt.quote_request_id && (
-            <Link href='/admin/quotes' style={{ fontSize: 12, color: '#6366f1' }}>→ Quotes</Link>
-          )}
-          {appt.quote_request_id && (
-            <Link href={`/admin/quotes/${appt.quote_request_id}`} style={{ fontSize: 12, color: '#6366f1' }}>View quote →</Link>
-          )}
-        </div>
+                onClick={confirmCancel}
+              >Confirm cancel</button>
+              <button
+                className='button button-small'
+                style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
+                disabled={patching}
+                onClick={() => { setCancelPending(false); setCancelReason('') }}
+              >Back</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {appt.status === 'pending' && (
+              <button
+                className='button button-small'
+                style={{ background: '#22c55e', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
+                disabled={patching}
+                onClick={() => patch({ status: 'confirmed' })}
+              >Confirm</button>
+            )}
+            {(appt.status === 'pending' || appt.status === 'confirmed') && (
+              <>
+                <button
+                  className='button button-small'
+                  style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
+                  disabled={patching}
+                  onClick={() => patch({ status: 'no_show' })}
+                >No-show</button>
+                <button
+                  className='button button-small'
+                  style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
+                  disabled={patching}
+                  onClick={() => setCancelPending(true)}
+                >Cancel</button>
+              </>
+            )}
+            {appt.status === 'confirmed' && !appt.quote_request_id && (
+              <Link href='/admin/quotes' style={{ fontSize: 12, color: '#6366f1' }}>→ Quotes</Link>
+            )}
+            {appt.quote_request_id && (
+              <Link href={`/admin/quotes/${appt.quote_request_id}`} style={{ fontSize: 12, color: '#6366f1' }}>View quote →</Link>
+            )}
+          </div>
+        )}
+        {patchError && (
+          <div style={{ marginTop: 6, fontSize: 12, color: 'var(--danger, #dc2626)' }}>{patchError}</div>
+        )}
       </td>
     </tr>
   )

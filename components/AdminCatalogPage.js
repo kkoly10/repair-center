@@ -26,6 +26,7 @@ function BrandsTab() {
   const [brands, setBrands] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [actionError, setActionError] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [draft, setDraft] = useState({ brandName: '', category: 'phone' })
   const [saving, setSaving] = useState(false)
@@ -42,13 +43,14 @@ function BrandsTab() {
   async function handleAdd(e) {
     e.preventDefault()
     setSaving(true)
+    setActionError('')
     try {
       const res = await fetch('/admin/api/catalog/brands', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(draft),
       })
       const json = await res.json()
-      if (!res.ok) { alert(json.error || 'Failed.'); return }
+      if (!res.ok) { setActionError(json.error || 'Failed to add brand.'); return }
       setBrands((prev) => [...prev, json.brand].sort((a, b) => a.brand_name.localeCompare(b.brand_name)))
       setDraft({ brandName: '', category: 'phone' })
       setShowAdd(false)
@@ -57,13 +59,14 @@ function BrandsTab() {
 
   async function handleSaveEdit(brandId) {
     setSaving(true)
+    setActionError('')
     try {
       const res = await fetch(`/admin/api/catalog/brands/${brandId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editDraft),
       })
       const json = await res.json()
-      if (!res.ok) { alert(json.error || 'Failed.'); return }
+      if (!res.ok) { setActionError(json.error || 'Failed to save changes.'); return }
       setBrands((prev) => prev.map((b) => b.id === brandId ? json.brand : b))
       setEditId(null)
     } finally { setSaving(false) }
@@ -71,9 +74,10 @@ function BrandsTab() {
 
   async function handleDelete(brandId) {
     if (!confirm('Delete this brand? This will also remove its models and any linked pricing rules.')) return
+    setActionError('')
     const res = await fetch(`/admin/api/catalog/brands/${brandId}`, { method: 'DELETE' })
     const json = await res.json()
-    if (!res.ok) { alert(json.error || 'Failed.'); return }
+    if (!res.ok) { setActionError(json.error || 'Failed to delete brand.'); return }
     setBrands((prev) => prev.filter((b) => b.id !== brandId))
   }
 
@@ -82,6 +86,7 @@ function BrandsTab() {
 
   return (
     <div>
+      {actionError && <div className='notice notice-warn' style={{ marginBottom: 12 }}>{actionError}</div>}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ fontSize: 13, color: '#555' }}>{brands.filter((b) => b.is_org_owned).length} custom brand{brands.filter((b) => b.is_org_owned).length !== 1 ? 's' : ''} · {brands.filter((b) => !b.is_org_owned).length} global</div>
         <button className='button' onClick={() => setShowAdd((v) => !v)} style={{ fontSize: 13, padding: '5px 14px' }}>
@@ -173,6 +178,7 @@ function ModelsTab() {
   const [brands, setBrands] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [actionError, setActionError] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [draft, setDraft] = useState({ modelName: '', familyName: '', brandId: '', category: 'phone' })
   const [saving, setSaving] = useState(false)
@@ -198,13 +204,14 @@ function ModelsTab() {
   async function handleAdd(e) {
     e.preventDefault()
     setSaving(true)
+    setActionError('')
     try {
       const res = await fetch('/admin/api/catalog/models', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(draft),
       })
       const json = await res.json()
-      if (!res.ok) { alert(json.error || 'Failed.'); return }
+      if (!res.ok) { setActionError(json.error || 'Failed to add model.'); return }
       setModels((prev) => [...prev, json.model].sort((a, b) => a.model_name.localeCompare(b.model_name)))
       setDraft({ modelName: '', familyName: '', brandId: '', category: 'phone' })
       setShowAdd(false)
@@ -213,13 +220,14 @@ function ModelsTab() {
 
   async function handleSaveEdit(modelId) {
     setSaving(true)
+    setActionError('')
     try {
       const res = await fetch(`/admin/api/catalog/models/${modelId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editDraft),
       })
       const json = await res.json()
-      if (!res.ok) { alert(json.error || 'Failed.'); return }
+      if (!res.ok) { setActionError(json.error || 'Failed to save changes.'); return }
       setModels((prev) => prev.map((m) => m.id === modelId ? json.model : m))
       setEditId(null)
     } finally { setSaving(false) }
@@ -227,9 +235,10 @@ function ModelsTab() {
 
   async function handleDelete(modelId) {
     if (!confirm('Delete this model? Pricing rules for this model will also be removed.')) return
+    setActionError('')
     const res = await fetch(`/admin/api/catalog/models/${modelId}`, { method: 'DELETE' })
     const json = await res.json()
-    if (!res.ok) { alert(json.error || 'Failed.'); return }
+    if (!res.ok) { setActionError(json.error || 'Failed to delete model.'); return }
     setModels((prev) => prev.filter((m) => m.id !== modelId))
   }
 
@@ -238,6 +247,7 @@ function ModelsTab() {
 
   return (
     <div>
+      {actionError && <div className='notice notice-warn' style={{ marginBottom: 12 }}>{actionError}</div>}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 10, flexWrap: 'wrap' }}>
         <input className='input' placeholder='Search models…' value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 220, fontSize: 13 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -353,6 +363,7 @@ function RepairTypesTab() {
   const [repairTypes, setRepairTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [actionError, setActionError] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [draft, setDraft] = useState({ repairName: '', category: '', priceModeDefault: 'manual', warrantyDaysDefault: '' })
   const [saving, setSaving] = useState(false)
@@ -369,13 +380,14 @@ function RepairTypesTab() {
   async function handleAdd(e) {
     e.preventDefault()
     setSaving(true)
+    setActionError('')
     try {
       const res = await fetch('/admin/api/catalog/repair-types', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(draft),
       })
       const json = await res.json()
-      if (!res.ok) { alert(json.error || 'Failed.'); return }
+      if (!res.ok) { setActionError(json.error || 'Failed to add repair type.'); return }
       setRepairTypes((prev) => [...prev, json.repairType].sort((a, b) => a.repair_name.localeCompare(b.repair_name)))
       setDraft({ repairName: '', category: '', priceModeDefault: 'manual', warrantyDaysDefault: '' })
       setShowAdd(false)
@@ -384,13 +396,14 @@ function RepairTypesTab() {
 
   async function handleSaveEdit(typeId) {
     setSaving(true)
+    setActionError('')
     try {
       const res = await fetch(`/admin/api/catalog/repair-types/${typeId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editDraft),
       })
       const json = await res.json()
-      if (!res.ok) { alert(json.error || 'Failed.'); return }
+      if (!res.ok) { setActionError(json.error || 'Failed to save changes.'); return }
       setRepairTypes((prev) => prev.map((r) => r.id === typeId ? json.repairType : r))
       setEditId(null)
     } finally { setSaving(false) }
@@ -398,9 +411,10 @@ function RepairTypesTab() {
 
   async function handleDelete(typeId) {
     if (!confirm('Delete this repair type? Pricing rules using it will also be removed.')) return
+    setActionError('')
     const res = await fetch(`/admin/api/catalog/repair-types/${typeId}`, { method: 'DELETE' })
     const json = await res.json()
-    if (!res.ok) { alert(json.error || 'Failed.'); return }
+    if (!res.ok) { setActionError(json.error || 'Failed to delete repair type.'); return }
     setRepairTypes((prev) => prev.filter((r) => r.id !== typeId))
   }
 
@@ -409,6 +423,7 @@ function RepairTypesTab() {
 
   return (
     <div>
+      {actionError && <div className='notice notice-warn' style={{ marginBottom: 12 }}>{actionError}</div>}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ fontSize: 13, color: '#555' }}>{repairTypes.filter((r) => r.is_org_owned).length} custom · {repairTypes.filter((r) => !r.is_org_owned).length} global</div>
         <button className='button' onClick={() => setShowAdd((v) => !v)} style={{ fontSize: 13, padding: '5px 14px' }}>
