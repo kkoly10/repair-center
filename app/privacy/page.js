@@ -1,3 +1,5 @@
+import { LEGAL } from '../../lib/legalConfig'
+
 export const metadata = {
   title: 'Privacy Policy — RepairCenter',
   description:
@@ -14,12 +16,6 @@ export default function PrivacyPage() {
           <p>
             <strong>Effective date:</strong> May 14, 2026
           </p>
-
-          <div className='notice notice-warn' style={{ marginTop: 12 }}>
-            <strong>Draft notice.</strong> This privacy policy is a working draft. It is not legal
-            advice. It should be reviewed by a qualified attorney before public launch, especially
-            for state-specific notice requirements (CA, CO, VA, CT, UT and others).
-          </div>
 
           <h3>1. About RepairCenter and your repair shop</h3>
           <p>
@@ -184,7 +180,7 @@ export default function PrivacyPage() {
           <p><strong>How to exercise these rights.</strong></p>
           <ul>
             <li>For requests about your data at a specific shop, contact the shop directly through the message thread on your tracking page or the email on the shop&apos;s page.</li>
-            <li>For requests about RepairCenter&apos;s platform-level processing, email <strong>[privacy email — set before launch]</strong>.</li>
+            <li>For requests about RepairCenter&apos;s platform-level processing, email <a href={`mailto:${LEGAL.privacyEmail}`}>{LEGAL.privacyEmail}</a>.</li>
             <li>Include enough information to verify your identity (e.g. your Quote ID, the email on file, the shop name).</li>
             <li>We will respond within the timeframe the applicable law requires (typically 30–45 days).</li>
           </ul>
@@ -222,8 +218,8 @@ export default function PrivacyPage() {
             For privacy-related questions or to exercise your rights at the platform level:
           </p>
           <ul>
-            <li>Email: <strong>[privacy email — set before launch]</strong></li>
-            <li>Mailing address: <strong>[platform mailing address — set before launch]</strong></li>
+            <li>Email: <a href={`mailto:${LEGAL.privacyEmail}`}>{LEGAL.privacyEmail}</a></li>
+            {LEGAL.mailingAddress && <li>Mailing address: {LEGAL.mailingAddress}</li>}
             <li>Response time: we aim to respond within 30 days, or the timeframe required by law.</li>
           </ul>
           <p>

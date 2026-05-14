@@ -15,12 +15,6 @@ export default function ShopResponsibilityPage() {
             <strong>Effective date:</strong> May 14, 2026
           </p>
 
-          <div className='notice notice-warn' style={{ marginTop: 12 }}>
-            <strong>Draft notice.</strong> This page is a plain-language summary. It is not legal
-            advice. The full terms are in the <a href='/terms'>Terms of Service</a>. Both should
-            be reviewed by a qualified attorney before public launch.
-          </div>
-
           <h3>The short version</h3>
           <p>
             <strong>RepairCenter is software. Your repair shop is the business.</strong> When you
