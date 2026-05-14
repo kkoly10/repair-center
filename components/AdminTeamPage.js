@@ -73,10 +73,8 @@ function AdminTeamPageInner({ currentUserId }) {
     setRemovingId(memberId)
     setRemoveError('')
     try {
-      const res = await fetch('/admin/api/team', {
+      const res = await fetch(`/admin/api/team/${memberId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId }),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json.error || 'Failed to remove member.')
