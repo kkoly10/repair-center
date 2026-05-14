@@ -28,7 +28,16 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid JSON.' }, { status: 400 })
   }
 
-  const { orgSlug, firstName, lastName, email, phone, brandName, modelName, repairDescription, preferredAt } = body || {}
+  const raw = body || {}
+  const orgSlug = (raw.orgSlug || '').toString().trim()
+  const firstName = (raw.firstName || '').toString().trim()
+  const lastName = (raw.lastName || '').toString().trim()
+  const email = (raw.email || '').toString().trim().toLowerCase()
+  const phone = (raw.phone || '').toString().trim()
+  const brandName = (raw.brandName || '').toString().trim()
+  const modelName = (raw.modelName || '').toString().trim()
+  const repairDescription = (raw.repairDescription || '').toString().trim()
+  const preferredAt = (raw.preferredAt || '').toString().trim()
 
   if (!orgSlug) return NextResponse.json({ error: 'orgSlug is required.' }, { status: 400 })
   if (!firstName) return NextResponse.json({ error: 'First name is required.' }, { status: 400 })

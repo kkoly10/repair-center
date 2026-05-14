@@ -105,7 +105,9 @@ function AdminCustomersInner() {
         ) : error ? (
           <div className='notice notice-error'>{error}</div>
         ) : !customers.length ? (
-          <div className='policy-card center-card'>No customers yet.</div>
+          <div className='policy-card center-card'>
+            No customers yet. Customers appear here when they submit a repair estimate through your shop page.
+          </div>
         ) : !filtered.length ? (
           <div className='policy-card center-card'>No customers match your search.</div>
         ) : (

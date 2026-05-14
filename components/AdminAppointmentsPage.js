@@ -34,9 +34,11 @@ function fmtDatetime(iso) {
 
 function AppointmentRow({ appt, onPatch }) {
   const [patching, setPatching] = useState(false)
+  const [patchError, setPatchError] = useState('')
 
   async function patch(update) {
     setPatching(true)
+    setPatchError('')
     try {
       const res = await fetch(`/admin/api/appointments/${appt.id}`, {
         method: 'PATCH',
@@ -44,10 +46,10 @@ function AppointmentRow({ appt, onPatch }) {
         body: JSON.stringify(update),
       })
       const json = await res.json()
-      if (!res.ok) { alert(json.error || 'Failed to update.'); return }
+      if (!res.ok) { setPatchError(json.error || 'Failed to update.'); return }
       onPatch(json.appointment)
     } catch {
-      alert('Network error.')
+      setPatchError('Network error. Please try again.')
     } finally {
       setPatching(false)
     }
@@ -89,11 +91,7 @@ function AppointmentRow({ appt, onPatch }) {
                 className='button button-small'
                 style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
                 disabled={patching}
-                onClick={() => {
-                  const reason = prompt('Cancellation reason (optional):')
-                  if (reason === null) return
-                  patch({ status: 'cancelled', cancellation_reason: reason || null })
-                }}
+                onClick={() => patch({ status: 'cancelled', cancellation_reason: null })}
               >Cancel</button>
             </>
           )}
@@ -104,6 +102,9 @@ function AppointmentRow({ appt, onPatch }) {
             <Link href={`/admin/quotes/${appt.quote_request_id}`} style={{ fontSize: 12, color: '#6366f1' }}>View quote →</Link>
           )}
         </div>
+        {patchError && (
+          <div style={{ marginTop: 6, fontSize: 12, color: 'var(--danger, #dc2626)' }}>{patchError}</div>
+        )}
       </td>
     </tr>
   )

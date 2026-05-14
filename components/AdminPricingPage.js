@@ -51,6 +51,7 @@ function AdminPricingPageInner() {
 
   // Delete state
   const [deletingId, setDeletingId] = useState(null)
+  const [deleteError, setDeleteError] = useState('')
 
   useEffect(() => {
     fetch('/admin/api/pricing')
@@ -118,17 +119,18 @@ function AdminPricingPageInner() {
   async function handleDelete(ruleId) {
     if (!window.confirm('Delete this pricing rule? This cannot be undone.')) return
     setDeletingId(ruleId)
+    setDeleteError('')
     try {
       const res = await fetch(`/admin/api/pricing/${ruleId}`, { method: 'DELETE' })
       if (!res.ok) {
         const json = await res.json()
-        alert(json.error || 'Failed to delete rule.')
+        setDeleteError(json.error || 'Failed to delete rule.')
         return
       }
       setRules((prev) => prev.filter((r) => r.id !== ruleId))
       if (editingId === ruleId) { setEditingId(null); setEditDraft({}) }
     } catch {
-      alert('Network error. Please try again.')
+      setDeleteError('Network error. Please try again.')
     } finally {
       setDeletingId(null)
     }
@@ -252,6 +254,10 @@ function AdminPricingPageInner() {
             </div>
           </div>
         </div>
+
+        {deleteError && (
+          <div className='notice notice-warn' style={{ marginBottom: 12 }}>{deleteError}</div>
+        )}
 
         {rules.length > 0 && !hasActiveRules && (
           <div className='notice notice-warn'>
