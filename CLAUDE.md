@@ -824,6 +824,76 @@ Three sections extracted from `AdminRepairOrderPage.js` into the existing `compo
 
 ---
 
+## Sprint 34 — Platform Admin Console ✅ COMPLETE
+
+### No migration needed
+All data comes from existing tables: `organizations`, `organization_subscriptions`, `organization_members`, `profiles`, `quote_requests`, `repair_orders`, `customers`.
+
+### What was done
+- **`lib/platform/getPlatformSession.js`** (new) — reads auth session via `@supabase/ssr`; checks user email against `PLATFORM_ADMIN_EMAILS` env var (comma-separated); throws 403 if not configured or email not in list
+- **`GET /platform/api/stats`** — platform-wide KPIs: total orgs, per-status counts, new signups last 30d, trial-urgent list (≤3 days), recent 10 signups
+- **`GET /platform/api/orgs`** — full org list merged with subscription and active member counts
+- **`GET /platform/api/orgs/[orgId]`** — single org detail: billing info, members (with profile join), usage counts (quotes/orders/customers), recent 5 quotes
+- **`PATCH /platform/api/orgs/[orgId]`** — three actions: `suspend` (sets status=suspended), `reactivate` (sets to active if sub exists, else trialing), `extend_trial` (extends trial_ends_at by 1–90 days, caps at 90)
+- **`components/PlatformNav.js`** — fixed dark top bar (`#0f172a`); Dashboard and Organizations links; active page highlight
+- **`components/PlatformDashboard.js`** — KPI cards, urgent-trial warning section, recent signups list
+- **`components/PlatformOrgsPage.js`** — searchable org table with status filter tabs, member count, plan, trial/renewal columns
+- **`components/PlatformOrgDetailPage.js`** — org header with status pill, usage stat cards, billing detail panel, members list with profile info, recent quotes panel; Suspend/Reactivate/+7d Trial action buttons
+- **`app/platform/layout.js`** — server component; calls `getPlatformSession()`; redirects to `/admin/quotes` on auth failure; wraps with `<PlatformNav />`
+- **`app/platform/page.js`**, **`app/platform/orgs/page.js`**, **`app/platform/orgs/[orgId]/page.js`** — page wrappers
+- **`lib/statusPills.js`** — added org lifecycle statuses: `active`, `trialing`, `past_due`, `suspended`, `cancelled`
+- **`__tests__/api/platform.test.js`** — 12 tests: 403 guards for all routes, stats count aggregation, trialUrgent flag, org list with member counts, org detail 404, org detail shape, PATCH 403/404/unknown-400/suspend/extend_trial
+
+### Route structure
+| URL | Description |
+|-----|-------------|
+| `/platform` | Dashboard — KPIs, recent signups, urgent trials |
+| `/platform/orgs` | All organizations with search + status filter |
+| `/platform/orgs/[orgId]` | Org detail — billing, members, usage, actions |
+
+### New env var
+- `PLATFORM_ADMIN_EMAILS` — comma-separated list of emails allowed to access `/platform/*`; if not set, the route redirects to `/admin/quotes`
+
+### Design decisions
+- Platform console uses its own dark top nav (not the per-org sidebar) since it is a distinct operational surface
+- All DB queries use the service role client — no RLS filtering; platform admin sees all orgs
+- Auth is email-allowlist only (no new DB table) — appropriate for a small operator team; can be upgraded to a DB role if needed
+
+### Test suite after Sprint 34
+203 tests across 20 suites — all passing.
+
+---
+
+## Sprint 35 — Customer Portal Enhancements ✅ COMPLETE
+
+### No migration needed
+
+### What was done
+- **`app/shop/[orgSlug]/estimate/page.js`** (rewritten) — now a full server component; fetches org + calls `getCustomerSession(org.id)`; passes `prefillContact` (firstName, lastName, email, phone) from customer row to `EstimateForm`
+- **`components/EstimateForm.js`** (modified) — accepts `prefillContact` prop; lazy `useState(() => ...)` initializer for contact state; Step 5 shows "Signed in as {email}" copy when prefill present
+- **`app/shop/[orgSlug]/book/page.js`** (modified) — fetches org.id; calls `getCustomerSession`; passes `prefill` to `BookingPage`
+- **`components/BookingPage.js`** (modified) — accepts `prefill` prop; lazy `useState` initializer; shows "Booking as" notice when prefill is present
+- **`app/shop/[orgSlug]/track/[quoteId]/page.js`** (rewritten) — fetches org + customer session; passes `prefillEmail={session?.customer?.email}` to `CustomerTrackingPage`
+- **`components/CustomerTrackingPage.js`** (modified) — accepts `prefillEmail` prop; auto-verifies on mount with `useRef` guard to prevent double-fire in StrictMode; `loading` initializes to `!!prefillEmail` to avoid flash of email gate
+- **`app/shop/[orgSlug]/account/page.js`** (modified) — fetches appointments in parallel alongside quotes/orders; passes to `CustomerAccountPage`
+- **`components/CustomerAccountPage.js`** (modified) — new appointments section with status pill, device, description, and formatted datetime
+- **`app/api/appointments/route.js`** (modified) — validates `preferredDate` before org lookup; auto-links customer by email on appointment creation (`customer_id: matchedCustomer?.id || null`)
+
+### Bug fixes applied
+- **`repair_order_status_history` column name** — `orders/[orderId]/route.js` was querying `.eq('status', newStatus)` but the column is `new_status`; fixed to `.eq('new_status', newStatus)` — silent failure caused notification `historyId` to always be null, breaking dedup
+- **Billing plan_key default** — `GET /admin/api/billing` returned `'beta'` as fallback; changed to `'pro'` to match webhook handler
+- **Settings stripe_connect fields** — `POST /admin/api/settings` was not persisting `stripe_connect_account_id` or `stripe_connect_onboarding_complete` even though GET returned them; added to upsert payload
+
+### Second audit round fixes (same commit batch)
+- **`AdminTeamPage.js`** — `handleRemove` was calling `DELETE /admin/api/team` (wrong endpoint; only GET exists there); fixed to `DELETE /admin/api/team/${memberId}`; member removal was completely broken
+- **`lib/notifications.js`** — repair_orders SELECT was missing `created_at` and `repair_completed_at`; added both so `followUpEmails.js` warranty calculation works
+- **`lib/followUpEmails.js`** — warranty expiry used `context.repairOrder?.created_at` instead of `repair_completed_at`; fixed to use `repair_completed_at` (matching cron job logic)
+
+### Test suite after Sprint 35
+203 tests across 20 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
@@ -834,3 +904,4 @@ Three sections extracted from `AdminRepairOrderPage.js` into the existing `compo
 - Cron secret for `/api/cron/trial-check`: `CRON_SECRET` (optional)
 - HMAC token secret for email links: `EMAIL_LINK_SECRET` (optional but recommended; rotate to invalidate old links)
 - Default shop slug for legacy single-tenant routes: `NEXT_PUBLIC_DEFAULT_ORG_SLUG` / `DEFAULT_ORG_SLUG` (used by `EstimateForm` to fetch org-scoped pricing on the generic `/estimate` route)
+- Platform admin emails: `PLATFORM_ADMIN_EMAILS` (comma-separated; gates `/platform/*`)

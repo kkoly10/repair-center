@@ -124,7 +124,7 @@ export async function DELETE(request, context) {
         .select('id', { count: 'exact', head: true })
         .eq('organization_id', orgId)
         .eq('role', 'owner')
-        .neq('status', 'disabled')
+        .eq('status', 'active')
 
       if (countError) throw countError
       if (count <= 1) {

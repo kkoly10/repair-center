@@ -9,12 +9,11 @@ export const runtime = 'nodejs'
 
 export async function GET(request) {
   const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret) {
-    return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 })
-  }
-  const auth = request.headers.get('authorization')
-  if (auth !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (cronSecret) {
+    const auth = request.headers.get('authorization')
+    if (auth !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
   }
 
   const supabase = getSupabaseAdmin()

@@ -2,7 +2,12 @@ import Link from 'next/link'
 import CustomerSignOutButton from './CustomerSignOutButton'
 import { statusPill } from '../lib/statusPills'
 
-export default function CustomerAccountPage({ customer, quotes, orgSlug }) {
+function fmtDateTime(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
+export default function CustomerAccountPage({ customer, quotes, appointments = [], orgSlug }) {
   const name = [customer.first_name, customer.last_name].filter(Boolean).join(' ') || customer.email
 
   return (
@@ -69,6 +74,41 @@ export default function CustomerAccountPage({ customer, quotes, orgSlug }) {
             </div>
           )}
         </div>
+
+        {appointments.length > 0 && (
+          <div className='policy-card'>
+            <div className='kicker'>Appointments</div>
+            <h3>Your drop-off appointments</h3>
+            <div className='preview-meta' style={{ marginTop: 18 }}>
+              {appointments.map((a) => {
+                const device = [a.brand_name, a.model_name].filter(Boolean).join(' ') || null
+                const { cls, label } = statusPill(a.status)
+                return (
+                  <div key={a.id} className='preview-meta-row'>
+                    <span>
+                      <span className={cls}>{label}</span>
+                      {' '}
+                      {device && <span>{device}</span>}
+                      {a.repair_description && (
+                        <span style={{ color: 'var(--muted)', fontSize: '0.85rem', marginLeft: 6 }}>
+                          — {a.repair_description.slice(0, 60)}{a.repair_description.length > 60 ? '…' : ''}
+                        </span>
+                      )}
+                    </span>
+                    <span style={{ whiteSpace: 'nowrap', color: 'var(--muted)', fontSize: '0.875rem' }}>
+                      {fmtDateTime(a.preferred_at)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+            <div className='inline-actions' style={{ marginTop: 16 }}>
+              <Link href={`/shop/${orgSlug}/book`} className='button button-secondary'>
+                Book Another Appointment
+              </Link>
+            </div>
+          </div>
+        )}
 
         <div className='policy-card'>
           <div className='kicker'>Track a specific repair</div>

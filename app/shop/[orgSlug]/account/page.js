@@ -25,8 +25,8 @@ export default async function ShopAccountPage({ params }) {
 
   const { customer } = session
 
-  // 3. Fetch this customer's quote requests and repair orders in parallel
-  const [quotesResult, ordersResult] = await Promise.all([
+  // 3. Fetch quotes, orders, and appointments in parallel
+  const [quotesResult, ordersResult, appointmentsResult] = await Promise.all([
     supabase
       .from('quote_requests')
       .select('id, quote_id, brand_name, model_name, repair_type_key, status, created_at')
@@ -38,6 +38,13 @@ export default async function ShopAccountPage({ params }) {
       .select('quote_request_id, current_status')
       .eq('customer_id', customer.id)
       .eq('organization_id', org.id),
+    supabase
+      .from('appointments')
+      .select('id, preferred_at, status, brand_name, model_name, repair_description, created_at')
+      .eq('organization_id', org.id)
+      .eq('email', customer.email)
+      .order('preferred_at', { ascending: false })
+      .limit(10),
   ])
 
   if (quotesResult.error) throw new Error(quotesResult.error.message)
@@ -65,6 +72,7 @@ export default async function ShopAccountPage({ params }) {
     <CustomerAccountPage
       customer={customer}
       quotes={enrichedQuotes}
+      appointments={appointmentsResult.data || []}
       orgSlug={orgSlug}
     />
   )

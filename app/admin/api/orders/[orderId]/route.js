@@ -181,7 +181,7 @@ export async function PATCH(request, context) {
         .from('repair_order_status_history')
         .select('id')
         .eq('repair_order_id', orderId)
-        .eq('status', newStatus)
+        .eq('new_status', newStatus)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()

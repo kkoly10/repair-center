@@ -8,6 +8,12 @@ import {
 
 export const runtime = 'nodejs'
 
+const CUSTOMER_NOTIFY_STATUSES = new Set([
+  'inspection', 'repairing', 'awaiting_balance_payment', 'ready_to_ship',
+  'shipped', 'delivered', 'cancelled', 'returned_unrepaired',
+  'beyond_economical_repair', 'no_fault_found',
+])
+
 const ALLOWED_STATUSES = [
   'awaiting_mail_in',
   'in_transit_to_shop',
@@ -440,7 +446,7 @@ export async function POST(request, context) {
     }
 
     const shouldNotifyStatus =
-      Boolean(customerNote) &&
+      CUSTOMER_NOTIFY_STATUSES.has(newStatus) &&
       latestHistoryId &&
       latestHistoryStatus === newStatus &&
       previousStatus !== newStatus

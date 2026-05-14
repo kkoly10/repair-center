@@ -210,7 +210,7 @@ export async function finalizeDepositPayment({
       .from('payments')
       .insert({
         organization_id: orgId,
-        repair_order_id: newOrder.id,
+        repair_order_id: repairOrder.id,
         quote_estimate_id: estimateId || null,
         payment_kind: 'inspection_deposit',
         provider: 'stripe',

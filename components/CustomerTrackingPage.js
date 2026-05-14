@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { statusPill } from '../lib/statusPills'
 
 const TIMELINE_NODES = [
@@ -56,9 +56,9 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function CustomerTrackingPage({ quoteId, orgSlug, tok }) {
-  const [email,        setEmail]        = useState('')
-  const [loading,      setLoading]      = useState(false)
+export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEmail = '' }) {
+  const [email,        setEmail]        = useState(prefillEmail)
+  const [loading,      setLoading]      = useState(!!prefillEmail)
   const [error,        setError]        = useState('')
   const [record,       setRecord]       = useState(null)
   const [replyBody,    setReplyBody]    = useState('')
@@ -72,6 +72,31 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok }) {
 
   const descriptionText = useMemo(() => STATUS_DESCRIPTIONS[currentStatus] || '', [currentStatus])
   const msgCount        = useMemo(() => (record?.messages || []).length, [record])
+
+  // Auto-verify when a prefill email is provided (customer is logged in)
+  const didAutoVerify = useRef(false)
+  useEffect(() => {
+    if (!prefillEmail || didAutoVerify.current) return
+    didAutoVerify.current = true
+    const t = setTimeout(() => {
+      setLoading(true)
+      setError('')
+      fetch(`/api/track/${quoteId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: prefillEmail, ...(orgSlug ? { orgSlug } : {}), ...(tok ? { tok } : {}) }),
+      })
+        .then((r) => r.json())
+        .then((result) => {
+          if (!result.error) setRecord(result)
+          else setError(result.error || 'Unable to load tracking.')
+        })
+        .catch(() => setError('Unable to load tracking.'))
+        .finally(() => setLoading(false))
+    }, 0)
+    return () => clearTimeout(t)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleVerify(e) {
     e.preventDefault()

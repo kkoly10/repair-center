@@ -112,6 +112,14 @@ describe('POST /api/appointments', () => {
             maybeSingle: jest.fn().mockResolvedValue({ data: { id: ORG_ID, name: 'Acme', status: 'active' }, error: null }),
           }
         }
+        if (callCount === 2) {
+          // customers auto-link lookup
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+          }
+        }
         // appointments insert
         return {
           insert: jest.fn().mockReturnThis(),
@@ -138,6 +146,14 @@ describe('POST /api/appointments', () => {
             select: jest.fn().mockReturnThis(),
             eq: jest.fn().mockReturnThis(),
             maybeSingle: jest.fn().mockResolvedValue({ data: { id: ORG_ID, name: 'Acme', status: 'active' }, error: null }),
+          }
+        }
+        if (callCount === 2) {
+          // customers auto-link lookup
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
           }
         }
         return {

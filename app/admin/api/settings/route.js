@@ -146,6 +146,8 @@ export async function POST(request) {
             ...(payment.cashapp_tag !== undefined && { cashapp_tag: payment.cashapp_tag }),
             ...(payment.zelle_contact !== undefined && { zelle_contact: payment.zelle_contact }),
             ...(payment.square_payment_url !== undefined && { square_payment_url: payment.square_payment_url }),
+            ...(payment.stripe_connect_account_id !== undefined && { stripe_connect_account_id: payment.stripe_connect_account_id }),
+            ...(payment.stripe_connect_onboarding_complete !== undefined && { stripe_connect_onboarding_complete: payment.stripe_connect_onboarding_complete }),
           }, { onConflict: 'organization_id' })
       )
     }

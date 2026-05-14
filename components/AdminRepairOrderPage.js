@@ -144,7 +144,6 @@ function AdminRepairOrderInner({ quoteId }) {
 
   const [sendingReceipt, setSendingReceipt] = useState(false)
 
-  const currentStatusLabel = useMemo(() => formatStatusLabel(status), [status])
   const isUnrepairedReturn = useMemo(() => UNREPAIRED_RETURN_STATUSES.has(status), [status])
   const revisedEstimatePath = `/admin/quotes/${quoteId}/revised-estimate`
   const paymentsPath = `/admin/quotes/${quoteId}/payments`
