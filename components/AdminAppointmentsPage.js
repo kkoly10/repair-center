@@ -58,9 +58,24 @@ function AppointmentRow({ appt, onPatch }) {
   }
 
   async function confirmCancel() {
-    await patch({ status: 'cancelled', cancellation_reason: cancelReason.trim() || null })
-    setCancelPending(false)
-    setCancelReason('')
+    setPatching(true)
+    setPatchError('')
+    try {
+      const res = await fetch(`/admin/api/appointments/${appt.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled', cancellation_reason: cancelReason.trim() || null }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setPatchError(json.error || 'Failed to update.'); return }
+      onPatch(json.appointment)
+      setCancelPending(false)
+      setCancelReason('')
+    } catch {
+      setPatchError('Network error. Please try again.')
+    } finally {
+      setPatching(false)
+    }
   }
 
   return (
