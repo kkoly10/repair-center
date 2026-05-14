@@ -58,7 +58,7 @@ function fmtDate(iso) {
 
 export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEmail = '' }) {
   const [email,        setEmail]        = useState(prefillEmail)
-  const [loading,      setLoading]      = useState(false)
+  const [loading,      setLoading]      = useState(!!prefillEmail)
   const [error,        setError]        = useState('')
   const [record,       setRecord]       = useState(null)
   const [replyBody,    setReplyBody]    = useState('')
@@ -88,7 +88,7 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
       })
         .then((r) => r.json())
         .then((result) => {
-          if (result.ok !== false && !result.error) setRecord(result)
+          if (!result.error) setRecord(result)
           else setError(result.error || 'Unable to load tracking.')
         })
         .catch(() => setError('Unable to load tracking.'))

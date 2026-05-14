@@ -42,7 +42,7 @@ export async function GET() {
       ok: true,
       billing: {
         status: org.status,
-        planKey: sub?.plan_key || org.plan_key || 'beta',
+        planKey: sub?.plan_key || org.plan_key || 'pro',
         trialEndsAt,
         trialDaysLeft,
         currentPeriodEnd: sub?.current_period_end || null,

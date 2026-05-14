@@ -19,11 +19,13 @@ export async function GET(_req, context) {
       supabase.from('organizations')
         .select('id, name, slug, status, plan_key, trial_ends_at, created_at, stripe_customer_id, updated_at')
         .eq('id', orgId).single(),
-      supabase.from('organization_subscriptions').select('*').eq('organization_id', orgId).maybeSingle(),
+      supabase.from('organization_subscriptions')
+        .select('plan_key, status, current_period_end, cancel_at_period_end, stripe_subscription_id, stripe_customer_id')
+        .eq('organization_id', orgId).maybeSingle(),
       supabase.from('organization_members').select('id, role, status, user_id').eq('organization_id', orgId),
-      supabase.from('quote_requests').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
-      supabase.from('repair_orders').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
-      supabase.from('customers').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
+      supabase.from('quote_requests').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
+      supabase.from('repair_orders').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
+      supabase.from('customers').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
       supabase
         .from('quote_requests')
         .select('id, quote_id, brand_name, model_name, repair_type_key, status, created_at')
@@ -41,6 +43,11 @@ export async function GET(_req, context) {
   }
   if (membersRes.error)
     return NextResponse.json({ error: membersRes.error.message }, { status: 500 })
+  if (subRes.error)
+    return NextResponse.json({ error: subRes.error.message }, { status: 500 })
+  const countError = quotesCountRes.error || ordersCountRes.error || customersCountRes.error || recentQuotesRes.error
+  if (countError)
+    return NextResponse.json({ error: countError.message }, { status: 500 })
 
   const userIds = (membersRes.data || []).map((m) => m.user_id).filter(Boolean)
   const profilesRes = userIds.length > 0
