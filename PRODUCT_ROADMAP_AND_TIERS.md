@@ -2,224 +2,162 @@
 
 ## Product Positioning
 
-Repair Center is a SaaS platform for repair shops to accept online quote requests, convert to instant repair orders, manage mail-in workflows, provide live customer tracking, and (later) run full shop operations from a single dashboard.
+Repair Center is a multi-tenant SaaS platform for independent repair shops. Each shop gets a branded public page, a customer-facing estimate form, mail-in and in-store workflows, customer tracking, payment collection, a parts inventory, a repair queue, basic analytics, review collection, appointment booking, and a CSV data export. The platform runs the software. The repair work is done by the shop.
 
-The near-term focus is helping shops get online fast with zero friction: a customer-facing estimate form, automated notifications, and an admin workflow that replaces DMs and spreadsheets. Inventory, POS, and Stripe Connect are intentionally deferred to keep the core experience tight.
-
----
-
-## Target Customers
-
-| Tier | Who |
-|------|-----|
-| **Starter** | Solo technicians, mobile repair, social-media-only shops who need a professional online presence and quote intake |
-| **Growth** | Small repair shops and mall kiosks with 1–5 staff who need a shared queue and basic workflow |
-| **Pro** | Serious shops needing inventory tracking, staff management, and operational reports |
-| **Advanced** | Multi-location operations, high-volume shops, or franchises needing location management, POS, and custom domains |
+The near-term focus is helping shops get online fast with zero friction. Stripe Connect, multi-location, and POS are intentionally deferred to keep the core experience tight.
 
 ---
 
-## Pricing Tiers
+## Current Pricing — Founder Beta
 
-| Tier | Public Price | Founder Price |
-|------|-------------|---------------|
-| **Starter Portal** | $29 / mo | $25 / mo |
-| **Growth Shop** | $59 / mo | $49 / mo |
-| **Pro Operations** | $99 / mo | $79 / mo |
-| **Advanced** | $149+ / mo | Custom |
+While the product matures we are running a single Founder Beta plan:
 
-Founder pricing is locked in for life for shops that sign up during controlled beta.
+| Plan | Price | What's included |
+|------|-------|-----------------|
+| **Founder Beta Plan** | **$29 / month** | Every feature currently in the product. 14-day free trial. No credit card required during the trial. |
 
----
+Founder Beta terms:
 
-## Feature Matrix by Tier
-
-### Starter Portal — $29/mo
-
-| Feature | Status |
-|---------|--------|
-| Public estimate form (shop URL) | **Available now** |
-| Quote request intake + admin dashboard | **Available now** |
-| Email + SMS notifications to customer | **Available now** |
-| Estimate builder (send / revise estimates) | **Available now** |
-| Estimate approval + mail-in instructions | **Available now** |
-| Live customer tracking page | **Available now** |
-| Manual payment collection (CashApp, Zelle, Square link) | **Available now** |
-| Stripe payment links (deposit + final balance) | **Available now** |
-| Admin settings (branding, receiving address) | **Available now** |
-| Pricing catalog (per-model, per-repair rules) | **Available now** |
-| 1 staff seat (owner only) | **Available now** |
-| Invite-based team signup | **In beta** |
-| Repair order workflow (intake, inspection, repair, return) | **Available now** |
-| Multi-staff seats | **Not included — Growth+** |
-| Inventory & parts | **Not included — Pro+** |
-| Reporting / analytics | **Not included — Pro+** |
-| Multi-location | **Not included — Advanced** |
-| Custom domain | **Not included — Advanced** |
+- Founder Beta is offered while we collect feedback and stabilize the platform.
+- Existing founder accounts may receive grandfathered pricing or terms at the operator's discretion when public tiers launch — this is a goodwill decision, not a contractual promise.
+- We will give beta customers reasonable notice before any pricing change.
+- Trial does not auto-charge unless a payment method is added. Cancel anytime from the Stripe Customer Portal via `/admin/billing`.
 
 ---
 
-### Growth Shop — $59/mo
+## Long-term Pricing Tiers (planned, not yet launched)
 
-Includes everything in Starter, plus:
+When we exit beta and launch public tiers, the model is expected to be:
 
-| Feature | Status |
-|---------|--------|
-| Up to 5 staff seats | **Available now** |
-| Team management (invite, role, remove) | **Available now** |
-| Repair queue + status workflow | **Available now** |
-| SLA tracking (due date / overdue view) | **Available now** |
-| Basic repair analytics (volume, revenue) | **Available now** |
-| Staff performance dashboard | **Available now** |
-| Customer history (repeat customers) | **Available now** |
-| Invoices / receipts (PDF) | **Available now** |
-| Inventory & parts | **Not included — Pro+** |
-| Staff performance reports | **Available now** |
-| Multi-location | **Not included — Advanced** |
-| Custom domain | **Not included — Advanced** |
+| Tier | Indicative price | Who it's for |
+|------|------------------|--------------|
+| **Starter** | $29 / mo | Solo techs, mobile, social-only shops who need an online presence and quote intake |
+| **Growth** | $59 / mo | Small shops and kiosks (1–5 staff) needing a shared queue and basic workflow |
+| **Pro** | $99 / mo | Shops needing inventory, reporting, and staff performance |
+| **Advanced** | $149+ / mo or custom | Multi-location, high-volume, franchise, or white-label needs |
+
+Tiered feature gating is **not yet enforced in code**. All Founder Beta accounts get every feature in the product today.
 
 ---
 
-### Pro Operations — $99/mo
+## Currently Available Features (what the product actually does today)
 
-Includes everything in Growth, plus:
+These features are live and tested in the Founder Beta. Each one will be assigned to a future tier when public tiers launch.
 
-| Feature | Status |
-|---------|--------|
-| Unlimited staff seats | **Available now** |
-| Inventory & parts tracking | **Coming soon** |
-| Parts used per repair (cost tracking) | **Coming soon** |
-| Staff performance reports | **Coming soon** |
-| Advanced revenue / margin reports | **Coming soon** |
-| Customer history + lifetime value | **Available now** |
-| Invoices / receipts (PDF) | **Available now** |
-| Priority support | **Coming soon** |
-| Multi-location | **Not included — Advanced** |
-| Stripe Connect (marketplace payouts) | **Not included — Advanced** |
-| Custom domain | **Not included — Advanced** |
-| POS / barcode scanning | **Not included — Advanced** |
+### Shop public pages (any shop, free for the customer)
+- Branded shop landing page at `/shop/[slug]`
+- Public estimate request form with photo upload
+- Public appointment booking form
+- Public customer tracking page (lookup by Quote ID + email)
+- Customer login via email magic link to view all repairs for that shop (Sprint 28)
 
----
+### Admin core
+- Repair queue with status, priority, technician, due date inline editing
+- Quote review and estimate builder (send estimate, revise estimate)
+- Repair order page with intake, parts used, staff notes, status history + audit log
+- Customer list and customer profile (lifetime value, repeat flag)
+- Invoice page (HTML, printable) and emailed receipts
+- Global search bar across quotes / orders / customers
+- SLA dashboard (overdue / stuck / avg turnaround)
+- Analytics dashboard (revenue, repair-type mix, technician mix, repeat rate, with previous-period comparison)
+- Staff performance page
+- Team management (invite, role, remove)
+- Org settings (branding, receiving address, payment mode, manual payment instructions)
 
-### Advanced — $149+/mo or custom
+### Inventory & parts
+- Parts catalog with low-stock alerts
+- Per-repair-order parts tracking
+- Supplier list
 
-Includes everything in Pro, plus:
+### Catalog management
+- Per-shop custom brands, models, and repair types (alongside global catalog)
+- Pricing rules editor (fixed / range / manual)
 
-| Feature | Status |
-|---------|--------|
-| Multiple shop locations under one account | **Coming soon** |
-| Per-location pricing rules + staff | **Coming soon** |
-| Custom domain (yourbrand.com) | **Coming soon** |
-| Stripe Connect (direct payouts to shop) | **Coming soon** |
-| POS mode (in-store, walk-in) | **Coming soon** |
-| Barcode / QR scanning | **Coming soon** |
-| Purchase orders (parts ordering) | **Coming soon** |
-| Franchise / white-label options | **Coming soon** |
-| Dedicated onboarding + SLA support | **Coming soon** |
+### Reviews
+- Public review submission page
+- Star-link in review-request email
+- Admin reviews summary with star distribution
+- Daily cron sends review requests 3 days after shipment and warranty reminders 7 days before expiry
 
----
+### Appointments
+- Public booking form
+- Admin appointments page with status workflow (pending / confirmed / cancelled / no-show / converted)
 
-## Feature Roadmap by Phase
+### CSV export
+- Customers, orders, and reviews exports
 
-### Phase 1 — Online Quote & Order Portal ✅ Complete
-- Public shop URL + estimate form
-- Quote intake, admin review, estimate builder
-- Estimate approval, mail-in workflow
-- Customer tracking + messaging
-- Manual + Stripe payment modes
-- Admin settings, pricing catalog, team invites
+### Billing
+- Subscription billing via Stripe (Stripe Checkout + Customer Portal)
+- 14-day free trial
+- Trial expiry warning emails (3-day and 1-day) via daily cron
+- Suspended-account redirect
+- Past-due flag
 
-### Phase 2 — Repair Queue & Workflow ✅ Complete (Sprint 8)
-- `/admin/orders` queue: all active repair orders in one view
-- Status, priority, technician, due date — all editable inline from the queue
-- Filters: active / waiting parts / awaiting payment / overdue / completed / all
-- Search by order #, quote ID, customer name/email
-- Tech filter dropdown (per-org member list)
-- `priority` (low/normal/high/urgent) and `due_at` columns on repair_orders
-- `repair_order_audit_log` table: tracks technician assignment, priority, and due date changes
-- `GET /admin/api/orders` + `PATCH /admin/api/orders/[orderId]` — both org-scoped
-- `getSessionContext()` helper returns `{ orgId, userId }` for audit attribution
-- Status changes from queue still feed the existing `repair_order_status_history` trigger
-- Intake form, device condition photos (existing, per-quote repair order page)
-- SLA tracking (due_at overdue view is the first SLA indicator)
-
-### Phase 3 — Staff & Team Management ✅ Complete (Sprint 9)
-- Staff roles (owner, admin, technician) — done in Sprint 3b
-- Per-staff repair assignment views — `/admin/orders?tech={id}` filter in repair queue
-- Activity log / audit trail — unified timeline on repair order page (status history + audit log merged)
-- Staff performance metrics — `/admin/staff`: active orders, completed in 30d, avg turnaround per tech
-
-### Phase 4 — Inventory & Parts 🔜 Coming Soon
-- Parts catalog (name, SKU, cost, quantity)
-- Parts consumed per repair order
-- Low-stock alerts
-- Supplier / vendor records
-
-### Phase 5 — Invoices, Receipts & Customer History ✅ Complete (Sprint 10)
-- Printable HTML invoice page (`/admin/quotes/[id]/invoice`) with browser print-to-PDF
-- Email receipt via Resend (`POST /admin/api/quotes/[id]/send-invoice`) — "Send Receipt" button on repair order page
-- Customer list page (`/admin/customers`) — order count, completed count, last order date, repeat badge
-- Customer profile page (`/admin/customers/[id]`) — full repair history, lifetime value, repeat customer flag
-- `GET /admin/api/customers` + `GET /admin/api/customers/[customerId]` — both org-scoped
-
-### Phase 6 — Reporting & Analytics ✅ Complete (Sprint 11)
-- Revenue by date range (7d / 30d / 90d / 12m / all) with previous-period trend
-- Revenue by repair type and by technician (bar charts)
-- Average repair time (intake → shipped)
-- Deposit vs. balance collection rates
-- Repeat customer rate
-
-### Phase 7 — Stripe Connect 🔜 Deferred
-- Direct payouts to shop Stripe accounts
-- Platform fee collection
-- Multi-shop payout dashboard
-
-### Phase 8 — SaaS Subscription Billing 🔜 Deferred
-- In-app plan selection and upgrade
-- Stripe Billing integration (metered seats)
-- Trial periods, coupons
-- Dunning / failed payment handling
-
-### Phase 9 — Multi-Location, POS & Advanced Ops 🔜 Deferred
-- Multiple locations under one org
-- POS / walk-in mode
-- Barcode and QR scanning for devices and parts
-- Purchase orders and supplier management
-- Custom domain mapping
+### Multi-tenant security
+- Org-scoped RLS across all tables
+- Session-based org resolution in every admin route
+- HMAC-signed customer email links (when `EMAIL_LINK_SECRET` is set)
+- Rate limiting on public quote, appointment, and review endpoints
 
 ---
 
-## Feature Gating Summary
+## Long-term Feature Gating (planned)
+
+This is the **intended** allocation of features to tiers once public tiers launch. Not enforced today.
 
 | Capability | Starter | Growth | Pro | Advanced |
-|-----------|---------|--------|-----|----------|
-| Online quote portal | ✓ | ✓ | ✓ | ✓ |
-| Stripe payments | ✓ | ✓ | ✓ | ✓ |
+|------------|---------|--------|-----|----------|
+| Public shop page + estimate form | ✓ | ✓ | ✓ | ✓ |
+| Customer tracking + messaging | ✓ | ✓ | ✓ | ✓ |
 | Manual payment modes | ✓ | ✓ | ✓ | ✓ |
+| Stripe payment links | ✓ | ✓ | ✓ | ✓ |
 | Pricing catalog | ✓ | ✓ | ✓ | ✓ |
-| Staff seats | 1 | up to 5 | Unlimited | Unlimited |
+| Appointments | ✓ | ✓ | ✓ | ✓ |
+| Staff seats | 1 | up to 5 | unlimited | unlimited |
 | Team management | — | ✓ | ✓ | ✓ |
 | Repair queue / workflow | — | ✓ | ✓ | ✓ |
+| Invoices / receipts | — | ✓ | ✓ | ✓ |
 | Inventory & parts | — | — | ✓ | ✓ |
-| Staff reports | — | — | ✓ | ✓ |
-| Revenue / margin reporting | — | — | ✓ | ✓ |
+| Reporting / analytics | — | — | ✓ | ✓ |
+| Staff performance reports | — | — | ✓ | ✓ |
+| Custom catalog (brands/models/repair types) | — | — | ✓ | ✓ |
 | Multi-location | — | — | — | ✓ |
 | Custom domain | — | — | — | ✓ |
 | POS / barcode | — | — | — | ✓ |
-| Stripe Connect | — | — | — | ✓ |
+| Stripe Connect (marketplace payouts) | — | — | — | ✓ |
 | Purchase orders | — | — | — | ✓ |
-
-> Feature gating is not yet enforced in the codebase. All shops currently operate as single-org with full access. Enforcement will be added in Phase 8 alongside subscription billing.
 
 ---
 
-## Product Readiness Targets
+## What is *not* in the product yet
 
-| Score | Milestone | What it means |
-|-------|-----------|---------------|
-| **8.5 / 10** | Controlled beta | Portal is usable end-to-end with trusted friend/beta shops. Core quote → approval → mail-in → payment flow works reliably. All critical multi-tenant data isolation verified. |
-| **9.0 / 10** | Strong shop workflow | Repair queue, technician assignment, SLA tracking, and customer history working. Growth tier shops can manage their day from the dashboard. |
-| **9.3 / 10** | Bigger shop operations | Inventory, parts tracking, PDF invoices, staff reports, and advanced analytics in place. Pro tier shops have meaningful operational control. |
-| **9.5 / 10** | Competitor-close SaaS | Subscription billing live, Stripe Connect available, multi-location support usable. Positioned to compete directly with RepairDesk, RepairShopr, and similar platforms. |
+These are real gaps. Do not advertise them as available.
 
-**Current status: 9.3 reached (bigger shop operations).** Sprints 1–11 complete. Phases 1–3, 5, and 6 done. Phase 4 (inventory) deferred. Next target: 9.5 (competitor-close SaaS) — subscription billing, Stripe Connect, multi-location.
+- **Stripe Connect** — shops connect their own Stripe accounts today, or use manual payment modes. Platform-level payout/marketplace flow is deferred.
+- **Multi-location** — one organization is one shop today.
+- **Custom domain mapping** — shops live at `/shop/[slug]` only.
+- **POS / barcode scanning** — not built.
+- **Purchase orders** — supplier list exists, but ordering parts and tracking POs is not built.
+- **White-label / franchise** — not built.
+- **Mobile app** — there is no native app; the web is responsive.
+
+---
+
+## Phase history (for engineering reference)
+
+Sprints 1–28 covered: database multi-tenant foundation, application code conversion, session-based org resolution, customer-facing tenant behavior, payment settings + admin pricing + photo hardening, testing/CI, repair queue, staff performance, invoices + customer history, analytics, inventory & parts, hardening, subscription billing, billing enforcement + admin nav, global search + SLA dashboard, internal notes + auto customer notifications, deposit + final balance UX, new-quote admin alerts, customer reviews + follow-up automation, CSV export, pricing rule creation + deletion, appointment scheduling, repair catalog management, gap audit + hardening, ThemeProvider + HMAC tokens, /for-shops marketing page, customer magic-link account.
+
+See `CLAUDE.md` for full sprint-by-sprint detail.
+
+---
+
+## Readiness for public beta
+
+Engineering scope is essentially complete. The remaining blockers to public beta are:
+
+1. **Legal / compliance documents reviewed by an attorney** (this is the current sprint).
+2. **Live test of Stripe billing webhook against the actual price ID and webhook secret.**
+3. **Two-shop isolation test** in a clean staging environment.
+4. **Production domain and email sender configured.**
+
+See `LAUNCH_COMPLIANCE_CHECKLIST.md` for the full pre-launch list.
