@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import AdminNav from '../../components/AdminNav'
+import AdminSidebar from '../../components/AdminSidebar'
 import ThemeProvider from '../../components/ThemeProvider'
 import { getSessionOrgId } from '../../lib/admin/getSessionOrgId'
 import { getSupabaseAdmin } from '../../lib/supabase/admin'
@@ -24,18 +24,22 @@ export default async function AdminLayout({ children }) {
   return (
     <>
       <ThemeProvider primaryColor={primaryColor} accentColor={accentColor} />
-      <AdminNav />
-      <Suspense
-        fallback={
-          <main className='page-hero'>
-            <div className='site-shell'>
-              <div className='policy-card center-card'>Loading admin workspace…</div>
-            </div>
-          </main>
-        }
-      >
-        {children}
-      </Suspense>
+      <div className='admin-layout'>
+        <AdminSidebar />
+        <div className='admin-main'>
+          <Suspense
+            fallback={
+              <main className='page-hero'>
+                <div className='site-shell'>
+                  <div className='policy-card center-card'>Loading admin workspace…</div>
+                </div>
+              </main>
+            }
+          >
+            {children}
+          </Suspense>
+        </div>
+      </div>
     </>
   )
 }
