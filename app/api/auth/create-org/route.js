@@ -92,7 +92,7 @@ export async function POST(request) {
         slug,
         public_name: publicName || name,
         status: 'trialing',
-        plan_key: 'beta',
+        plan_key: 'pro',
         trial_ends_at: trialEndsAt,
         created_by_user_id: userId,
       })

@@ -121,6 +121,10 @@ export async function POST(request, context) {
 
     if (memberCheckError) throw memberCheckError
     if (existingMember) {
+      await supabase
+        .from('organization_invitations')
+        .update({ accepted_at: new Date().toISOString() })
+        .eq('id', invitation.id)
       return NextResponse.json({ ok: true, alreadyMember: true })
     }
 
