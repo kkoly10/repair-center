@@ -724,6 +724,34 @@ Add to **Auth → URL Configuration → Allowed Redirect URLs**:
 
 ---
 
+## Sprint 31 — Pre-Public-Beta Cleanup ✅ COMPLETE (PR #36, merged)
+
+### No migration needed
+
+### What was done
+1. **`lib/legalConfig.js`** (new) — centralized legal contact constants (`businessName`, `mailingAddress`, `supportEmail`, `privacyEmail`) read from `NEXT_PUBLIC_*` env vars with sensible fallbacks; imports into server-component legal pages
+2. **`app/terms/page.js`** — removed yellow "Draft" banner; removed inline "(Choice of law is a placeholder pending attorney review.)" note from governing law section
+3. **`app/privacy/page.js`** — removed yellow "Draft" banner; replaced `[privacy email]` and `[platform mailing address]` placeholders with `LEGAL.*` values; mailing address renders conditionally
+4. **`app/platform-terms/page.js`** — removed yellow "Draft" banner; replaced three `[support email]`, `[mailing address]`, `[business entity name]` placeholders with `LEGAL.*` values; removed inline governing law placeholder note; added a small, professional legal disclaimer note at the bottom of §17 Contact
+5. **`app/shop-responsibility/page.js`** — removed yellow "Draft" banner
+6. **`LAUNCH_READINESS.md`** (new) — 10-area operational go/no-go checklist: infrastructure, Supabase, Stripe billing, Stripe repair payments, email, customer magic-link login, two-shop isolation, full end-to-end repair flow, cron jobs, legal docs; sign-off table
+7. **`PRODUCTION_SETUP.md`** (new) — step-by-step setup guide covering: Vercel env vars (required / legal / recommended / optional), Supabase Auth redirect URL config, two Stripe webhook endpoints, Resend domain verification, Vercel cron, default org slug, health check command
+8. **`.env.example`** — added `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_SUPPORT_EMAIL`, `NEXT_PUBLIC_PRIVACY_EMAIL`, `NEXT_PUBLIC_BUSINESS_NAME`, `NEXT_PUBLIC_MAILING_ADDRESS`
+
+### Post-merge bug fix
+- Import order fix: `import { LEGAL }` was placed after `export const metadata` in `privacy/page.js` and `platform-terms/page.js`; moved to top of file per ES module spec
+
+### New env vars (legal pages)
+- `NEXT_PUBLIC_BUSINESS_NAME` — legal entity name shown on Platform Terms §17
+- `NEXT_PUBLIC_MAILING_ADDRESS` — physical mailing address (renders conditionally)
+- `NEXT_PUBLIC_SUPPORT_EMAIL` — support contact email on Platform Terms §17
+- `NEXT_PUBLIC_PRIVACY_EMAIL` — privacy contact email on Privacy Policy §10, §14
+
+### Test suite after Sprint 31
+191 tests across 19 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
