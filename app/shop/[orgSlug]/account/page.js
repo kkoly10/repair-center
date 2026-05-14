@@ -40,6 +40,9 @@ export default async function ShopAccountPage({ params }) {
       .eq('organization_id', org.id),
   ])
 
+  if (quotesResult.error) throw new Error(quotesResult.error.message)
+  if (ordersResult.error) throw new Error(ordersResult.error.message)
+
   const quotes = quotesResult.data || []
   const orders = ordersResult.data || []
 

@@ -18,8 +18,6 @@ const STATUS_LABELS = {
   cancelled: 'Cancelled',
   declined: 'Declined',
   returned_unrepaired: 'Returned Unrepaired',
-  beyond_economical_repair: 'Beyond Repair',
-  no_fault_found: 'No Fault Found',
 }
 
 export default function CustomerAccountPage({ customer, quotes, orgSlug }) {

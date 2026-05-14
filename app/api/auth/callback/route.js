@@ -46,10 +46,13 @@ export async function GET(request) {
     // The composite unique (auth_user_id, organization_id) prevents duplicate links
     // even if this runs multiple times. Errors are intentionally swallowed so a
     // linking failure never blocks the customer from signing in.
+    // Escape SQL LIKE wildcards before the case-insensitive match to prevent
+    // a crafted email address from matching unintended customer rows.
+    const escapedEmail = userEmail.replace(/%/g, '\\%').replace(/_/g, '\\_')
     await getSupabaseAdmin()
       .from('customers')
       .update({ auth_user_id: user.id })
-      .ilike('email', userEmail)
+      .ilike('email', escapedEmail)
       .is('auth_user_id', null)
   }
 
