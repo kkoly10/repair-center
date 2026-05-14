@@ -2,453 +2,354 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { statusPill } from '../lib/statusPills'
 
-const STATUS_LABELS = {
-  awaiting_mail_in: 'Awaiting Mail-In',
-  in_transit_to_shop: 'In Transit to Shop',
-  received: 'Received',
-  inspection: 'Inspection',
-  awaiting_final_approval: 'Awaiting Final Approval',
-  approved: 'Approved',
-  waiting_parts: 'Waiting for Parts',
-  repairing: 'Repairing',
-  testing: 'Testing',
-  awaiting_balance_payment: 'Awaiting Balance Payment',
-  ready_to_ship: 'Ready to Ship',
-  shipped: 'Shipped',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled',
-  declined: 'Declined',
-  returned_unrepaired: 'Returned Unrepaired',
-  beyond_economical_repair: 'Beyond Economical Repair',
-  no_fault_found: 'No Fault Found',
+const TIMELINE_NODES = [
+  { key: 'submitted',     label: 'Submitted' },
+  { key: 'inspection',    label: 'Inspecting' },
+  { key: 'repairing',     label: 'Repairing' },
+  { key: 'ready_to_ship', label: 'Ready' },
+  { key: 'shipped',       label: 'Shipped' },
+]
+
+const ORDER_TO_NODE = {
+  inspection: 1,
+  repairing: 2, awaiting_parts: 2,
+  awaiting_balance_payment: 3, ready_to_ship: 3,
+  shipped: 4, delivered: 4,
 }
 
-function formatSender(senderRole) {
-  if (senderRole === 'admin') return 'Repair Center'
-  if (senderRole === 'tech') return 'Technician'
-  if (senderRole === 'customer') return 'You'
-  return 'System'
+const STATUS_DESCRIPTIONS = {
+  submitted:                'Your request has been received. We\'ll review it shortly.',
+  under_review:             'Our team is reviewing your device details and photos.',
+  estimate_sent:            'We\'ve sent you an estimate by email. Please review it to proceed.',
+  approved:                 'Estimate approved — awaiting your device.',
+  inspection:               'Your device has arrived and we\'re assessing it.',
+  repairing:                'Repair is in progress. We\'ll keep you updated.',
+  awaiting_parts:           'Waiting on parts to arrive before we continue.',
+  awaiting_balance_payment: 'Repair is complete! Please pay the remaining balance to ship.',
+  ready_to_ship:            'Your device is repaired and ready to be shipped back to you.',
+  shipped:                  'Your device is on its way back to you.',
+  delivered:                'Your device has been delivered. Enjoy!',
+  cancelled:                'This repair has been cancelled.',
+  returned_unrepaired:      'Your device was returned without repair.',
+  beyond_economical_repair: 'Unfortunately the repair cost would exceed the device value.',
+  no_fault_found:           'Our inspection found no fault with the device.',
+}
+
+const SENDER_NAMES = { admin: 'Repair Team', tech: 'Technician', customer: 'You', system: 'System' }
+
+function fmtRelTime(iso) {
+  if (!iso) return 'unknown'
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins  = Math.floor(diff / 60000)
+  if (mins < 2)   return 'just now'
+  if (mins < 60)  return `${mins} minutes ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24)   return `${hrs} hour${hrs !== 1 ? 's' : ''} ago`
+  const days = Math.floor(hrs / 24)
+  return `${days} day${days !== 1 ? 's' : ''} ago`
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export default function CustomerTrackingPage({ quoteId, orgSlug, tok }) {
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [record, setRecord] = useState(null)
-  const [replyBody, setReplyBody] = useState('')
+  const [email,        setEmail]        = useState('')
+  const [loading,      setLoading]      = useState(false)
+  const [error,        setError]        = useState('')
+  const [record,       setRecord]       = useState(null)
+  const [replyBody,    setReplyBody]    = useState('')
   const [replySending, setReplySending] = useState(false)
-  const [replyError, setReplyError] = useState('')
+  const [replyError,   setReplyError]   = useState('')
   const [replySuccess, setReplySuccess] = useState('')
 
-  const currentStatusLabel = useMemo(() => {
-    if (!record?.order?.current_status) return 'No repair order yet'
-    return STATUS_LABELS[record.order.current_status] || record.order.current_status
-  }, [record])
+  const currentStatus = record?.order?.current_status || record?.quote?.status
+  const activeNode    = record ? (ORDER_TO_NODE[record.order?.current_status] ?? 0) : 0
+  const lastUpdated   = record?.order?.updated_at || record?.quote?.created_at
 
-  const handleVerify = async (event) => {
-    event.preventDefault()
-    setLoading(true)
-    setError('')
-    setReplyError('')
-    setReplySuccess('')
+  const descriptionText = useMemo(() => STATUS_DESCRIPTIONS[currentStatus] || '', [currentStatus])
+  const msgCount        = useMemo(() => (record?.messages || []).length, [record])
 
+  async function handleVerify(e) {
+    e.preventDefault()
+    setLoading(true); setError('')
+    setReplyError(''); setReplySuccess('')
     try {
-      const response = await fetch(`/api/track/${quoteId}`, {
+      const res    = await fetch(`/api/track/${quoteId}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, ...(orgSlug ? { orgSlug } : {}), ...(tok ? { tok } : {}) }),
       })
-
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Unable to load tracking.')
-
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Unable to load tracking.')
       setRecord(result)
-    } catch (trackingError) {
+    } catch (err) {
       setRecord(null)
-      setError(trackingError.message || 'Unable to load tracking.')
-    } finally {
-      setLoading(false)
-    }
+      setError(err.message || 'Unable to load tracking.')
+    } finally { setLoading(false) }
   }
 
-  const handleReply = async (event) => {
-    event.preventDefault()
+  async function handleReply(e) {
+    e.preventDefault()
     if (!replyBody.trim()) return
-
-    setReplySending(true)
-    setReplyError('')
-    setReplySuccess('')
-
+    setReplySending(true); setReplyError(''); setReplySuccess('')
     try {
-      const response = await fetch(`/api/track/${quoteId}/messages`, {
+      const res    = await fetch(`/api/track/${quoteId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, body: replyBody, ...(orgSlug ? { orgSlug } : {}) }),
       })
-
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Unable to send your message.')
-
-      setRecord((current) =>
-        current
-          ? {
-              ...current,
-              messages: [...(current.messages || []), result.message],
-            }
-          : current
-      )
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Unable to send your message.')
+      setRecord((prev) => prev ? { ...prev, messages: [...(prev.messages || []), result.message] } : prev)
       setReplyBody('')
-      setReplySuccess('Your message has been sent to the repair team.')
+      setReplySuccess('Your message has been sent.')
     } catch (err) {
       setReplyError(err.message || 'Unable to send your message.')
-    } finally {
-      setReplySending(false)
-    }
+    } finally { setReplySending(false) }
   }
 
   return (
-    <main className='page-hero'>
-      <div className='site-shell page-stack'>
-        <div className='info-card'>
-          <div className='kicker'>Repair tracking</div>
-          <h1>Track your repair from estimate approval to return delivery</h1>
-          <p>
-            Enter the email used for your quote to securely view repair progress, shipment updates,
-            and messages from the repair team.
-          </p>
-        </div>
+    <main>
+      {/* Shop header */}
+      {orgSlug && (
+        <header className='shop-header'>
+          <Link href={`/shop/${orgSlug}`} style={{ color: 'var(--muted)', fontSize: '0.85rem', textDecoration: 'none' }}>
+            ← Back to shop
+          </Link>
+          <span className='shop-header-name' style={{ flex: 1, textAlign: 'center' }}>Track Your Repair</span>
+        </header>
+      )}
 
-        <div className='grid-2'>
-          <form className='policy-card' onSubmit={handleVerify}>
-            <div className='kicker'>Verify request</div>
-            <h3>Enter your email</h3>
-            <p className='field-note' style={{ marginBottom: 18 }}>
-              You can open tracking using either your <strong>Quote ID (RCQ-...)</strong> or your{' '}
-              <strong>Order Number (RCO-...)</strong>.
+      <div className='site-shell page-stack' style={{ maxWidth: 700, paddingTop: 32, paddingBottom: 48 }}>
+
+        {!record ? (
+          /* ─── Verify form ─────────────────────────────────── */
+          <div className='info-card'>
+            <div className='kicker'>Repair tracking</div>
+            <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', marginBottom: 8 }}>Track your repair</h1>
+            <p style={{ color: 'var(--muted)', margin: '0 0 24px' }}>
+              Enter the email you used when submitting your request. You can use your Quote ID{' '}
+              (RCQ-…) or Order Number (RCO-…).
             </p>
-            <div className='field' style={{ marginTop: 18 }}>
-              <label htmlFor='track-email'>Email address</label>
-              <input
-                id='track-email'
-                type='email'
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder='name@example.com'
-                required
-              />
-            </div>
-
-            {error ? (
-              <div className='notice notice-warn' style={{ marginTop: 18 }}>
-                {error}
+            <form onSubmit={handleVerify}>
+              <div className='field' style={{ marginBottom: 16 }}>
+                <label htmlFor='track-email'>Email address</label>
+                <input
+                  id='track-email'
+                  type='email'
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder='name@example.com'
+                  required
+                />
               </div>
-            ) : null}
-
-            <div className='inline-actions'>
+              {error && <div className='notice notice-warn' style={{ marginBottom: 16 }}>{error}</div>}
               <button type='submit' className='button button-primary' disabled={loading}>
                 {loading ? 'Loading…' : 'Track Repair'}
               </button>
-            </div>
-          </form>
-
-          <div className='policy-card'>
-            <div className='kicker'>What you can see</div>
-            <h3>Tracking details</h3>
-            <div className='preview-meta' style={{ marginTop: 18 }}>
-              <div className='preview-meta-row'>
-                <span>1</span>
-                <span>Estimate and repair status</span>
-              </div>
-              <div className='preview-meta-row'>
-                <span>2</span>
-                <span>Progress updates</span>
-              </div>
-              <div className='preview-meta-row'>
-                <span>3</span>
-                <span>Shipment and return tracking</span>
-              </div>
-              <div className='preview-meta-row'>
-                <span>4</span>
-                <span>Messages from the repair team</span>
-              </div>
-            </div>
+            </form>
           </div>
-        </div>
-
-        {record ? (
-          <div className='page-stack'>
-            {record.order?.current_status === 'awaiting_final_approval' ? (
-              <div className='notice notice-warn'>
-                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
-                  Action required
-                </strong>
-                A revised estimate needs your approval before the repair can continue.
-                <div className='inline-actions' style={{ marginBottom: 0 }}>
-                  <Link href={record.reviewPath} className='button button-primary'>
-                    Review &amp; Approve Estimate
-                  </Link>
-                </div>
-              </div>
-            ) : null}
-
-            {record.depositRequired && !record.depositPaid ? (
-              <div className='notice notice-warn'>
-                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
-                  Payment required
-                </strong>
-                An inspection deposit is required before we can begin work on your device.
-                <div className='inline-actions' style={{ marginBottom: 0 }}>
-                  <Link href={record.paymentPath} className='button button-primary'>
-                    Pay Inspection Deposit
-                  </Link>
-                </div>
-              </div>
-            ) : null}
-
-            {record.order?.current_status === 'awaiting_balance_payment' ? (
-              <div className='notice notice-warn'>
-                <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
-                  Final payment required
-                </strong>
-                Your repair is complete. Please pay the remaining balance so we can ship your device back.
-                <div className='inline-actions' style={{ marginBottom: 0 }}>
-                  <Link href={record.balancePaymentPath} className='button button-primary'>
-                    Pay Final Balance
-                  </Link>
-                </div>
-              </div>
-            ) : null}
-
-            <div className='quote-card'>
-              <div className='quote-top'>
+        ) : (
+          /* ─── Record found ────────────────────────────────── */
+          <>
+            {/* 1 — Status card + timeline */}
+            <div className='policy-card'>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
                 <div>
-                  <div className='quote-id'>{record.quote.quote_id}</div>
-                  <h2 className='quote-title'>
-                    {[record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ')}
-                  </h2>
-                  <p className='muted'>{record.quote.repair_type_key || 'Repair type not set'}</p>
+                  <div className='id-mono' style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 6 }}>
+                    {record.canonicalOrderNumber || record.canonicalQuoteId}
+                  </div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text)' }}>
+                    {[record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ') || 'Your device'}
+                  </div>
+                  {record.quote.repair_type_key && (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: 3 }}>
+                      {record.quote.repair_type_key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </div>
+                  )}
                 </div>
-                <span className='price-chip'>{currentStatusLabel}</span>
+                <span className={statusPill(currentStatus).cls}>{statusPill(currentStatus).label}</span>
               </div>
 
-              <div className='identity-band'>
-                <div className='identity-band-grid'>
-                  <div className='identity-band-item'>
-                    <strong>Quote ID</strong>
-                    <span>{record.canonicalQuoteId || record.quote.quote_id}</span>
-                  </div>
-                  <div className='identity-band-item'>
-                    <strong>Order number</strong>
-                    <span>
-                      {record.canonicalOrderNumber || record.order?.order_number || 'Not created yet'}
-                    </span>
-                  </div>
-                  <div className='identity-band-item'>
-                    <strong>You entered</strong>
-                    <span>{record.identifier}</span>
-                  </div>
-                </div>
+              {/* Horizontal timeline */}
+              <div className='repair-timeline'>
+                {TIMELINE_NODES.map((node, i) => {
+                  const nodeState = i < activeNode ? 'done' : i === activeNode ? 'active' : 'upcoming'
+                  const isLast    = i === TIMELINE_NODES.length - 1
+                  return (
+                    <div key={node.key} style={{ display: 'flex', alignItems: 'flex-start', flex: isLast ? '0 0 auto' : 1 }}>
+                      <div className='timeline-step'>
+                        <div className={`timeline-dot${nodeState === 'done' ? ' done' : nodeState === 'active' ? ' active' : ''}`}>
+                          {nodeState === 'done' ? '✓' : null}
+                        </div>
+                        <div className={`timeline-label${nodeState === 'active' ? ' active' : ''}`}>{node.label}</div>
+                      </div>
+                      {!isLast && <div className={`timeline-line${nodeState === 'done' ? ' done' : ''}`} />}
+                    </div>
+                  )
+                })}
               </div>
 
-              <div className='quote-summary'>
-                <div className='quote-summary-card'>
-                  <strong>Estimate total</strong>
-                  <span>
-                    {record.estimate?.total_amount != null
-                      ? `$${Number(record.estimate.total_amount).toFixed(2)}`
-                      : '—'}
-                  </span>
-                </div>
-                <div className='quote-summary-card'>
-                  <strong>Current stage</strong>
-                  <span>{currentStatusLabel}</span>
-                </div>
-                <div className='quote-summary-card'>
-                  <strong>Other ID you can use</strong>
-                  <span>
-                    {record.canonicalOrderNumber
-                      ? record.identifier === record.canonicalOrderNumber
-                        ? record.canonicalQuoteId
-                        : record.canonicalOrderNumber
-                      : record.canonicalQuoteId}
-                  </span>
-                </div>
+              {descriptionText && (
+                <p style={{ margin: '16px 0 0', fontSize: '0.875rem', color: 'var(--muted)' }}>{descriptionText}</p>
+              )}
+              <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 8, opacity: 0.7 }}>
+                Updated {fmtRelTime(lastUpdated)}
               </div>
             </div>
 
-            <div className='grid-2'>
-              <div className='page-stack'>
-                <div className='policy-card'>
-                  <div className='kicker'>Status history</div>
-                  <h3>Repair timeline</h3>
-                  <div className='preview-meta' style={{ marginTop: 18 }}>
-                    {(record.statusHistory || []).length ? (
-                      record.statusHistory.map((item) => (
-                        <div key={item.id} className='preview-meta-row'>
-                          <span>
-                            {STATUS_LABELS[item.new_status] || item.new_status}
-                            {item.note ? ` · ${item.note}` : ''}
-                          </span>
-                          <span>{new Date(item.created_at).toLocaleString()}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className='preview-meta-row'>
-                        <span>No updates yet.</span>
-                        <span>—</span>
+            {/* 2 — Action banners */}
+            {record.order?.current_status === 'awaiting_final_approval' && (
+              <div className='notice notice-warn'>
+                <strong style={{ display: 'block', marginBottom: 6 }}>Action required</strong>
+                A revised estimate needs your approval before the repair can continue.
+                <div className='inline-actions' style={{ marginBottom: 0, marginTop: 12 }}>
+                  <Link href={record.reviewPath} className='button button-primary'>Review &amp; Approve</Link>
+                </div>
+              </div>
+            )}
+            {record.depositRequired && !record.depositPaid && (
+              <div className='notice notice-warn'>
+                <strong style={{ display: 'block', marginBottom: 6 }}>Deposit required</strong>
+                An inspection deposit is required before we can begin.
+                <div className='inline-actions' style={{ marginBottom: 0, marginTop: 12 }}>
+                  <Link href={record.paymentPath} className='button button-primary'>Pay Inspection Deposit</Link>
+                </div>
+              </div>
+            )}
+            {record.order?.current_status === 'awaiting_balance_payment' && (
+              <div className='notice notice-warn'>
+                <strong style={{ display: 'block', marginBottom: 6 }}>Final payment required</strong>
+                Repair is complete. Pay the remaining balance so we can ship your device back.
+                <div className='inline-actions' style={{ marginBottom: 0, marginTop: 12 }}>
+                  <Link href={record.balancePaymentPath} className='button button-primary'>Pay Final Balance</Link>
+                </div>
+              </div>
+            )}
+
+            {/* 3 — Order summary (always visible) */}
+            <div className='policy-card'>
+              <div className='kicker'>Order summary</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 16, marginTop: 14 }}>
+                {[
+                  { label: 'Device',     value: [record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ') || '—' },
+                  { label: 'Quote ID',   value: <span className='id-mono'>{record.canonicalQuoteId || '—'}</span> },
+                  { label: 'Order #',    value: record.canonicalOrderNumber ? <span className='id-mono'>{record.canonicalOrderNumber}</span> : '—' },
+                  { label: 'Estimate',   value: record.estimate?.total_amount != null ? `$${Number(record.estimate.total_amount).toFixed(2)}` : '—' },
+                  { label: 'Submitted',  value: fmtDate(record.quote.created_at) },
+                  ...(record.depositRequired ? [{
+                    label: 'Deposit',
+                    value: record.depositPaid
+                      ? <span style={{ color: '#16a34a', fontWeight: 600 }}>Paid ✓</span>
+                      : <span style={{ color: '#b45309', fontWeight: 600 }}>Unpaid</span>,
+                  }] : []),
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: 4 }}>{label}</div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Shipments */}
+              {(record.shipments || []).length > 0 && (
+                <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: 10 }}>Shipments</div>
+                  {record.shipments.map((s) => (
+                    <div key={s.id} style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 4 }}>
+                      {s.shipment_type} · {s.carrier || 'Carrier pending'}
+                      {s.tracking_number ? ` · ${s.tracking_number}` : ''}
+                      {' — '}<span style={{ color: 'var(--text)' }}>{s.status || 'Pending'}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Quick links */}
+              <div className='inline-actions' style={{ marginTop: 20 }}>
+                {record.reviewPath && (
+                  <Link href={record.reviewPath} className='button button-secondary' style={{ fontSize: '0.82rem' }}>View Estimate</Link>
+                )}
+                {record.mailInPath && (
+                  <Link href={record.mailInPath} className='button button-secondary' style={{ fontSize: '0.82rem' }}>Mail-In Instructions</Link>
+                )}
+              </div>
+            </div>
+
+            {/* 4 — Messages (collapsed) */}
+            <details className='policy-card tracking-details'>
+              <summary>
+                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+                  {msgCount > 0 ? `${msgCount} message${msgCount !== 1 ? 's' : ''}` : 'Messages'}
+                </span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--muted)', marginLeft: 8 }}>with the repair team</span>
+              </summary>
+
+              <div style={{ marginTop: 20 }}>
+                <div className='message-thread'>
+                  {(record.messages || []).length > 0 ? (
+                    record.messages.map((m) => (
+                      <div key={m.id} className={`message-bubble ${m.sender_role === 'customer' ? 'message-bubble-customer' : 'message-bubble-staff'}`}>
+                        <strong>{SENDER_NAMES[m.sender_role] || 'Team'}</strong>
+                        <span>{m.body}</span>
+                        <small>{new Date(m.created_at).toLocaleString()}</small>
                       </div>
-                    )}
-                  </div>
+                    ))
+                  ) : (
+                    <p style={{ color: 'var(--muted)', fontSize: '0.875rem', margin: 0 }}>No messages yet.</p>
+                  )}
                 </div>
 
-                <div className='policy-card'>
-                  <div className='kicker'>Helpful links</div>
-                  <h3>Quick actions</h3>
-                  <div className='inline-actions'>
-                    <Link href={record.reviewPath} className='button button-secondary'>
-                      Review Estimate
-                    </Link>
-                    {record.mailInPath ? (
-                      <Link href={record.mailInPath} className='button button-secondary'>
-                        Mail-In Instructions
-                      </Link>
-                    ) : null}
-                    {record.depositRequired && !record.depositPaid ? (
-                      <Link href={record.paymentPath} className='button button-primary'>
-                        Pay Deposit
-                      </Link>
-                    ) : null}
-                    {record.order?.current_status === 'awaiting_balance_payment' ? (
-                      <Link href={record.balancePaymentPath} className='button button-primary'>
-                        Pay Balance
-                      </Link>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className='policy-card'>
-                  <div className='kicker'>Messages</div>
-                  <h3>Repair team updates</h3>
-                  <div className='message-thread'>
-                    {(record.messages || []).length ? (
-                      record.messages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`message-bubble ${
-                            message.sender_role === 'customer'
-                              ? 'message-bubble-customer'
-                              : 'message-bubble-staff'
-                          }`}
-                        >
-                          <strong>{formatSender(message.sender_role)}</strong>
-                          <span>{message.body}</span>
-                          <small>{new Date(message.created_at).toLocaleString()}</small>
-                        </div>
-                      ))
-                    ) : (
-                      <div className='preview-meta-row'>
-                        <span>No messages yet.</span>
-                        <span>—</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {record.order ? (
-                  <form className='policy-card' onSubmit={handleReply}>
-                    <div className='kicker'>Reply</div>
-                    <h3>Send a message to the repair team</h3>
-                    <div className='field' style={{ marginTop: 18 }}>
-                      <label htmlFor='customer-reply'>Message</label>
+                {record.order && (
+                  <form onSubmit={handleReply} style={{ marginTop: 20 }}>
+                    <div className='field' style={{ marginBottom: 12 }}>
+                      <label htmlFor='customer-reply'>Send a message</label>
                       <textarea
                         id='customer-reply'
                         value={replyBody}
-                        onChange={(event) => setReplyBody(event.target.value)}
+                        onChange={(e) => setReplyBody(e.target.value)}
                         placeholder='Ask a question or send a note about your repair.'
+                        style={{ minHeight: 80 }}
                       />
                     </div>
-
-                    {replyError ? (
-                      <div className='notice notice-warn' style={{ marginTop: 14 }}>
-                        {replyError}
-                      </div>
-                    ) : null}
-                    {replySuccess ? (
-                      <div className='notice notice-success' style={{ marginTop: 14 }}>
-                        {replySuccess}
-                      </div>
-                    ) : null}
-
-                    <div className='inline-actions'>
-                      <button
-                        type='submit'
-                        className='button button-primary'
-                        disabled={replySending || !replyBody.trim()}
-                      >
-                        {replySending ? 'Sending…' : 'Send Message'}
-                      </button>
-                    </div>
+                    {replyError   && <div className='notice notice-warn' style={{ marginBottom: 10 }}>{replyError}</div>}
+                    {replySuccess && <div className='notice notice-success' style={{ marginBottom: 10 }}>{replySuccess}</div>}
+                    <button type='submit' className='button button-primary' disabled={replySending || !replyBody.trim()}>
+                      {replySending ? 'Sending…' : 'Send Message'}
+                    </button>
                   </form>
-                ) : null}
+                )}
               </div>
+            </details>
 
-              <div className='page-stack'>
-                <div className='policy-card'>
-                  <div className='kicker'>Shipment updates</div>
-                  <h3>Tracking numbers and delivery status</h3>
-                  <div className='preview-meta' style={{ marginTop: 18 }}>
-                    {(record.shipments || []).length ? (
-                      record.shipments.map((shipment) => (
-                        <div key={shipment.id} className='preview-meta-row'>
-                          <span>
-                            {shipment.shipment_type} · {shipment.carrier || 'Carrier pending'}
-                            {shipment.tracking_number ? ` · ${shipment.tracking_number}` : ''}
-                          </span>
-                          <span>{shipment.status || 'Pending'}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className='preview-meta-row'>
-                        <span>No shipment updates yet.</span>
-                        <span>—</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className='policy-card'>
-                  <div className='kicker'>Repair summary</div>
-                  <h3>Current order details</h3>
-                  <div className='preview-meta' style={{ marginTop: 18 }}>
-                    <div className='preview-meta-row'>
-                      <span>Quote status</span>
-                      <span>{record.quote.status}</span>
-                    </div>
-                    <div className='preview-meta-row'>
-                      <span>Estimate status</span>
-                      <span>{record.estimate?.status || '—'}</span>
-                    </div>
-                    <div className='preview-meta-row'>
-                      <span>Turnaround</span>
-                      <span>{record.estimate?.turnaround_note || 'After intake review'}</span>
-                    </div>
-                    <div className='preview-meta-row'>
-                      <span>Warranty</span>
-                      <span>
-                        {record.estimate?.warranty_days
-                          ? `${record.estimate.warranty_days} days`
-                          : '—'}
+            {/* 5 — Activity history (collapsed) */}
+            {(record.statusHistory || []).length > 0 && (
+              <details className='policy-card tracking-details'>
+                <summary>
+                  <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>View full history</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--muted)', marginLeft: 8 }}>
+                    {record.statusHistory.length} event{record.statusHistory.length !== 1 ? 's' : ''}
+                  </span>
+                </summary>
+                <div style={{ marginTop: 16 }}>
+                  {record.statusHistory.map((item) => (
+                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--line)', fontSize: '0.875rem' }}>
+                      <span style={{ color: 'var(--text)' }}>
+                        {statusPill(item.new_status).label}
+                        {item.note ? ` — ${item.note}` : ''}
                       </span>
+                      <span style={{ color: 'var(--muted)', whiteSpace: 'nowrap' }}>{new Date(item.created_at).toLocaleString()}</span>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
+              </details>
+            )}
+          </>
+        )}
       </div>
     </main>
   )

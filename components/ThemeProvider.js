@@ -11,6 +11,7 @@ export default function ThemeProvider({ primaryColor, accentColor }) {
   if (primaryColor) {
     rules.push(`--blue: ${primaryColor}`)
     rules.push(`--blue-strong: ${primaryColor}`)
+    rules.push(`--blue-soft: color-mix(in srgb, ${primaryColor} 10%, transparent)`)
   }
   if (accentColor) {
     rules.push(`--accent: ${accentColor}`)

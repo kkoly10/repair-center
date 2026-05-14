@@ -1,5 +1,5 @@
 import './globals.css'
-import { Inter, Manrope } from 'next/font/google'
+import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import SiteHeader from '../components/SiteHeader'
 import SiteFooter from '../components/SiteFooter'
 
@@ -9,7 +9,7 @@ const inter = Inter({
   weight: ['400', '500', '600', '700'],
 })
 
-const manrope = Manrope({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-display',
   weight: ['600', '700', '800'],
@@ -24,7 +24,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang='en'>
-      <body className={`${inter.variable} ${manrope.variable}`}>
+      <body className={`${inter.variable} ${plusJakartaSans.variable}`}>
         <SiteHeader />
         {children}
         <SiteFooter />

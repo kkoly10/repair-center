@@ -5,9 +5,13 @@ import { useEffect, useMemo, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 import AdminSignOutButton from './AdminSignOutButton'
 import AdminPaymentSummaryCard from './AdminPaymentSummaryCard'
+import OrderActivityLog from './repair-order/OrderActivityLog'
+import OrderIntakeForm from './repair-order/OrderIntakeForm'
 import OrderMessagesSection from './repair-order/OrderMessagesSection'
 import OrderPartsSection from './repair-order/OrderPartsSection'
+import OrderShipments from './repair-order/OrderShipments'
 import OrderStaffNotes from './repair-order/OrderStaffNotes'
+import { statusPill } from '../lib/statusPills'
 
 const STATUS_OPTIONS = [
   'awaiting_mail_in',
@@ -71,20 +75,6 @@ function AdminRepairOrderInner({ quoteId }) {
 
   const [technicianId, setTechnicianId] = useState('')
 
-  const [intake, setIntake] = useState(null)
-  const [intakeSaving, setIntakeSaving] = useState(false)
-  const [intakeError, setIntakeError] = useState('')
-  const [intakeSuccess, setIntakeSuccess] = useState('')
-  const [packageCondition, setPackageCondition] = useState('')
-  const [deviceCondition, setDeviceCondition] = useState('')
-  const [includedItems, setIncludedItems] = useState('')
-  const [imeiOrSerial, setImeiOrSerial] = useState('')
-  const [powerTestResult, setPowerTestResult] = useState('')
-  const [intakePhotosComplete, setIntakePhotosComplete] = useState(false)
-  const [hiddenDamageFound, setHiddenDamageFound] = useState(false)
-  const [liquidDamageFound, setLiquidDamageFound] = useState(false)
-  const [boardDamageFound, setBoardDamageFound] = useState(false)
-  const [intakeNotes, setIntakeNotes] = useState('')
 
 
   const [depositMarking, setDepositMarking] = useState(false)
@@ -151,41 +141,6 @@ function AdminRepairOrderInner({ quoteId }) {
     }
   }, [quoteId])
 
-  useEffect(() => {
-    if (!record?.order?.id) return
-    let ignore = false
-
-    async function loadIntake() {
-      try {
-        const response = await fetch(`/admin/api/quotes/${quoteId}/intake`, { cache: 'no-store' })
-        const result = await response.json()
-        if (!ignore && result.ok) {
-          const r = result.intake
-          if (r) {
-            setIntake(r)
-            setPackageCondition(r.package_condition || '')
-            setDeviceCondition(r.device_condition || '')
-            setIncludedItems(r.included_items || '')
-            setImeiOrSerial(r.imei_or_serial || '')
-            setPowerTestResult(r.power_test_result || '')
-            setIntakePhotosComplete(r.intake_photos_complete || false)
-            setHiddenDamageFound(r.hidden_damage_found || false)
-            setLiquidDamageFound(r.liquid_damage_found || false)
-            setBoardDamageFound(r.board_damage_found || false)
-            setIntakeNotes(r.notes || '')
-          }
-        }
-      } catch {
-        // non-blocking
-      }
-    }
-
-    loadIntake()
-
-    return () => {
-      ignore = true
-    }
-  }, [quoteId, record?.order?.id])
 
   const [sendingReceipt, setSendingReceipt] = useState(false)
 
@@ -323,41 +278,6 @@ function AdminRepairOrderInner({ quoteId }) {
     }
   }
 
-  const handleIntakeSave = async (event) => {
-    event.preventDefault()
-    setIntakeSaving(true)
-    setIntakeError('')
-    setIntakeSuccess('')
-
-    try {
-      const response = await fetch(`/admin/api/quotes/${quoteId}/intake`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          packageCondition,
-          deviceCondition,
-          includedItems,
-          imeiOrSerial,
-          powerTestResult,
-          intakePhotosComplete,
-          hiddenDamageFound,
-          liquidDamageFound,
-          boardDamageFound,
-          notes: intakeNotes,
-        }),
-      })
-
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Unable to save intake report.')
-
-      setIntake(result.intake)
-      setIntakeSuccess('Intake report saved.')
-    } catch (err) {
-      setIntakeError(err.message || 'Unable to save intake report.')
-    } finally {
-      setIntakeSaving(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -405,7 +325,7 @@ function AdminRepairOrderInner({ quoteId }) {
               </p>
             </div>
             <div className='inline-actions' style={{ margin: 0 }}>
-              <span className='price-chip'>{currentStatusLabel}</span>
+              <span className={statusPill(status).cls}>{statusPill(status).label}</span>
               <AdminSignOutButton />
             </div>
           </div>
@@ -495,7 +415,7 @@ function AdminRepairOrderInner({ quoteId }) {
             </div>
             <div className='quote-summary-card'>
               <strong>Current stage</strong>
-              <span>{currentStatusLabel}</span>
+              <span className={statusPill(status).cls}>{statusPill(status).label}</span>
             </div>
             {depositRequired > 0 && (
               <div className='quote-summary-card'>
@@ -684,203 +604,14 @@ function AdminRepairOrderInner({ quoteId }) {
             ) : null}
 
             {record.order?.id && (
-              <form className='policy-card' onSubmit={handleIntakeSave}>
-                <div className='kicker'>Device intake</div>
-                <h3>Condition on arrival</h3>
-                <p style={{ marginBottom: 18 }}>
-                  Record the device state when it arrives. This protects against disputes about
-                  pre-existing damage.
-                </p>
-
-                <div className='form-grid'>
-                  <div className='field'>
-                    <label htmlFor='package-condition'>Package condition</label>
-                    <input
-                      id='package-condition'
-                      value={packageCondition}
-                      onChange={(e) => setPackageCondition(e.target.value)}
-                      placeholder='Good, Damaged, etc.'
-                    />
-                  </div>
-                  <div className='field'>
-                    <label htmlFor='device-condition'>Device condition</label>
-                    <input
-                      id='device-condition'
-                      value={deviceCondition}
-                      onChange={(e) => setDeviceCondition(e.target.value)}
-                      placeholder='Good, Cracked screen, etc.'
-                    />
-                  </div>
-                  <div className='field'>
-                    <label htmlFor='imei-serial'>IMEI / Serial</label>
-                    <input
-                      id='imei-serial'
-                      value={imeiOrSerial}
-                      onChange={(e) => setImeiOrSerial(e.target.value)}
-                      placeholder='IMEI or serial number'
-                    />
-                  </div>
-                  <div className='field'>
-                    <label htmlFor='power-test'>Power test result</label>
-                    <input
-                      id='power-test'
-                      value={powerTestResult}
-                      onChange={(e) => setPowerTestResult(e.target.value)}
-                      placeholder='Powers on, No power, etc.'
-                    />
-                  </div>
-                </div>
-
-                <div className='field' style={{ marginTop: 18 }}>
-                  <label htmlFor='included-items'>Included items</label>
-                  <input
-                    id='included-items'
-                    value={includedItems}
-                    onChange={(e) => setIncludedItems(e.target.value)}
-                    placeholder='Device only, charger included, etc.'
-                  />
-                </div>
-
-                <div className='form-grid' style={{ marginTop: 18 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                    <input
-                      type='checkbox'
-                      checked={intakePhotosComplete}
-                      onChange={(e) => setIntakePhotosComplete(e.target.checked)}
-                    />
-                    Photos complete
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                    <input
-                      type='checkbox'
-                      checked={hiddenDamageFound}
-                      onChange={(e) => setHiddenDamageFound(e.target.checked)}
-                    />
-                    Hidden damage found
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                    <input
-                      type='checkbox'
-                      checked={liquidDamageFound}
-                      onChange={(e) => setLiquidDamageFound(e.target.checked)}
-                    />
-                    Liquid damage found
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                    <input
-                      type='checkbox'
-                      checked={boardDamageFound}
-                      onChange={(e) => setBoardDamageFound(e.target.checked)}
-                    />
-                    Board damage found
-                  </label>
-                </div>
-
-                <div className='field' style={{ marginTop: 18 }}>
-                  <label htmlFor='intake-notes'>Intake notes</label>
-                  <textarea
-                    id='intake-notes'
-                    value={intakeNotes}
-                    onChange={(e) => setIntakeNotes(e.target.value)}
-                    placeholder='Any additional observations about the device on arrival.'
-                  />
-                </div>
-
-                {intakeError ? <div className='notice'>{intakeError}</div> : null}
-                {intakeSuccess ? <div className='notice'>{intakeSuccess}</div> : null}
-
-                <div className='inline-actions' style={{ marginTop: 18 }}>
-                  <button type='submit' className='button button-primary' disabled={intakeSaving}>
-                    {intakeSaving ? 'Saving…' : intake ? 'Update Intake Report' : 'Save Intake Report'}
-                  </button>
-                </div>
-              </form>
+              <OrderIntakeForm quoteId={quoteId} orderId={record.order.id} />
             )}
 
             {record.order?.id && <OrderPartsSection orderId={record.order.id} />}
 
-            <div className='policy-card'>
-              <div className='kicker'>Activity log</div>
-              <h3>Order timeline</h3>
-              <div className='preview-meta' style={{ marginTop: 18 }}>
-                {(() => {
-                  const statusEvents = (record.history || []).map((item) => ({
-                    id: `s-${item.id}`,
-                    created_at: item.created_at,
-                    kind: 'status',
-                    label: formatStatusLabel(item.new_status),
-                    detail: item.note || null,
-                    internal: !item.customer_visible,
-                  }))
-                  const auditEvents = (record.auditLog || []).map((item) => {
-                    let label = item.event_type
-                    if (item.event_type === 'technician_assigned') {
-                      label = item.new_value ? `Tech assigned` : 'Tech unassigned'
-                    } else if (item.event_type === 'priority_changed') {
-                      label = `Priority → ${item.new_value || '—'}`
-                    } else if (item.event_type === 'due_date_changed') {
-                      label = item.new_value
-                        ? `Due date set: ${new Date(item.new_value).toLocaleDateString()}`
-                        : 'Due date cleared'
-                    }
-                    return {
-                      id: `a-${item.id}`,
-                      created_at: item.created_at,
-                      kind: 'audit',
-                      label,
-                      detail: null,
-                      internal: true,
-                    }
-                  })
-                  const timeline = [...statusEvents, ...auditEvents].sort(
-                    (a, b) => new Date(a.created_at) - new Date(b.created_at)
-                  )
-                  if (!timeline.length) {
-                    return (
-                      <div className='preview-meta-row'>
-                        <span>No timeline entries yet.</span>
-                        <span>—</span>
-                      </div>
-                    )
-                  }
-                  return timeline.map((item) => (
-                    <div key={item.id} className='preview-meta-row'>
-                      <span>
-                        {item.internal ? (
-                          <span className='mini-chip' style={{ marginRight: 6, fontSize: 10 }}>internal</span>
-                        ) : null}
-                        {item.label}
-                        {item.detail ? ` · ${item.detail}` : ''}
-                      </span>
-                      <span style={{ whiteSpace: 'nowrap' }}>{new Date(item.created_at).toLocaleString()}</span>
-                    </div>
-                  ))
-                })()}
-              </div>
-            </div>
+            <OrderActivityLog history={record.history} auditLog={record.auditLog} />
 
-            <div className='policy-card'>
-              <div className='kicker'>Shipment records</div>
-              <h3>Return shipping</h3>
-              <div className='preview-meta' style={{ marginTop: 18 }}>
-                {(record.shipments || []).length ? (
-                  record.shipments.map((shipment) => (
-                    <div key={shipment.id} className='preview-meta-row'>
-                      <span>
-                        {shipment.shipment_type} · {shipment.carrier || 'Carrier pending'}
-                        {shipment.tracking_number ? ` · ${shipment.tracking_number}` : ''}
-                      </span>
-                      <span>{shipment.status || 'Pending'}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className='preview-meta-row'>
-                    <span>No shipments recorded yet.</span>
-                    <span>—</span>
-                  </div>
-                )}
-              </div>
-            </div>
+            <OrderShipments shipments={record.shipments} />
 
             {record.order?.id && (
               <OrderMessagesSection quoteId={quoteId} />

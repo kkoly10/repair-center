@@ -1,30 +1,11 @@
 'use client'
 import Link from 'next/link'
 import { useState, useEffect, useMemo } from 'react'
-
-const STATUS_LABELS = {
-  pending: 'Pending',
-  confirmed: 'Confirmed',
-  cancelled: 'Cancelled',
-  no_show: 'No-show',
-  converted: 'Converted',
-}
-
-const STATUS_COLORS = {
-  pending: { bg: '#fffbeb', color: '#92400e', border: '#fde68a' },
-  confirmed: { bg: '#f0fdf4', color: '#166534', border: '#bbf7d0' },
-  cancelled: { bg: '#fef2f2', color: '#991b1b', border: '#fecaca' },
-  no_show: { bg: '#f9fafb', color: '#374151', border: '#e5e7eb' },
-  converted: { bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' },
-}
+import { statusPill } from '../lib/statusPills'
 
 function StatusBadge({ status }) {
-  const style = STATUS_COLORS[status] || STATUS_COLORS.pending
-  return (
-    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: style.bg, color: style.color, border: `1px solid ${style.border}`, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-      {STATUS_LABELS[status] || status}
-    </span>
-  )
+  const { cls, label } = statusPill(status)
+  return <span className={cls}>{label}</span>
 }
 
 function fmtDatetime(iso) {
@@ -238,7 +219,7 @@ function AdminAppointmentsInner() {
                 fontWeight: statusFilter === s ? 600 : 400,
               }}
             >
-              {s === 'all' ? 'All' : STATUS_LABELS[s]}{counts[s] ? ` (${counts[s]})` : ''}
+              {s === 'all' ? 'All' : statusPill(s).label}{counts[s] ? ` (${counts[s]})` : ''}
             </button>
           ))}
         </div>
@@ -247,7 +228,7 @@ function AdminAppointmentsInner() {
           <div className='policy-card' style={{ color: 'var(--muted)' }}>Loading appointments…</div>
         ) : filtered.length === 0 ? (
           <div className='policy-card' style={{ textAlign: 'center', color: '#aaa', padding: 40 }}>
-            No appointments{statusFilter !== 'all' ? ` with status "${STATUS_LABELS[statusFilter]}"` : ''}.
+            No appointments{statusFilter !== 'all' ? ` with status "${statusPill(statusFilter).label}"` : ''}.
           </div>
         ) : (
           <div className='policy-card' style={{ padding: 0, overflow: 'hidden' }}>
