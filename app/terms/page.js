@@ -19,12 +19,6 @@ export default function TermsPage() {
             hosted on the RepairCenter platform. Please read them carefully.
           </p>
 
-          <div className='notice notice-warn' style={{ marginTop: 12 }}>
-            <strong>Draft notice.</strong> These template terms are provided as a working draft.
-            They are not legal advice and should be reviewed by a qualified attorney before public
-            launch.
-          </div>
-
           <h3>1. Who you are dealing with</h3>
           <p>
             When you submit a repair request through a shop page on this platform, three parties
@@ -240,8 +234,7 @@ export default function TermsPage() {
             </li>
             <li>
               <strong>Governing law.</strong> These terms are governed by the laws of the
-              Commonwealth of Virginia, without regard to conflict-of-law principles.{' '}
-              <em>(Choice of law is a placeholder pending attorney review.)</em>
+              Commonwealth of Virginia, without regard to conflict-of-law principles.
             </li>
           </ul>
 

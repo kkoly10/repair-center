@@ -4,6 +4,8 @@ export const metadata = {
     'Platform terms of service for repair shops that use RepairCenter as their SaaS software.',
 }
 
+import { LEGAL } from '../../lib/legalConfig'
+
 export default function PlatformTermsPage() {
   return (
     <main className='page-hero'>
@@ -16,12 +18,6 @@ export default function PlatformTermsPage() {
             <strong>For:</strong> repair shops (&ldquo;Shop&rdquo;, &ldquo;you&rdquo;) that use the
             RepairCenter platform.
           </p>
-
-          <div className='notice notice-warn' style={{ marginTop: 12 }}>
-            <strong>Draft notice.</strong> These template terms are provided for operational
-            readiness and should be reviewed by a qualified attorney before public launch.
-            They are not legal advice.
-          </div>
 
           <h3>1. The service we provide</h3>
           <p>
@@ -202,8 +198,7 @@ export default function PlatformTermsPage() {
             These terms are governed by the laws of the Commonwealth of Virginia, without regard
             to its conflict-of-law principles. Any dispute that cannot be resolved informally shall
             be brought in the state or federal courts located in Virginia, and each party consents
-            to the exclusive jurisdiction of those courts. <em>Note: the choice of governing law
-            and venue is a placeholder pending attorney review.</em>
+            to the exclusive jurisdiction of those courts.
           </p>
 
           <h3>16. Changes to these terms</h3>
@@ -215,9 +210,14 @@ export default function PlatformTermsPage() {
 
           <h3>17. Contact</h3>
           <p>
-            Email: <strong>[support email — set before launch]</strong> <br />
-            Mailing address: <strong>[platform mailing address — set before launch]</strong> <br />
-            Legal entity: <strong>[business entity name — set before launch]</strong>
+            Email: <a href={`mailto:${LEGAL.supportEmail}`}>{LEGAL.supportEmail}</a><br />
+            {LEGAL.mailingAddress && <>Mailing address: {LEGAL.mailingAddress}<br /></>}
+            Legal entity: {LEGAL.businessName}
+          </p>
+          <p style={{ marginTop: 24, fontSize: 13, color: '#888', borderTop: '1px solid #eee', paddingTop: 16 }}>
+            These terms are provided in good faith for operational use. We recommend having them
+            reviewed by a qualified attorney before enforcing them in a dispute. They are not a
+            substitute for legal advice tailored to your jurisdiction.
           </p>
           <p>
             For privacy questions, see the <a href='/privacy'>Privacy Policy</a>. Customer-facing
