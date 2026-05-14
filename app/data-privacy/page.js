@@ -1,3 +1,5 @@
+import { LEGAL } from '../../lib/legalConfig'
+
 export default function DataPrivacyPage() {
   return (
     <main className='page-hero'>
@@ -69,7 +71,7 @@ export default function DataPrivacyPage() {
           <h3>How to access your data</h3>
           <p>You have the right to know what personal data we hold about you. To request access:</p>
           <ul>
-            <li><strong>Via email:</strong> Send a request to <strong>privacy@repaircenter.example</strong> with the subject line &ldquo;Data Access Request&rdquo;. Include your full name and Quote ID</li>
+            <li><strong>Via email:</strong> Send a request to <a href={`mailto:${LEGAL.privacyEmail}`}>{LEGAL.privacyEmail}</a> with the subject line &ldquo;Data Access Request&rdquo;. Include your full name and Quote ID</li>
             <li><strong>Via your tracking page:</strong> Log in to your repair tracking page to view your repair records, communications, and status history</li>
           </ul>
           <p>
@@ -93,13 +95,13 @@ export default function DataPrivacyPage() {
             <li><strong>Data subject to legal holds:</strong> Retained as required by active legal proceedings or regulatory investigations</li>
           </ul>
           <p>
-            To submit a deletion request, email <strong>privacy@repaircenter.example</strong> with the subject line &ldquo;Data Deletion Request&rdquo;. Include your full name and Quote ID. We will process your request within 30 days and confirm once deletion is complete.
+            To submit a deletion request, email <a href={`mailto:${LEGAL.privacyEmail}`}>{LEGAL.privacyEmail}</a> with the subject line &ldquo;Data Deletion Request&rdquo;. Include your full name and Quote ID. We will process your request within 30 days and confirm once deletion is complete.
           </p>
 
           <h3>How to opt out</h3>
           <p>You can opt out of non-essential communications at any time:</p>
           <ul>
-            <li><strong>Marketing emails:</strong> Click the &ldquo;Unsubscribe&rdquo; link at the bottom of any marketing email, or email us at <strong>privacy@repaircenter.example</strong> with the subject line &ldquo;Unsubscribe&rdquo;</li>
+            <li><strong>Marketing emails:</strong> Click the &ldquo;Unsubscribe&rdquo; link at the bottom of any marketing email, or email us at <a href={`mailto:${LEGAL.privacyEmail}`}>{LEGAL.privacyEmail}</a> with the subject line &ldquo;Unsubscribe&rdquo;</li>
             <li><strong>SMS notifications:</strong> Reply STOP to any SMS message, or email us to opt out of text notifications</li>
           </ul>
           <p>
@@ -130,14 +132,14 @@ export default function DataPrivacyPage() {
             <li>Device photos (if still within retention period)</li>
           </ul>
           <p>
-            To request a data export, email <strong>privacy@repaircenter.example</strong> with the subject line &ldquo;Data Export Request&rdquo;. Include your full name and Quote ID. We will provide your data in JSON or CSV format within 30 days.
+            To request a data export, email <a href={`mailto:${LEGAL.privacyEmail}`}>{LEGAL.privacyEmail}</a> with the subject line &ldquo;Data Export Request&rdquo;. Include your full name and Quote ID. We will provide your data in JSON or CSV format within 30 days.
           </p>
 
           <h3>Contact the privacy team</h3>
           <p>If you have questions about your data or want to exercise any of the rights described on this page, we are here to help:</p>
           <ul>
-            <li><strong>Privacy Officer email:</strong> privacy@repaircenter.example</li>
-            <li><strong>Mailing address:</strong> 123 Repair Center Way, Suite 200, Fredericksburg, VA 22401</li>
+            <li><strong>Privacy Officer email:</strong> {LEGAL.privacyEmail}</li>
+            {LEGAL.mailingAddress && <li><strong>Mailing address:</strong> {LEGAL.mailingAddress}</li>}
             <li><strong>Response time:</strong> Within 30 days of receiving your request</li>
           </ul>
           <p>
