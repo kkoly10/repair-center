@@ -6,14 +6,12 @@ export default async function ShopLandingPage({ params }) {
   const { orgSlug } = await params
   const supabase = getSupabaseAdmin()
 
-  const [{ data: org }, ] = await Promise.all([
-    supabase
-      .from('organizations')
-      .select('id, name, slug')
-      .eq('slug', orgSlug)
-      .eq('status', 'active')
-      .maybeSingle(),
-  ])
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id, name, slug')
+    .eq('slug', orgSlug)
+    .eq('status', 'active')
+    .maybeSingle()
 
   if (!org) notFound()
 

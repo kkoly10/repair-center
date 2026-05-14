@@ -177,6 +177,7 @@ export async function POST(request, context) {
             id: repairOrder.id,
             order_number: repairOrder.order_number,
             current_status: repairOrder.current_status,
+            updated_at: repairOrder.updated_at,
             inspection_deposit_required: repairOrder.inspection_deposit_required,
             intake_received_at: repairOrder.intake_received_at,
             repair_started_at: repairOrder.repair_started_at,

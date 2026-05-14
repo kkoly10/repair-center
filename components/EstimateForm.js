@@ -53,6 +53,15 @@ export default function EstimateForm({ orgSlug }) {
   const [submitError,  setSubmitError]  = useState('')
   const [dbPricingLookup, setDbPricingLookup] = useState({})
 
+  const previewUrls = useMemo(() => {
+    const urls = selectedFiles.map((f) => URL.createObjectURL(f))
+    return urls
+  }, [selectedFiles])
+
+  useEffect(() => {
+    return () => { previewUrls.forEach((url) => URL.revokeObjectURL(url)) }
+  }, [previewUrls])
+
   const didRestoreHash = useRef(false)
 
   // Hash routing: restore step from hash on mount, sync hash on change
@@ -348,7 +357,7 @@ export default function EstimateForm({ orgSlug }) {
               <div className='upload-grid'>
                 {selectedFiles.map((f, i) => (
                   <div key={`${f.name}-${i}`} className='upload-tile upload-tile-preview'>
-                    <img src={URL.createObjectURL(f)} alt={f.name} style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 8 }} />
+                    <img src={previewUrls[i]} alt={f.name} style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 8 }} />
                     <span className='upload-tile-label'>{f.name}</span>
                   </div>
                 ))}

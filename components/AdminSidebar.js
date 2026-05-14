@@ -191,7 +191,7 @@ export default function AdminSidebar() {
           {dropdownOpen && (results.length > 0 ? (
             <div style={{
               position: 'absolute', top: 'calc(100% + 4px)', left: 12, right: 12,
-              background: '#2c2622', border: '1px solid rgba(255,255,255,0.12)',
+              background: 'var(--surface-dark-soft)', border: '1px solid rgba(255,255,255,0.12)',
               borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
               zIndex: 300, overflow: 'hidden',
             }}>
@@ -218,7 +218,7 @@ export default function AdminSidebar() {
           ) : query.length >= 2 && !searchLoading ? (
             <div style={{
               position: 'absolute', top: 'calc(100% + 4px)', left: 12, right: 12,
-              background: '#2c2622', border: '1px solid rgba(255,255,255,0.12)',
+              background: 'var(--surface-dark-soft)', border: '1px solid rgba(255,255,255,0.12)',
               borderRadius: 8, padding: '10px 12px',
               fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', zIndex: 300,
             }}>

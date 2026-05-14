@@ -68,7 +68,7 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok }) {
 
   const currentStatus = record?.order?.current_status || record?.quote?.status
   const activeNode    = record ? (ORDER_TO_NODE[record.order?.current_status] ?? 0) : 0
-  const lastUpdated   = record?.order?.updated_at || record?.quote?.updated_at
+  const lastUpdated   = record?.order?.updated_at || record?.quote?.created_at
 
   const descriptionText = useMemo(() => STATUS_DESCRIPTIONS[currentStatus] || '', [currentStatus])
   const msgCount        = useMemo(() => (record?.messages || []).length, [record])
