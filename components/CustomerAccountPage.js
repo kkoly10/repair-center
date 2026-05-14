@@ -1,24 +1,6 @@
 import Link from 'next/link'
 import CustomerSignOutButton from './CustomerSignOutButton'
-
-const STATUS_LABELS = {
-  awaiting_mail_in: 'Awaiting Mail-In',
-  in_transit_to_shop: 'In Transit',
-  received: 'Received',
-  inspection: 'Inspection',
-  awaiting_final_approval: 'Awaiting Approval',
-  approved: 'Approved',
-  waiting_parts: 'Waiting for Parts',
-  repairing: 'Repairing',
-  testing: 'Testing',
-  awaiting_balance_payment: 'Awaiting Payment',
-  ready_to_ship: 'Ready to Ship',
-  shipped: 'Shipped',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled',
-  declined: 'Declined',
-  returned_unrepaired: 'Returned Unrepaired',
-}
+import { statusPill } from '../lib/statusPills'
 
 export default function CustomerAccountPage({ customer, quotes, orgSlug }) {
   const name = [customer.first_name, customer.last_name].filter(Boolean).join(' ') || customer.email
@@ -59,9 +41,8 @@ export default function CustomerAccountPage({ customer, quotes, orgSlug }) {
             <div className='preview-meta' style={{ marginTop: 18 }}>
               {quotes.map((q) => {
                 const device = [q.brand_name, q.model_name].filter(Boolean).join(' ') || 'Device'
-                const statusLabel = q.order_status
-                  ? (STATUS_LABELS[q.order_status] || q.order_status)
-                  : q.quote_status
+                const rawStatus = q.order_status || q.quote_status
+                const { cls, label } = statusPill(rawStatus)
 
                 return (
                   <div key={q.quote_id} className='preview-meta-row'>
@@ -69,14 +50,15 @@ export default function CustomerAccountPage({ customer, quotes, orgSlug }) {
                       <Link
                         href={`/shop/${orgSlug}/track/${q.quote_id}`}
                         style={{ fontWeight: 600 }}
+                        className='id-mono'
                       >
                         {q.quote_id}
                       </Link>
                       {' — '}
                       {device}
                       {q.repair_type_key ? ` · ${q.repair_type_key}` : ''}
-                      {' · '}
-                      <span style={{ color: 'var(--muted)' }}>{statusLabel}</span>
+                      {' '}
+                      <span className={cls}>{label}</span>
                     </span>
                     <span style={{ whiteSpace: 'nowrap', color: 'var(--muted)', fontSize: '0.875rem' }}>
                       {new Date(q.created_at).toLocaleDateString()}

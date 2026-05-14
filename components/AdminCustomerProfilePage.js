@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 import AdminSignOutButton from './AdminSignOutButton'
+import { statusPill } from '../lib/statusPills'
 
 export default function AdminCustomerProfilePage({ customerId }) {
   return (
@@ -135,7 +136,7 @@ function AdminCustomerProfileInner({ customerId }) {
                           : '—'}
                       </td>
                       <td>
-                        <span className='mini-chip'>{statusLabel(o.current_status)}</span>
+                        <span className={statusPill(o.current_status).cls}>{statusPill(o.current_status).label}</span>
                       </td>
                       <td style={{ color: '#777', fontSize: 13 }}>
                         {new Date(o.created_at).toLocaleDateString()}

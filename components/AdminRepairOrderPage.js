@@ -8,6 +8,7 @@ import AdminPaymentSummaryCard from './AdminPaymentSummaryCard'
 import OrderMessagesSection from './repair-order/OrderMessagesSection'
 import OrderPartsSection from './repair-order/OrderPartsSection'
 import OrderStaffNotes from './repair-order/OrderStaffNotes'
+import { statusPill } from '../lib/statusPills'
 
 const STATUS_OPTIONS = [
   'awaiting_mail_in',
@@ -405,7 +406,7 @@ function AdminRepairOrderInner({ quoteId }) {
               </p>
             </div>
             <div className='inline-actions' style={{ margin: 0 }}>
-              <span className='price-chip'>{currentStatusLabel}</span>
+              <span className={statusPill(status).cls}>{statusPill(status).label}</span>
               <AdminSignOutButton />
             </div>
           </div>
@@ -495,7 +496,7 @@ function AdminRepairOrderInner({ quoteId }) {
             </div>
             <div className='quote-summary-card'>
               <strong>Current stage</strong>
-              <span>{currentStatusLabel}</span>
+              <span className={statusPill(status).cls}>{statusPill(status).label}</span>
             </div>
             {depositRequired > 0 && (
               <div className='quote-summary-card'>

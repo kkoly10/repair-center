@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AdminAuthGate from './AdminAuthGate'
 import AdminSignOutButton from './AdminSignOutButton'
+import { statusPill } from '../lib/statusPills'
 
 const PAGE_SIZE = 25
 
@@ -323,9 +324,9 @@ function AdminOrdersQueueInner() {
                     <tr key={order.id} style={{ opacity: isSaving ? 0.6 : 1 }}>
                       {/* Order number + deposit badge */}
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        <div style={{ fontWeight: 600, fontSize: 13 }}>{order.order_number}</div>
+                        <div className='id-mono' style={{ fontWeight: 600, fontSize: 13 }}>{order.order_number}</div>
                         {order.quote_id ? (
-                          <div style={{ fontSize: 11, color: 'var(--muted)' }}>{order.quote_id}</div>
+                          <div className='id-mono' style={{ fontSize: 11, color: 'var(--muted)' }}>{order.quote_id}</div>
                         ) : null}
                         {Number(order.inspection_deposit_required) > 0 && !order.inspection_deposit_paid_at ? (
                           <span className='chip chip-warn' style={{ fontSize: 10, marginTop: 4 }}>Deposit due</span>
@@ -352,17 +353,22 @@ function AdminOrdersQueueInner() {
 
                       {/* Status — inline select */}
                       <td>
-                        <select
-                          className='field'
-                          value={order.current_status}
-                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                          disabled={isSaving}
-                          style={{ fontSize: 12, padding: '4px 8px', minWidth: 140 }}
-                        >
-                          {ALLOWED_STATUSES.map((s) => (
-                            <option key={s} value={s}>{formatStatus(s)}</option>
-                          ))}
-                        </select>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <span className={statusPill(order.current_status).cls}>
+                            {statusPill(order.current_status).label}
+                          </span>
+                          <select
+                            className='field'
+                            value={order.current_status}
+                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                            disabled={isSaving}
+                            style={{ fontSize: 11, padding: '2px 6px', minWidth: 140 }}
+                          >
+                            {ALLOWED_STATUSES.map((s) => (
+                              <option key={s} value={s}>{formatStatus(s)}</option>
+                            ))}
+                          </select>
+                        </div>
                       </td>
 
                       {/* Priority — inline select */}

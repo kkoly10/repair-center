@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { statusPill } from '../lib/statusPills'
 
 const STATUS_LABELS = {
   awaiting_mail_in: 'Awaiting Mail-In',
