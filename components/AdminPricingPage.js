@@ -68,8 +68,11 @@ function AdminPricingPageInner() {
       setCatalogLoading(true)
       fetch('/admin/api/catalog')
         .then((r) => r.json())
-        .then((json) => { if (json.ok) setCatalog(json) })
-        .catch(() => {})
+        .then((json) => {
+          if (json.ok) setCatalog(json)
+          else setAddError(json.error || 'Failed to load catalog. Please try again.')
+        })
+        .catch(() => setAddError('Failed to load catalog. Please try again.'))
         .finally(() => setCatalogLoading(false))
     }
   }
