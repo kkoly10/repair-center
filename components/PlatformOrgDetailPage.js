@@ -25,7 +25,10 @@ export default function PlatformOrgDetailPage({ orgId }) {
   }
 
   useEffect(() => {
-    loadData().catch(() => setError('Failed to load organization.')).finally(() => setLoading(false))
+    const t = setTimeout(() => {
+      loadData().catch(() => setError('Failed to load organization.')).finally(() => setLoading(false))
+    }, 0)
+    return () => clearTimeout(t)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId])
 
@@ -51,11 +54,8 @@ export default function PlatformOrgDetailPage({ orgId }) {
   if (loading) return <div className='notice' style={{ margin: 32 }}>Loading…</div>
   if (error)   return <div className='notice notice-warn' style={{ margin: 32 }}>{error}</div>
 
-  const { org, subscription, members, usage, recentQuotes } = data
+  const { org, subscription, members, usage, recentQuotes, trialDaysLeft } = data
   const isSuspendable = !['suspended', 'cancelled'].includes(org.status)
-  const trialDaysLeft = org.trial_ends_at
-    ? Math.ceil((new Date(org.trial_ends_at).getTime() - Date.now()) / 86400000)
-    : null
 
   const billingRows = [
     { label: 'Status',      value: <span className={statusPill(org.status).cls}>{statusPill(org.status).label}</span> },

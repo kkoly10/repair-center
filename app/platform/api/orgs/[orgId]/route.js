@@ -51,9 +51,14 @@ export async function GET(_req, context) {
     profile: profilesById[m.user_id] || null,
   }))
 
+  const trialDaysLeft = orgRes.data.trial_ends_at
+    ? Math.ceil((new Date(orgRes.data.trial_ends_at).getTime() - Date.now()) / 86400000)
+    : null
+
   return NextResponse.json({
     ok: true,
     org: orgRes.data,
+    trialDaysLeft,
     subscription: subRes.data,
     members,
     usage: {
