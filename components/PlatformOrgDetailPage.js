@@ -61,7 +61,7 @@ export default function PlatformOrgDetailPage({ orgId }) {
     { label: 'Status',      value: <span className={statusPill(org.status).cls}>{statusPill(org.status).label}</span> },
     { label: 'Plan',        value: subscription?.plan_key || org.plan_key || 'trial' },
     { label: 'Trial ends',  value: org.trial_ends_at
-        ? `${fmtDate(org.trial_ends_at)}${trialDaysLeft !== null ? ` (${trialDaysLeft}d remaining)` : ''}`
+        ? `${fmtDate(org.trial_ends_at)}${trialDaysLeft !== null ? ` (${trialDaysLeft > 0 ? `${trialDaysLeft}d remaining` : 'Expired'})` : ''}`
         : '—' },
     { label: 'Renewal',     value: fmtDate(subscription?.current_period_end) },
     { label: 'Stripe ID',   value: org.stripe_customer_id

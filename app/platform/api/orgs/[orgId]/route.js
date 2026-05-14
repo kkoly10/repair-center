@@ -16,7 +16,9 @@ export async function GET(_req, context) {
 
   const [orgRes, subRes, membersRes, quotesCountRes, ordersCountRes, customersCountRes, recentQuotesRes] =
     await Promise.all([
-      supabase.from('organizations').select('*').eq('id', orgId).single(),
+      supabase.from('organizations')
+        .select('id, name, slug, status, plan_key, trial_ends_at, created_at, stripe_customer_id, updated_at')
+        .eq('id', orgId).single(),
       supabase.from('organization_subscriptions').select('*').eq('organization_id', orgId).maybeSingle(),
       supabase.from('organization_members').select('id, role, status, user_id').eq('organization_id', orgId),
       supabase.from('quote_requests').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
@@ -37,6 +39,8 @@ export async function GET(_req, context) {
       { status: is404 ? 404 : 500 }
     )
   }
+  if (membersRes.error)
+    return NextResponse.json({ error: membersRes.error.message }, { status: 500 })
 
   const userIds = (membersRes.data || []).map((m) => m.user_id).filter(Boolean)
   const profilesRes = userIds.length > 0

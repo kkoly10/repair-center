@@ -54,7 +54,6 @@ describe('GET /platform/api/stats', () => {
 
   it('returns 403 when platform session fails', async () => {
     getPlatformSession.mockRejectedValue(AUTH_ERR)
-    jest.isolateModules(() => {})
     const { GET } = require('../../app/platform/api/stats/route')
     const res = await GET()
     expect(res.status).toBe(403)
