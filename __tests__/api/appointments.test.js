@@ -62,6 +62,14 @@ describe('POST /api/appointments', () => {
     expect(body.error).toMatch(/email/i)
   })
 
+  it('returns 400 when firstName is whitespace-only', async () => {
+    getSupabaseAdmin.mockReturnValue({ from: jest.fn() })
+    const res = await POST(makeRequest({ orgSlug: ORG_SLUG, firstName: '   ', email: 'j@e.com', preferredAt: FUTURE }))
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toMatch(/first name/i)
+  })
+
   it('returns 400 when preferredAt is in the past', async () => {
     const past = new Date(Date.now() - 1000).toISOString()
     getSupabaseAdmin.mockReturnValue({
