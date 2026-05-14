@@ -49,6 +49,15 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 })
   }
 
+  // Validate preferred time is in the future
+  const preferredDate = new Date(preferredAt)
+  if (isNaN(preferredDate.getTime())) {
+    return NextResponse.json({ error: 'Invalid appointment date.' }, { status: 400 })
+  }
+  if (preferredDate < new Date()) {
+    return NextResponse.json({ error: 'Appointment time must be in the future.' }, { status: 400 })
+  }
+
   // Resolve org by slug
   const { data: org, error: orgError } = await supabase
     .from('organizations')
@@ -60,14 +69,13 @@ export async function POST(request) {
   if (orgError) return NextResponse.json({ error: orgError.message }, { status: 500 })
   if (!org) return NextResponse.json({ error: 'Shop not found.' }, { status: 404 })
 
-  // Validate preferred time is in the future
-  const preferredDate = new Date(preferredAt)
-  if (isNaN(preferredDate.getTime())) {
-    return NextResponse.json({ error: 'Invalid appointment date.' }, { status: 400 })
-  }
-  if (preferredDate < new Date()) {
-    return NextResponse.json({ error: 'Appointment time must be in the future.' }, { status: 400 })
-  }
+  // Look up a matching customer account in this org to auto-link customer_id
+  const { data: matchedCustomer } = await supabase
+    .from('customers')
+    .select('id')
+    .eq('organization_id', org.id)
+    .eq('email', email)
+    .maybeSingle()
 
   const { data: appointment, error: insertError } = await supabase
     .from('appointments')
@@ -82,6 +90,7 @@ export async function POST(request) {
       repair_description: repairDescription ? String(repairDescription).slice(0, 1000) : null,
       preferred_at: preferredDate.toISOString(),
       status: 'pending',
+      customer_id: matchedCustomer?.id || null,
     })
     .select('id, preferred_at, status')
     .single()

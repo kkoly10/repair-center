@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
 import { notFound } from 'next/navigation'
+import { getCustomerSession } from '../../../../lib/customer/getCustomerSession'
 import BookingPage from '../../../../components/BookingPage'
 
 export default async function Page({ params }) {
@@ -8,11 +9,19 @@ export default async function Page({ params }) {
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('name, status')
+    .select('id, name, status')
     .eq('slug', orgSlug)
     .maybeSingle()
 
   if (!org || org.status !== 'active') notFound()
 
-  return <BookingPage orgSlug={orgSlug} orgName={org.name} />
+  const session = await getCustomerSession(org.id).catch(() => null)
+  const prefill = session?.customer ? {
+    firstName: session.customer.first_name || '',
+    lastName:  session.customer.last_name  || '',
+    email:     session.customer.email      || '',
+    phone:     session.customer.phone      || '',
+  } : null
+
+  return <BookingPage orgSlug={orgSlug} orgName={org.name} prefill={prefill} />
 }

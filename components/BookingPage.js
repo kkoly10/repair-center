@@ -4,11 +4,14 @@ import { useState } from 'react'
 const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }
 const labelStyle = { display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#555' }
 
-export default function BookingPage({ orgSlug, orgName }) {
-  const [form, setForm] = useState({
-    firstName: '', lastName: '', email: '', phone: '',
+export default function BookingPage({ orgSlug, orgName, prefill }) {
+  const [form, setForm] = useState(() => ({
+    firstName: prefill?.firstName || '',
+    lastName:  prefill?.lastName  || '',
+    email:     prefill?.email     || '',
+    phone:     prefill?.phone     || '',
     brandName: '', modelName: '', repairDescription: '', preferredAt: '',
-  })
+  }))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -68,6 +71,11 @@ export default function BookingPage({ orgSlug, orgName }) {
           <div className='kicker'>{orgName}</div>
           <h1>Book a Drop-Off Appointment</h1>
           <p>Request a time to drop off your device. We&apos;ll confirm your appointment by email.</p>
+          {prefill?.email && (
+            <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: 'var(--muted)' }}>
+              Booking as <strong>{prefill.email}</strong>
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className='policy-card' style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>

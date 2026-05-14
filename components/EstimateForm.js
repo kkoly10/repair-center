@@ -35,7 +35,7 @@ function ProgressBar({ step }) {
   )
 }
 
-export default function EstimateForm({ orgSlug }) {
+export default function EstimateForm({ orgSlug, prefillContact }) {
   const searchParams    = useSearchParams()
   const resolvedOrgSlug = orgSlug || searchParams.get('shop') || process.env.NEXT_PUBLIC_DEFAULT_ORG_SLUG || ''
 
@@ -46,7 +46,12 @@ export default function EstimateForm({ orgSlug }) {
   const [repairKey,    setRepairKey]    = useState(searchParams.get('repairKey') || 'screen')
   const [notes,        setNotes]        = useState('')
   const [selectedFiles,setSelectedFiles]= useState([])
-  const [contact,      setContact]      = useState({ firstName: '', lastName: '', email: '', phone: '' })
+  const [contact,      setContact]      = useState(() => ({
+    firstName: prefillContact?.firstName || '',
+    lastName:  prefillContact?.lastName  || '',
+    email:     prefillContact?.email     || '',
+    phone:     prefillContact?.phone     || '',
+  }))
   const [phoneError,   setPhoneError]   = useState('')
   const [submitting,   setSubmitting]   = useState(false)
   const [result,       setResult]       = useState(null)
@@ -391,7 +396,12 @@ export default function EstimateForm({ orgSlug }) {
             <div>
               <div className='kicker'>Step 5 — Contact</div>
               <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', margin: '4px 0 6px' }}>Where should we send the estimate?</h1>
-              <p style={{ color: 'var(--muted)', margin: 0 }}>No account required. We&apos;ll email you the estimate within one business day.</p>
+              <p style={{ color: 'var(--muted)', margin: 0 }}>
+                {prefillContact?.email
+                  ? <>Signed in as <strong>{prefillContact.email}</strong>. We&apos;ll email your estimate within one business day.</>
+                  : <>No account required. We&apos;ll email you the estimate within one business day.</>
+                }
+              </p>
             </div>
 
             {/* Summary chip */}
