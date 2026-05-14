@@ -1,10 +1,10 @@
+import { LEGAL } from '../../lib/legalConfig'
+
 export const metadata = {
   title: 'Privacy Policy — RepairCenter',
   description:
     'How RepairCenter, the SaaS platform, and the repair shops on the platform handle your personal information.',
 }
-
-import { LEGAL } from '../../lib/legalConfig'
 
 export default function PrivacyPage() {
   return (

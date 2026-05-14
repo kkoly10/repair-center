@@ -1,10 +1,10 @@
+import { LEGAL } from '../../lib/legalConfig'
+
 export const metadata = {
   title: 'Platform Terms — RepairCenter',
   description:
     'Platform terms of service for repair shops that use RepairCenter as their SaaS software.',
 }
-
-import { LEGAL } from '../../lib/legalConfig'
 
 export default function PlatformTermsPage() {
   return (
