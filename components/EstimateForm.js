@@ -60,7 +60,10 @@ export default function EstimateForm({ orgSlug }) {
     if (!didRestoreHash.current) {
       didRestoreHash.current = true
       const match = window.location.hash.match(/^#step-([1-5])$/)
-      if (match) setStep(parseInt(match[1]))
+      if (match) {
+        const hashStep = parseInt(match[1])
+        setTimeout(() => setStep(hashStep), 0)
+      }
     }
   }, [])
 

@@ -98,7 +98,10 @@ export default function AdminSidebar() {
   }, [])
 
   // Close mobile sidebar on navigation
-  useEffect(() => { setMobileOpen(false) }, [pathname])
+  useEffect(() => {
+    const t = setTimeout(() => setMobileOpen(false), 0)
+    return () => clearTimeout(t)
+  }, [pathname])
 
   const dropdownOpen   = searchFocused && query.length >= 2
   const trialDaysLeft  = billing?.trialDaysLeft ?? null
