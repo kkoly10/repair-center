@@ -94,6 +94,20 @@ export default async function ShopLandingPage({ params }) {
               </Link>
             </div>
           </div>
+
+          <div className='policy-card'>
+            <div className='kicker'>Returning customer?</div>
+            <h3>View your account</h3>
+            <p>
+              Sign in to see all your repairs in one place. We&apos;ll send a secure magic link
+              to your email — no password needed.
+            </p>
+            <div className='inline-actions'>
+              <Link href={`/shop/${orgSlug}/account`} className='button button-secondary'>
+                My Account
+              </Link>
+            </div>
+          </div>
         </div>
 
         <div className='policy-card'>

@@ -93,37 +93,45 @@ const steps = [
 ]
 
 const compare = [
-  { feature: 'Mail-in first', us: true, shopr: false, desk: false },
+  { feature: 'Mail-in workflow at the center', us: true, shopr: false, desk: false },
   { feature: 'Branded shop page per tenant', us: true, shopr: false, desk: false },
   { feature: 'Customer self-serve tracking', us: true, shopr: true, desk: true },
   { feature: 'Appointment booking', us: true, shopr: true, desk: true },
   { feature: 'Parts inventory', us: true, shopr: true, desk: true },
   { feature: 'Analytics dashboard', us: true, shopr: true, desk: true },
   { feature: 'Tamper-proof customer links', us: true, shopr: false, desk: false },
-  { feature: 'Starting price', us: `$${PRICE}/mo`, shopr: '$99/mo', desk: '$49/mo' },
+  { feature: 'Starting price', us: `$${PRICE}/mo (Founder Beta)`, shopr: '$99/mo', desk: '$49/mo' },
   { feature: 'Free trial', us: '14 days', shopr: 'No card req.', desk: 'Limited' },
 ]
 
 const faqs = [
   {
     q: 'Do I need to be a mail-in shop to use this?',
-    a: "No. Mail-in is where we shine and where competitors fall short — but the platform handles walk-in repairs, drop-offs, and appointment bookings just as well. Most shops use both.",
+    a: "No. RepairCenter is built with mail-in workflows at the center, but the platform handles walk-in repairs, drop-offs, and appointment bookings too. Most shops use both.",
   },
   {
     q: 'What happens after the free trial?',
-    a: `Your account moves to the paid plan at $${PRICE}/month. No surprise charges — you'll get a reminder before the trial ends. Cancel anytime, no contract.`,
+    a: `If you have not added a payment method, your trial ends and access is paused — you will not be charged. If you have added a card, your subscription continues at the current Founder Beta rate of $${PRICE}/month. You can cancel anytime from the billing page; there is no contract.`,
+  },
+  {
+    q: 'Will the price stay $29/month forever?',
+    a: `The Founder Beta plan is $${PRICE}/month while we are in beta and includes every feature in the product today. When we launch public tiers (Starter / Growth / Pro / Advanced) features will be allocated across tiers and prices will change. Founder Beta accounts may be eligible for grandfathered pricing at our discretion — we will give you reasonable notice before any change.`,
   },
   {
     q: 'Can I bring my existing customers over?',
-    a: "New accounts start fresh — RepairCenter builds your history as jobs come in. Your pricing rules are set up during onboarding. If you need to migrate data from another platform, reach out and we will help.",
+    a: "New accounts start fresh — RepairCenter builds your history as jobs come in. Your pricing rules are set up during onboarding. If you need to migrate data from another platform, get in touch and we will help.",
   },
   {
-    q: "Do my customers need to create accounts?",
-    a: "No. Customers access their repair status via a secure link sent to their email. No app download, no account creation, no friction.",
+    q: 'Do my customers need to create accounts?',
+    a: "No. Customers can access their repair status via a secure link sent to their email. They can also optionally sign in with a magic link to see all their repairs at your shop in one place.",
   },
   {
     q: 'Do I need Stripe to accept payments?',
-    a: "Only if you want online card payments. You can set your shop to manual payment mode and collect cash, Zelle, Cash App, or Square yourself — the platform still handles everything else.",
+    a: "Only if you want to accept online card payments through the platform. You can set your shop to manual payment mode and collect cash, Zelle, Cash App, or Square yourself — the platform still handles everything else. Your shop is the merchant of record for repair payments either way.",
+  },
+  {
+    q: 'Who is responsible for the actual repair?',
+    a: "Your shop is. RepairCenter is software — we provide the intake form, the tracking page, the payment tools, and the admin dashboard. The repair itself, the pricing, the warranty, the refund policy, and the shipping instructions are all controlled by your shop.",
   },
 ]
 
@@ -144,8 +152,8 @@ function XIcon() {
 }
 
 export const metadata = {
-  title: 'RepairCenter for Shops — Run Your Mail-In Repair Business',
-  description: `Give your repair shop a professional front door. Branded estimate forms, customer tracking, automated payments, and a full admin dashboard. Mail-in and in-store. $${PRICE}/month, 14-day free trial.`,
+  title: 'RepairCenter for Shops — Run Your Repair Business Online',
+  description: `Give your repair shop a professional front door. Branded estimate forms, customer tracking, automated payments, and a full admin dashboard. Built with mail-in workflows at the center; designed for shops that handle both mail-in and in-store repairs. Founder Beta plan at $${PRICE}/month with a 14-day free trial.`,
 }
 
 export default function ForShopsPage() {
@@ -172,7 +180,7 @@ export default function ForShopsPage() {
               </Link>
             </div>
             <p style={{ marginTop: 14, fontSize: '0.85rem', color: 'var(--muted)' }}>
-              No credit card required &middot; No contract &middot; Cancel anytime &middot; ${PRICE}/month after trial
+              14-day trial &middot; No credit card required during the trial &middot; Cancel anytime &middot; Founder Beta at ${PRICE}/month after trial
             </p>
           </div>
 
@@ -269,16 +277,17 @@ export default function ForShopsPage() {
             <div>
               <div className="kicker">The differentiator</div>
               <h2 className="section-title" style={{ marginBottom: 16 }}>
-                The only repair platform where mail-in is not an afterthought.
+                Built with mail-in workflows at the center.
               </h2>
               <p className="muted" style={{ fontSize: '1rem', lineHeight: 1.7, marginBottom: 20 }}>
-                RepairShopr and RepairDesk were built for shops with a front counter and a cash
-                drawer. Mail-in is a clunky add-on they never fully designed.
+                Most shop-management platforms were designed around a front counter and a cash
+                drawer. Mail-in tends to be a bolt-on.
               </p>
               <p className="muted" style={{ fontSize: '1rem', lineHeight: 1.7, marginBottom: 24 }}>
                 We built mail-in first — the estimate flow, the tracking link, the deposit collection,
-                the shipping confirmation — then added in-store on top. The result is a platform that
-                actually fits how remote repair works, without stripping out what walk-in shops need.
+                the shipping confirmation — and then designed in-store on top. The result is a
+                platform that fits how remote repair works without stripping out what walk-in shops
+                need.
               </p>
               <Link href="/signup" className="button button-primary">
                 Start your free trial
@@ -335,9 +344,9 @@ export default function ForShopsPage() {
           <div className="section-head">
             <div>
               <div className="kicker kicker-dark-section">Pricing</div>
-              <h2 className="section-title section-title-light">One plan. Everything included.</h2>
+              <h2 className="section-title section-title-light">Founder Beta Plan — everything included during beta.</h2>
               <p style={{ marginTop: 10, color: '#94a3b8' }}>
-                We publish our price. You should not have to book a demo to find out what software costs.
+                One transparent price while we are in beta. Public tiers (Starter, Growth, Pro, Advanced) will follow when the product is out of beta. Founder accounts may receive grandfathered terms at our discretion.
               </p>
             </div>
           </div>
@@ -351,13 +360,13 @@ export default function ForShopsPage() {
               width: '100%',
               textAlign: 'center',
             }}>
-              <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Pro plan</div>
+              <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Founder Beta Plan</div>
               <div style={{ fontSize: 56, fontWeight: 800, color: 'white', lineHeight: 1 }}>
                 ${PRICE}
                 <span style={{ fontSize: '1rem', fontWeight: 500, color: '#94a3b8' }}>/month</span>
               </div>
               <div style={{ color: '#94a3b8', margin: '12px 0 28px', fontSize: '0.9rem' }}>
-                14-day free trial &middot; No credit card required &middot; Cancel anytime
+                14-day free trial &middot; No credit card required during trial &middot; Cancel anytime
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, textAlign: 'left' }}>
                 {[
@@ -424,7 +433,9 @@ export default function ForShopsPage() {
             </table>
           </div>
           <p className="muted" style={{ marginTop: 12, fontSize: '0.8rem' }}>
-            RepairShopr starts at $99/mo. RepairDesk starts at $49/mo per location. Prices as of May 2026.
+            Comparison based on publicly available pricing and feature descriptions as of May 2026.
+            Sourced from each vendor&apos;s public website at that date. Features and prices change —
+            check each vendor&apos;s site for current information.
           </p>
         </div>
       </section>
@@ -458,7 +469,7 @@ export default function ForShopsPage() {
               <h3 className="card-title">Your shop could be live in 10 minutes.</h3>
               <p className="muted">
                 No demo call. No sales rep. Sign up, configure your shop, and share your link.
-                Free for 14 days, then ${PRICE}/month.
+                Free for 14 days, then Founder Beta at ${PRICE}/month.
               </p>
             </div>
             <div className="inline-actions">

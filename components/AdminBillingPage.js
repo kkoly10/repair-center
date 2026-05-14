@@ -150,7 +150,7 @@ export default function AdminBillingPage() {
               onClick={handleCheckout}
               disabled={actionLoading}
             >
-              {actionLoading ? 'Redirecting…' : 'Upgrade to Pro'}
+              {actionLoading ? 'Redirecting…' : 'Subscribe — Founder Beta ($29/mo)'}
             </button>
           )}
           {(hasSub || isPastDue) && (
@@ -174,10 +174,11 @@ export default function AdminBillingPage() {
       <div className='policy-card'>
         <h2 style={{ margin: '0 0 12px', fontSize: '1rem' }}>About your plan</h2>
         <ul style={{ margin: 0, paddingLeft: 20, color: 'var(--muted)', fontSize: '0.9rem', lineHeight: 1.7 }}>
-          <li>Your 14-day free trial includes full access to all features.</li>
-          <li>After the trial, a paid subscription is required to continue.</li>
-          <li>Cancel any time from the Manage Subscription portal — no lock-in.</li>
-          <li>Questions? Contact support.</li>
+          <li>Your 14-day free trial includes full access to every feature in the product today.</li>
+          <li>No credit card is required during the trial. Your account will not be charged unless you add a payment method.</li>
+          <li>After the trial, a paid subscription is required to continue. Founder Beta is $29/month.</li>
+          <li>Cancel any time from the Manage Subscription portal — no contract, no lock-in. Cancellation takes effect at the end of the current billing period.</li>
+          <li>See the <a href='/platform-terms'>Platform Terms</a> for full subscription terms.</li>
         </ul>
       </div>
     </div>

@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
 import { checkRateLimit } from '../../../../lib/rateLimiter'
 
+// FTC Consumer Reviews and Testimonials Rule (effective Oct 21, 2024):
+// - Do NOT filter, suppress, or moderate reviews by sentiment.
+// - Do NOT offer compensation or incentives conditioned on a positive review.
+// - Do NOT alter the rating or text the customer submitted.
+// This handler stores reviews exactly as the customer submitted them.
+// https://www.ftc.gov/news-events/news/press-releases/2024/08/federal-trade-commission-announces-final-rule-banning-fake-reviews-testimonials
 export const runtime = 'nodejs'
 
 export async function POST(request, context) {

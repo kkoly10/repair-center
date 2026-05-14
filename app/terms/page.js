@@ -1,154 +1,270 @@
+export const metadata = {
+  title: 'Terms of Service — RepairCenter',
+  description:
+    'Customer-facing terms explaining the platform, the repair shop, and your responsibilities when you submit a repair through RepairCenter.',
+}
+
 export default function TermsPage() {
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='policy-card'>
           <div className='kicker'>Terms of service</div>
-          <h1>Terms of service</h1>
+          <h1>Terms of Service</h1>
           <p>
-            <strong>Effective date:</strong> March 31, 2026
+            <strong>Effective date:</strong> May 14, 2026
           </p>
           <p>
-            By submitting an estimate request or using Repair Center&apos;s mail-in repair service,
-            you agree to the following terms. Please read them carefully before shipping your device.
-          </p>
-
-          <h3>1. Acceptance of terms</h3>
-          <p>
-            By accessing our website, submitting an estimate request, or using any part of our repair
-            service, you agree to be bound by these Terms of Service, our{' '}
-            <a href='/privacy'>Privacy Policy</a>, and our{' '}
-            <a href='/returns'>Returns &amp; Refund Policy</a>. If you do not agree to these terms,
-            do not use our service.
+            These terms apply when you (the customer) submit a repair request through a shop page
+            hosted on the RepairCenter platform. Please read them carefully.
           </p>
 
-          <h3>2. Service description</h3>
+          <div className='notice notice-warn' style={{ marginTop: 12 }}>
+            <strong>Draft notice.</strong> These template terms are provided as a working draft.
+            They are not legal advice and should be reviewed by a qualified attorney before public
+            launch.
+          </div>
+
+          <h3>1. Who you are dealing with</h3>
           <p>
-            Repair Center provides mail-in repair services for consumer electronics including phones,
-            tablets, and laptops. Our service includes:
+            When you submit a repair request through a shop page on this platform, three parties
+            are involved:
           </p>
           <ul>
-            <li>Free online estimates based on device information and photos you provide</li>
-            <li>Professional diagnosis and repair at our facility</li>
-            <li>Secure return shipping of repaired devices</li>
-            <li>Limited warranty on completed repairs</li>
+            <li>
+              <strong>RepairCenter (the platform).</strong> RepairCenter provides software —
+              estimate forms, tracking pages, messaging, appointment booking, payment tools, and
+              the admin dashboard the shop uses to run its repair business.
+            </li>
+            <li>
+              <strong>The repair shop.</strong> The shop is the independent business listed on
+              the shop page where you submitted your request. The shop is responsible for
+              diagnosing, repairing, shipping, and warrantying your device.
+            </li>
+            <li>
+              <strong>You (the customer).</strong> You are submitting a device for repair to that
+              shop. You are responsible for the information you provide, for backing up your
+              device, and for reviewing the shop&apos;s policies before mailing or dropping it off.
+            </li>
           </ul>
+
+          <h3>2. RepairCenter is not the repair provider</h3>
+          <p>
+            Unless a shop page explicitly identifies RepairCenter itself as the shop, RepairCenter
+            does not perform repairs, does not set pricing, does not own the parts used, and does
+            not control the shop&apos;s warranty terms. We provide the platform that lets the shop
+            offer those services to you.
+          </p>
+          <p>
+            For more on the platform / shop / customer relationship, see our{' '}
+            <a href='/shop-responsibility'>Shop Responsibility</a> page.
+          </p>
 
           <h3>3. Estimates and pricing</h3>
           <ul>
-            <li>Photo-based estimates are preliminary. They reflect our best assessment based on the information you provide, but are not a binding price guarantee.</li>
-            <li>Final pricing may change after in-hand inspection if the actual device condition differs from what was submitted (e.g., hidden damage, liquid exposure, or additional parts needed).</li>
-            <li>If the price changes, we will send you a revised estimate for approval before proceeding with the repair.</li>
-            <li>No repair work begins without your explicit approval of the applicable estimate.</li>
-            <li>Estimates expire 14 days after they are sent. Expired estimates require a new submission.</li>
-            <li>Prices do not include optional add-on services (data backup, express service, screen protector) unless explicitly selected.</li>
+            <li>
+              Photo-based estimates are preliminary. They reflect the shop&apos;s best assessment
+              based on the information you provide and are not a binding price guarantee.
+            </li>
+            <li>
+              Final pricing may change after in-hand inspection if the actual device condition
+              differs from what was submitted (e.g., hidden damage, liquid exposure, or additional
+              parts needed).
+            </li>
+            <li>
+              If the price changes, the shop will send you a revised estimate for approval before
+              proceeding with the repair.
+            </li>
+            <li>
+              No repair work begins without your explicit approval of the applicable estimate.
+            </li>
+            <li>
+              Pricing, estimate expiry, and add-on options are set by the shop. Review the shop
+              page for the specific terms that apply.
+            </li>
           </ul>
 
-          <h3>4. Mail-in and inspection</h3>
+          <h3>4. Mail-in and shipping</h3>
           <ul>
-            <li>You are responsible for packaging your device securely and following the mail-in instructions provided after approval.</li>
-            <li>Repair Center is not liable for damage that occurs during inbound shipping due to inadequate packaging.</li>
-            <li>We recommend insuring your inbound shipment for the full value of the device.</li>
-            <li>Upon receipt, we inspect the device and document its condition with photos. Inspection may confirm the original estimate, narrow the issue, or reveal additional damage.</li>
-            <li>If inspection changes the repair scope, a revised estimate will be issued. You may approve the revised estimate or decline and have the device returned.</li>
+            <li>
+              You are responsible for packaging your device securely and following the mail-in
+              instructions the shop provides.
+            </li>
+            <li>
+              Neither the shop nor RepairCenter is liable for damage that occurs during inbound
+              shipping due to inadequate packaging.
+            </li>
+            <li>
+              We recommend insuring your inbound shipment for the full value of the device.
+            </li>
+            <li>
+              Upon receipt, the shop typically inspects the device and documents its condition.
+              If inspection changes the repair scope, the shop will issue a revised estimate.
+            </li>
+            <li>
+              Return shipping cost, carrier, and timing are set by the shop and listed in the
+              mail-in instructions.
+            </li>
           </ul>
 
           <h3>5. Payments</h3>
           <ul>
-            <li>An inspection deposit is required before we begin work. The deposit amount varies by device type ($25 for phones and tablets, $45 for laptops). The deposit is credited toward your final bill.</li>
-            <li>The remaining balance must be paid before we ship the repaired device back to you.</li>
-            <li>All payments are processed securely through Stripe. We do not store your card details.</li>
-            <li>Accepted payment methods include all major credit and debit cards.</li>
-            <li>Refund terms are detailed in our <a href='/returns'>Returns &amp; Refund Policy</a>.</li>
+            <li>
+              The shop sets the pricing, the deposit policy, and the accepted payment methods. The
+              shop is the seller and the merchant of record for repair payments.
+            </li>
+            <li>
+              If you pay online through Stripe, Stripe processes the payment on the shop&apos;s
+              behalf. If the shop uses manual payment mode, you will see the shop&apos;s payment
+              instructions on the estimate-review page (e.g. Cash App, Zelle, Square, cash on
+              pickup).
+            </li>
+            <li>
+              RepairCenter does not collect or hold repair payments and is not responsible for
+              refunds, chargebacks, or payment disputes between you and the shop. Contact the shop
+              directly for refund or dispute requests.
+            </li>
           </ul>
 
           <h3>6. Warranty</h3>
           <ul>
-            <li><strong>Standard warranty:</strong> Completed repairs include a 90-day limited warranty covering parts and labor for the specific work performed.</li>
-            <li><strong>Software repairs:</strong> Software-related repairs carry a 30-day warranty.</li>
-            <li><strong>Extended warranty:</strong> Optional extended (180-day) and premium (365-day) warranty plans are available for purchase at the time of estimate approval.</li>
-            <li>The warranty does not cover: unrelated device failures, physical damage after return, liquid damage after return, issues caused by third-party modifications, or normal wear and tear.</li>
-            <li>Warranty coverage begins on the date the repaired device is delivered back to you.</li>
-            <li>To make a warranty claim, contact us through the tracking page message thread or via email with your Quote ID or Order Number.</li>
+            <li>
+              The warranty on your repair is offered by the shop, not by RepairCenter. Warranty
+              length, scope, and exclusions are set by the shop.
+            </li>
+            <li>
+              Review the shop&apos;s estimate, intake report, or shop page for the warranty terms
+              that apply to your repair.
+            </li>
+            <li>
+              RepairCenter does not provide a platform-backed repair warranty.
+            </li>
           </ul>
 
-          <h3>7. Customer responsibilities</h3>
+          <h3>7. Your responsibilities</h3>
           <ul>
-            <li><strong>Data backup:</strong> Back up all data on your device before shipping. We are not responsible for data loss during the repair process, even if you purchase our data backup add-on service.</li>
-            <li><strong>Remove personal items:</strong> Remove SIM cards, memory cards, cases, and screen protectors before shipping unless instructed otherwise.</li>
-            <li><strong>Disable security locks:</strong> Disable Find My Device / Activation Lock / screen passcodes before shipping. Locked devices may be returned unrepaired and the deposit may be forfeited.</li>
-            <li><strong>Accurate information:</strong> Provide accurate and complete information about your device condition. Failure to disclose known issues (especially liquid damage) may affect your estimate and warranty coverage.</li>
+            <li>
+              <strong>Data backup.</strong> Back up all data on your device before shipping or
+              dropping it off. Repair work may result in data loss, even when the shop takes care.
+              The shop is not responsible for data loss unless the shop&apos;s policy says so.
+              RepairCenter is not responsible for data loss in any case.
+            </li>
+            <li>
+              <strong>Remove personal items.</strong> Remove SIM cards, memory cards, cases, and
+              screen protectors before shipping unless the shop instructs otherwise.
+            </li>
+            <li>
+              <strong>Disable security locks.</strong> Disable Find My Device / Activation Lock /
+              screen passcodes unless the shop&apos;s instructions say to leave them on. A locked
+              device may be returned unrepaired and any deposit may be forfeited per the
+              shop&apos;s policy.
+            </li>
+            <li>
+              <strong>Accurate information.</strong> Provide accurate information about your
+              device condition. Failure to disclose known issues (especially liquid damage) may
+              affect your estimate, repair, and warranty.
+            </li>
           </ul>
 
           <h3>8. Devices that cannot be repaired</h3>
           <ul>
-            <li><strong>Beyond economical repair:</strong> If inspection determines the repair cost would exceed the device&apos;s value, we will notify you and offer to return it. See our <a href='/returns'>Returns &amp; Refund Policy</a> for deposit refund terms.</li>
-            <li><strong>No fault found:</strong> If no fault is found during inspection, the device will be returned with a report of our findings.</li>
-            <li><strong>Parts unavailable:</strong> If required parts are unavailable, we will notify you and return the device with a full deposit refund.</li>
+            <li>
+              <strong>Beyond economical repair.</strong> If the shop determines the repair cost
+              exceeds the device&apos;s value, the shop will notify you. Deposit refund terms are
+              set by the shop.
+            </li>
+            <li>
+              <strong>No fault found.</strong> If no fault is identified, the shop will return the
+              device with a report of findings.
+            </li>
+            <li>
+              <strong>Parts unavailable.</strong> If required parts are unavailable, the shop will
+              notify you and follow its return policy.
+            </li>
           </ul>
 
-          <h3>9. Intellectual property</h3>
+          <h3>9. Reviews</h3>
           <p>
-            All content on our website, including text, graphics, logos, and software, is the property
-            of Repair Center and is protected by applicable intellectual property laws. You may not
-            reproduce, distribute, or create derivative works from our content without written permission.
+            After your repair ships, you may receive a request to leave a review. Participation is
+            entirely optional. You are free to rate any number of stars, leave a comment, or
+            decline to respond. Reviews are not screened for sentiment — your honest feedback is
+            welcome. We comply with the FTC&apos;s Consumer Reviews and Testimonials Rule and do
+            not offer incentives in exchange for positive reviews.
           </p>
 
-          <h3>10. Limitation of liability</h3>
-          <ul>
-            <li>Repair Center&apos;s total liability for any claim arising from our service is limited to the amount you paid for the specific repair in question.</li>
-            <li>We are not liable for indirect, incidental, special, or consequential damages including but not limited to lost data, lost revenue, device downtime, or emotional distress.</li>
-            <li>We are not liable for pre-existing conditions, undisclosed damage, or issues unrelated to the repair we performed.</li>
-            <li>Some jurisdictions do not allow limitation of liability for certain damages. In such cases, our liability is limited to the maximum extent permitted by law.</li>
-          </ul>
-
-          <h3>11. Indemnification</h3>
+          <h3>10. Customer accounts</h3>
           <p>
-            You agree to indemnify and hold harmless Repair Center, its officers, employees, and agents
-            from any claims, damages, losses, or expenses (including reasonable attorney&apos;s fees) arising
-            from your use of our service, your violation of these terms, or your violation of any
-            third-party rights.
+            You may sign in to a shop&apos;s page with a magic email link to see all of your
+            repairs at that shop in one place. Signing in is optional. You can also continue to
+            track an individual repair by entering your Quote ID and email.
           </p>
 
-          <h3>12. Dispute resolution</h3>
+          <h3>11. Intellectual property</h3>
+          <p>
+            The RepairCenter platform, its software, and its branding are owned by RepairCenter.
+            The repair shop&apos;s branding, logos, and content shown on a shop page belong to
+            that shop. You may not reproduce or redistribute either without permission.
+          </p>
+
+          <h3>12. Limitation of liability (platform)</h3>
           <ul>
-            <li><strong>Informal resolution:</strong> We encourage you to contact us first to resolve any disputes informally. Most issues can be resolved through our tracking page message thread or by email.</li>
-            <li><strong>Governing law:</strong> These terms are governed by the laws of the Commonwealth of Virginia, without regard to conflict of law principles.</li>
-            <li><strong>Jurisdiction:</strong> Any disputes not resolved informally shall be subject to the exclusive jurisdiction of the courts in Fredericksburg, Virginia.</li>
+            <li>
+              RepairCenter&apos;s total liability to you under these terms is limited to the
+              amount you have paid RepairCenter directly (if any). Most customers pay the repair
+              shop, not RepairCenter, so this amount is usually zero.
+            </li>
+            <li>
+              RepairCenter is not liable for repair outcomes, parts costs, shipping damage, device
+              data loss, or customer service failures by the shop.
+            </li>
+            <li>
+              The shop sets its own limitation of liability for the repair work; consult the
+              shop&apos;s policies directly.
+            </li>
+            <li>
+              Some jurisdictions do not allow these limitations; in those jurisdictions, the
+              limits apply to the maximum extent permitted by law.
+            </li>
           </ul>
 
-          <h3>13. Service availability</h3>
+          <h3>13. Dispute resolution</h3>
           <ul>
-            <li>We reserve the right to refuse service, modify pricing, or discontinue any service at our discretion.</li>
-            <li>We do not guarantee uninterrupted availability of our website or services.</li>
-            <li>Turnaround times are estimates and not guaranteed. Delays may occur due to parts availability, shipping, or high repair volume.</li>
+            <li>
+              <strong>Repair disputes.</strong> Contact the shop directly. RepairCenter cannot
+              resolve repair pricing, repair quality, or refund disputes between you and the shop.
+            </li>
+            <li>
+              <strong>Platform disputes.</strong> For disputes about the platform itself, contact
+              us via the email on the <a href='/contact'>contact page</a>. Most issues can be
+              resolved informally.
+            </li>
+            <li>
+              <strong>Governing law.</strong> These terms are governed by the laws of the
+              Commonwealth of Virginia, without regard to conflict-of-law principles.{' '}
+              <em>(Choice of law is a placeholder pending attorney review.)</em>
+            </li>
           </ul>
 
-          <h3>14. Promotional offers and discounts</h3>
-          <ul>
-            <li>Promo codes and discounts are subject to specific terms and conditions stated at the time of offer.</li>
-            <li>Promo codes cannot be combined unless explicitly stated.</li>
-            <li>We reserve the right to modify or cancel promotional offers at any time.</li>
-            <li>Returning customer loyalty discounts are applied automatically and cannot be combined with other percentage-based discounts.</li>
-          </ul>
+          <h3>14. Operator-run repair shop (if applicable)</h3>
+          <p>
+            If the operator of the RepairCenter platform also runs a repair shop using this
+            software, that shop&apos;s own terms — including pricing, warranty, refund, and
+            shipping terms — apply separately to repairs you submit to it. Look on that specific
+            shop&apos;s page for its terms.
+          </p>
 
           <h3>15. Changes to these terms</h3>
           <p>
-            We may update these terms from time to time. The effective date at the top of this page
-            indicates when the terms were last revised. Continued use of the service after changes
-            constitutes acceptance of the updated terms. Material changes will be communicated via
-            email to customers with active repairs.
+            We may update these terms from time to time. The effective date at the top of this
+            page indicates when the terms were last revised. Continued use of the service after
+            changes constitutes acceptance.
           </p>
 
           <h3>16. Contact</h3>
           <p>
-            For questions about these terms, contact us at the email address listed in your repair
-            communications, through the message thread on your tracking page, or by mail at:
-          </p>
-          <p>
-            <strong>Repair Center</strong><br />
-            123 Repair Center Way, Suite 200<br />
-            Fredericksburg, VA 22401
+            Platform-related questions: see the <a href='/contact'>contact page</a>. <br />
+            Repair-specific questions: contact the shop directly through the message thread on
+            your tracking page.
           </p>
         </div>
       </div>
