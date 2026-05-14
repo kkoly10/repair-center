@@ -139,7 +139,7 @@ export default function DataPrivacyPage() {
           <p>If you have questions about your data or want to exercise any of the rights described on this page, we are here to help:</p>
           <ul>
             <li><strong>Privacy Officer email:</strong> {LEGAL.privacyEmail}</li>
-            <li><strong>Mailing address:</strong> 123 Repair Center Way, Suite 200, Fredericksburg, VA 22401</li>
+            {LEGAL.mailingAddress && <li><strong>Mailing address:</strong> {LEGAL.mailingAddress}</li>}
             <li><strong>Response time:</strong> Within 30 days of receiving your request</li>
           </ul>
           <p>
