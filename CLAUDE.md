@@ -752,6 +752,78 @@ Add to **Auth → URL Configuration → Allowed Redirect URLs**:
 
 ---
 
+## Sprint 32 — Design System Overhaul ✅ COMPLETE (PR #38)
+
+### No migration needed
+
+### What was done — six ordered phases
+
+**Phase 1 — Design tokens & typography**
+- Replaced `Manrope` with `Plus_Jakarta_Sans` via `next/font/google`; `--font-display` variable name unchanged — zero downstream changes
+- New `:root` token set in `globals.css`: forest green brand (`#16a34a` as `--blue`), warm stone neutrals (`--bg: #fafaf9`, `--text: #1c1917`), flatter radii (`--radius-xl: 20px` → `--radius-sm: 6px`), tighter shadows
+- Removed blue radial gradient from body; simplified to `background: var(--bg)`
+- Heading `letter-spacing: -0.02em`; added `.id-mono` class for all RCO-/RCQ- order ID displays
+- `ThemeProvider.js`: added `--blue-soft` forwarding via `color-mix()`
+
+**Phase 2 — Status pill badge system**
+- New `lib/statusPills.js`: `statusPill(status)` → `{ cls, label }` for all repair, order, and appointment status enums
+- Semantic variants: `pill-complete` (green), `pill-active` (blue), `pill-pending` (amber), `pill-overdue` (red), `pill-inactive` (gray)
+- Applied to 6 components: `AdminOrdersQueue`, `AdminRepairOrderPage`, `CustomerTrackingPage`, `CustomerAccountPage`, `AdminAppointmentsPage`, `AdminCustomerProfilePage`
+
+**Phase 3 — Admin sidebar navigation**
+- New `components/AdminSidebar.js`: 248px fixed left sidebar (`--surface-dark`) replacing 13-link top nav
+- Four grouped sections: Customer-Facing / Operations / Business / Account
+- Active link: 3px left border (`--blue`) + subtle background; hover state
+- Badge counts: Quotes (unreviewed), Appointments (pending) — red pill
+- Billing urgency dot: amber ≤7d trial, red ≤3d / past-due; trial/past-due banners inline
+- Search transplanted from AdminNav with debounce + result dropdown
+- Responsive: collapses to 56px icon-only at ≤900px; hamburger overlay at ≤640px
+- `app/admin/layout.js` updated to flex layout with `.admin-layout` / `.admin-main` CSS classes
+- **`components/AdminNav.js` deleted**
+
+**Phase 4 — Customer shop landing page**
+- `app/shop/[orgSlug]/page.js` rewritten: sticky branded header, full-width hero, star rating row (≥5 reviews), 4-step how-it-works grid, secondary CTA links
+- Fetches `repair_reviews` aggregate alongside existing org + branding fetch
+- Uses `notFound()` for missing orgs (uses custom 404 page from Sprint 31)
+
+**Phase 5 — Customer tracking page**
+- `components/CustomerTrackingPage.js` rewritten following Aftership/Baymard patterns
+- Email verify form simplified; status card with 5-node horizontal repair timeline (submitted → inspecting → repairing → ready → shipped)
+- Human-language status description below timeline; order summary always above the fold
+- Messages and activity history both in collapsed `<details>` (most return visits are status checks)
+
+**Phase 6 — Estimate form 5-step wizard**
+- `components/EstimateForm.js` rewritten as multi-step conversational intake
+- Step 1: device type tile grid (click to advance); Step 2: brand/model selects; Step 3: repair type tiles with prices; Step 4: photos + notes (skippable); Step 5: contact + submit
+- Progress bar, hash routing (`#step-N`) for browser back support
+- Success state: full-width confirmation card with "what happens next" + tracking link
+- Same `POST /api/quote-requests` body shape — **no API changes**
+- **Note:** device condition questions (powerState, chargeState, etc.) removed to reduce friction; capturable via notes field
+
+### Bugs caught and fixed during Sprint 32
+- `AdminAppointmentsPage.js`: filter tab labels still referenced deleted `STATUS_LABELS` — fixed to use `statusPill(s).label`
+- `AdminSidebar.js` + `EstimateForm.js`: `setState` called synchronously in `useEffect` body — deferred into `setTimeout(fn, 0)` to satisfy `react-hooks/set-state-in-effect` lint rule
+
+### Test suite after Sprint 32
+191 tests across 19 suites — all passing (no new test suites; all changes are UI/presentation layer).
+
+---
+
+## Sprint 33 — AdminRepairOrderPage Component Extraction ✅ COMPLETE
+
+### No migration needed
+
+### What was done
+Three sections extracted from `AdminRepairOrderPage.js` into the existing `components/repair-order/` subdirectory (which already contained `OrderMessagesSection`, `OrderPartsSection`, `OrderStaffNotes` from prior sprints):
+
+- **`repair-order/OrderIntakeForm.js`** (new) — fully self-contained component; owns all 10 device-intake state variables (`packageCondition`, `deviceCondition`, `imeiOrSerial`, `powerTestResult`, `includedItems`, 4 damage checkboxes, `intakeNotes`), its own load + save API calls to `/admin/api/quotes/[quoteId]/intake`; accepts `{ quoteId, orderId }` props
+- **`repair-order/OrderActivityLog.js`** (new) — presentational; accepts `{ history, auditLog }` props; merges + sorts both arrays and renders the unified timeline with "internal" mini-chip badges
+- **`repair-order/OrderShipments.js`** (new) — presentational; accepts `{ shipments }` prop; renders the return shipping record list
+
+**Result**: `AdminRepairOrderPage.js` reduced from ~920 lines to 650 lines; 15 state variables and 2 useEffect hooks removed from the main component.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
