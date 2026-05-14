@@ -10,6 +10,7 @@ const navItems = [
   { href: '/devices', label: 'Supported Devices' },
   { href: '/track', label: 'Track Repair' },
   { href: '/faq', label: 'FAQ' },
+  { href: '/for-shops', label: 'For Shops' },
 ]
 
 export default function SiteHeader() {
