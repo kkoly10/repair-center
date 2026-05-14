@@ -660,6 +660,70 @@ To create a staging environment:
 
 ---
 
+## Sprint 27 — Customer Account Login ✅ COMPLETE (PR #32, merged)
+
+### Migration applied to production
+- `20260514_021_customer_auth.sql` — drops global `UNIQUE` on `customers.auth_user_id` (wrong for multi-tenant); adds composite unique `(auth_user_id, organization_id)`; adds `customers_self_select` RLS policy so authenticated users can SELECT their own rows via `auth_user_id = auth.uid()`
+
+### What was done
+- **`lib/customer/getCustomerSession.js`** (new) — reads auth session from cookies via `@supabase/ssr`; looks up `customers` by `(auth_user_id, organization_id)`; returns `{ user, customer }` or `null`; never throws for "no session" — callers redirect gracefully
+- **`app/api/auth/callback/route.js`** (new) — PKCE code exchange via `supabase.auth.exchangeCodeForSession`; after session is set, links any unlinked `customers` rows matching the user's email across all orgs (LIKE-escaped, `auth_user_id IS NULL`); validates `next` param starts with `/` to prevent open redirect
+- **`components/CustomerLoginPage.js`** (new) — `'use client'`; `signInWithOtp` with `emailRedirectTo` → `/api/auth/callback?next=/shop/${orgSlug}/account`; "sent" state shows confirmation; inline error state
+- **`app/shop/[orgSlug]/login/page.js`** (new) — server component; org lookup + `notFound()`; renders `<CustomerLoginPage orgSlug />`
+- **`components/CustomerSignOutButton.js`** (new) — `signOut()` then `router.replace` to login page
+- **`components/CustomerAccountPage.js`** (new) — server component; welcome header + sign-out button; quote list with status (order status if order exists, else quote status); "View details" links to tracking page; empty state with link to estimate form
+- **`app/shop/[orgSlug]/account/page.js`** (new) — server component; org resolve → session check (redirect to login if null) → fetch quotes + repair_orders in parallel → enrich quotes with order status → render `<CustomerAccountPage>`
+- **`app/shop/[orgSlug]/page.js`** (modified) — added "My Account" card to landing page grid
+
+### Supabase dashboard requirement
+Add to **Auth → URL Configuration → Allowed Redirect URLs**:
+- `https://repair-center-ten.vercel.app/api/auth/callback`
+- `http://localhost:3000/api/auth/callback`
+
+### Test suite after Sprint 27
+190 tests across 19 suites — all passing (no new suite; customer auth is integration-heavy).
+
+---
+
+## Sprint 28 — Compliance & Legal Pages ✅ COMPLETE (PR #32, merged)
+
+### No migration needed
+
+### What was done
+- **`app/terms/page.js`**, **`app/privacy/page.js`**, **`app/platform-terms/page.js`**, **`app/shop-responsibility/page.js`** (new) — static legal pages covering terms of service, privacy policy, platform-level terms, and shop operator responsibility disclosure
+- **`app/for-shops/page.js`** (new) — marketing/onboarding landing page for shop operators; links to signup
+- **`components/SiteFooter.js`** (new) — shared footer component with links to legal pages; added to shop layout
+- **`lib/followUpEmails.js`** — updated warranty reminder email to include links to legal pages in footer
+
+---
+
+## Sprint 29 — Production Infrastructure ✅ COMPLETE (PR #33, merged)
+
+### No migration needed
+
+### What was done
+- **`app/api/health/route.js`** (new) — unauthenticated GET; checks `REQUIRED_VARS` array against `process.env`; pings `organizations` table via `getSupabaseAdmin()`; returns `200 { ok: true }` when all pass, `503` with per-check detail when any fail; for use by uptime monitoring tools
+- **`.env.example`** (rewritten) — now documents every env var added across all sprints, grouped by service: Supabase, Stripe repair payments, Stripe billing, Resend, Twilio, URLs, Security, Cron, Multi-tenant defaults
+
+---
+
+## Sprint 30 — Audit Fixes & UX Hardening ✅ COMPLETE (PR #34, merged)
+
+### No migration needed
+
+### What was done
+1. **`app/api/appointments/route.js`** — trim all string fields (`firstName`, `lastName`, `email`, `phone`, `brandName`, `modelName`, `repairDescription`) before validation, matching the `quote-requests/route.js` pattern; whitespace-only values now correctly rejected
+2. **`components/AdminAppointmentsPage.js`** — replaced blocking `prompt()` for cancellation reason with an inline expand-in-row form: clicking Cancel shows a text input + Confirm/Back buttons; reason stored in `cancellation_reason` or null if blank; form stays open on error so admin can retry with reason intact
+3. **`components/AdminPricingPage.js`** — replaced `alert()` in `handleDelete` with `deleteError` inline state; fixed silent catalog load failure: `catch(() => {})` now calls `setAddError()` so admin sees the failure instead of empty selectors with no message
+4. **`components/AdminCatalogPage.js`** — replaced all 10 `alert()` calls across `BrandsTab`, `ModelsTab`, `RepairTypesTab` with per-tab `actionError` inline state
+5. **`components/AdminCustomersPage.js`** — improved empty state copy to explain how customers appear
+6. **`__tests__/api/appointments.test.js`** — added test: whitespace-only `firstName` returns 400
+
+### Test suite after Sprint 30
+191 tests across 19 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
