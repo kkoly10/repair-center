@@ -864,6 +864,36 @@ All data comes from existing tables: `organizations`, `organization_subscription
 
 ---
 
+## Sprint 35 — Customer Portal Enhancements ✅ COMPLETE
+
+### No migration needed
+
+### What was done
+- **`app/shop/[orgSlug]/estimate/page.js`** (rewritten) — now a full server component; fetches org + calls `getCustomerSession(org.id)`; passes `prefillContact` (firstName, lastName, email, phone) from customer row to `EstimateForm`
+- **`components/EstimateForm.js`** (modified) — accepts `prefillContact` prop; lazy `useState(() => ...)` initializer for contact state; Step 5 shows "Signed in as {email}" copy when prefill present
+- **`app/shop/[orgSlug]/book/page.js`** (modified) — fetches org.id; calls `getCustomerSession`; passes `prefill` to `BookingPage`
+- **`components/BookingPage.js`** (modified) — accepts `prefill` prop; lazy `useState` initializer; shows "Booking as" notice when prefill is present
+- **`app/shop/[orgSlug]/track/[quoteId]/page.js`** (rewritten) — fetches org + customer session; passes `prefillEmail={session?.customer?.email}` to `CustomerTrackingPage`
+- **`components/CustomerTrackingPage.js`** (modified) — accepts `prefillEmail` prop; auto-verifies on mount with `useRef` guard to prevent double-fire in StrictMode; `loading` initializes to `!!prefillEmail` to avoid flash of email gate
+- **`app/shop/[orgSlug]/account/page.js`** (modified) — fetches appointments in parallel alongside quotes/orders; passes to `CustomerAccountPage`
+- **`components/CustomerAccountPage.js`** (modified) — new appointments section with status pill, device, description, and formatted datetime
+- **`app/api/appointments/route.js`** (modified) — validates `preferredDate` before org lookup; auto-links customer by email on appointment creation (`customer_id: matchedCustomer?.id || null`)
+
+### Bug fixes applied
+- **`repair_order_status_history` column name** — `orders/[orderId]/route.js` was querying `.eq('status', newStatus)` but the column is `new_status`; fixed to `.eq('new_status', newStatus)` — silent failure caused notification `historyId` to always be null, breaking dedup
+- **Billing plan_key default** — `GET /admin/api/billing` returned `'beta'` as fallback; changed to `'pro'` to match webhook handler
+- **Settings stripe_connect fields** — `POST /admin/api/settings` was not persisting `stripe_connect_account_id` or `stripe_connect_onboarding_complete` even though GET returned them; added to upsert payload
+
+### Second audit round fixes (same commit batch)
+- **`AdminTeamPage.js`** — `handleRemove` was calling `DELETE /admin/api/team` (wrong endpoint; only GET exists there); fixed to `DELETE /admin/api/team/${memberId}`; member removal was completely broken
+- **`lib/notifications.js`** — repair_orders SELECT was missing `created_at` and `repair_completed_at`; added both so `followUpEmails.js` warranty calculation works
+- **`lib/followUpEmails.js`** — warranty expiry used `context.repairOrder?.created_at` instead of `repair_completed_at`; fixed to use `repair_completed_at` (matching cron job logic)
+
+### Test suite after Sprint 35
+203 tests across 20 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
