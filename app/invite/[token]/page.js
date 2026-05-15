@@ -1,22 +1,12 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-
-const labelStyle = {
-  display: 'block',
-  fontWeight: 600,
-  fontSize: '0.9rem',
-  marginBottom: 6,
-}
-
-function formatRole(role) {
-  const map = { owner: 'Owner', admin: 'Admin', tech: 'Technician', viewer: 'Viewer' }
-  return map[role] || role || 'Unknown'
-}
+import LocalizedLink from '../../../lib/i18n/LocalizedLink'
+import { useT } from '../../../lib/i18n/TranslationProvider'
 
 export default function InvitePage() {
+  const t = useT()
   const { token } = useParams()
   const router = useRouter()
 
@@ -25,6 +15,16 @@ export default function InvitePage() {
   const [validationError, setValidationError] = useState(null)
   const [accepting, setAccepting] = useState(false)
   const [acceptError, setAcceptError] = useState('')
+
+  function formatRole(role) {
+    const map = {
+      owner: t('invite.roleOwner'),
+      admin: t('invite.roleAdmin'),
+      tech: t('invite.roleTech'),
+      viewer: t('invite.roleViewer'),
+    }
+    return map[role] || role || t('invite.roleUnknown')
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -40,7 +40,7 @@ export default function InvitePage() {
           setInvitation(json)
         }
         setLoading(false)
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setValidationError('not_found')
           setLoading(false)
@@ -68,11 +68,11 @@ export default function InvitePage() {
         return
       }
       if (!res.ok) {
-        throw new Error(json.error || 'Failed to accept invitation.')
+        throw new Error(json.error || t('invite.errFailed'))
       }
       router.replace('/admin')
     } catch (err) {
-      setAcceptError(err.message || 'Failed to accept invitation.')
+      setAcceptError(err.message || t('invite.errFailed'))
     } finally {
       setAccepting(false)
     }
@@ -82,7 +82,7 @@ export default function InvitePage() {
     return (
       <main className='page-hero'>
         <div className='site-shell page-stack'>
-          <div className='policy-card'>Validating invitation...</div>
+          <div className='policy-card'>{t('invite.loading')}</div>
         </div>
       </main>
     )
@@ -90,11 +90,11 @@ export default function InvitePage() {
 
   if (validationError) {
     const messages = {
-      not_found: 'This invitation link is invalid.',
-      expired: 'This invitation has expired. Ask an admin to resend it.',
-      already_accepted: 'This invitation has already been used.',
+      not_found: t('invite.errInvalid'),
+      expired: t('invite.errExpired'),
+      already_accepted: t('invite.errUsed'),
     }
-    const message = messages[validationError] || 'This invitation link is invalid.'
+    const message = messages[validationError] || t('invite.errInvalid')
     return (
       <main className='page-hero'>
         <div className='site-shell page-stack'>
@@ -104,30 +104,32 @@ export default function InvitePage() {
     )
   }
 
+  const orgName = invitation.orgName || invitation.org_name || t('invite.joinTeamFallback')
+
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='policy-card'>
-          <div className='kicker'>You&rsquo;re invited</div>
-          <h1>Join {invitation.orgName || invitation.org_name || 'the team'}</h1>
+          <div className='kicker'>{t('invite.kicker')}</div>
+          <h1>{t('invite.title', { orgName })}</h1>
           <p style={{ marginTop: 8 }}>
-            You&rsquo;ve been invited to join{' '}
-            <strong>{invitation.orgName || invitation.org_name}</strong> as{' '}
+            {t('invite.bodyPrefix')}{' '}
+            <strong>{orgName}</strong> {t('invite.bodyAs')}{' '}
             <strong>{formatRole(invitation.role)}</strong>.
           </p>
           <p className='muted' style={{ marginTop: 8 }}>
-            Sign in or create an account, then click Accept below.
+            {t('invite.signinFirst')}
           </p>
 
           {acceptError === 'unauthenticated' ? (
             <div className='notice' style={{ marginTop: 16 }}>
-              Please sign in first.{' '}
-              <Link
+              {t('invite.pleaseSignIn')}{' '}
+              <LocalizedLink
                 href={`/admin/login?redirect=/invite/${token}`}
                 style={{ color: '#2d6bff', fontWeight: 600 }}
               >
-                Sign in
-              </Link>
+                {t('invite.signInLink')}
+              </LocalizedLink>
             </div>
           ) : acceptError ? (
             <div className='notice' style={{ marginTop: 16 }}>{acceptError}</div>
@@ -139,7 +141,7 @@ export default function InvitePage() {
               disabled={accepting}
               onClick={handleAccept}
             >
-              {accepting ? 'Accepting...' : 'Accept Invitation'}
+              {accepting ? t('invite.accepting') : t('invite.acceptButton')}
             </button>
           </div>
         </div>

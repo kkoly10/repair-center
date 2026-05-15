@@ -1,12 +1,17 @@
-import Link from 'next/link'
+import LocalizedLink from '../../lib/i18n/LocalizedLink'
+import { getT } from '../../lib/i18n/server'
 import SiteFooter from '../../components/SiteFooter'
 
-export const metadata = {
-  title: { default: 'Help Center', template: '%s — Help Center' },
-  description: 'Find answers to common questions about repair tracking, appointments, payments, and shop management.',
+export async function generateMetadata() {
+  const t = await getT()
+  return {
+    title: { default: t('helpCenter.metaTitle'), template: t('helpCenter.metaTemplate') },
+    description: t('helpCenter.metaDescription'),
+  }
 }
 
-export default function HelpLayout({ children }) {
+export default async function HelpLayout({ children }) {
+  const t = await getT()
   return (
     <>
       <header style={{
@@ -18,11 +23,11 @@ export default function HelpLayout({ children }) {
         zIndex: 40,
       }}>
         <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 20, height: 56 }}>
-          <Link href='/help' style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text)', textDecoration: 'none' }}>
-            Help Center
-          </Link>
+          <LocalizedLink href='/help' style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text)', textDecoration: 'none' }}>
+            {t('helpCenter.layoutTitle')}
+          </LocalizedLink>
           <span style={{ color: 'var(--line)', fontSize: 18 }}>|</span>
-          <Link href='/' style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>← Back to site</Link>
+          <LocalizedLink href='/' style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>{t('helpCenter.backToSite')}</LocalizedLink>
         </div>
       </header>
       <main>{children}</main>

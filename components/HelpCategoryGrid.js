@@ -1,15 +1,16 @@
 'use client'
 
-import Link from 'next/link'
 import { useState } from 'react'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 import { getArticlesByCategory } from '../lib/helpContent'
 
-function CategoryCard({ cat }) {
+function CategoryCard({ cat, t }) {
   const [hovered, setHovered] = useState(false)
   const articles = getArticlesByCategory(cat.slug)
 
   return (
-    <Link href={`/help/${cat.slug}`} style={{ textDecoration: 'none' }}>
+    <LocalizedLink href={`/help/${cat.slug}`} style={{ textDecoration: 'none' }}>
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -27,16 +28,17 @@ function CategoryCard({ cat }) {
         <div style={{ fontSize: 28, marginBottom: 8 }}>{cat.icon}</div>
         <div style={{ fontWeight: 700, fontSize: '1rem', color: cat.colorFg, marginBottom: 6 }}>{cat.title}</div>
         <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10, lineHeight: 1.45 }}>{cat.description}</div>
-        <div style={{ fontSize: 12, color: cat.colorFg, fontWeight: 600 }}>{articles.length} articles →</div>
+        <div style={{ fontSize: 12, color: cat.colorFg, fontWeight: 600 }}>{t('helpCenter.articlesCount', { count: articles.length })}</div>
       </div>
-    </Link>
+    </LocalizedLink>
   )
 }
 
 export default function HelpCategoryGrid({ categories }) {
+  const t = useT()
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-      {categories.map((cat) => <CategoryCard key={cat.slug} cat={cat} />)}
+      {categories.map((cat) => <CategoryCard key={cat.slug} cat={cat} t={t} />)}
     </div>
   )
 }

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function PaymentCompletePage({ quoteId }) {
+  const t = useT()
   const searchParams = useSearchParams()
   const [state, setState] = useState('verifying') // verifying | success | failed | error
   const [orderNumber, setOrderNumber] = useState(null)
@@ -17,13 +19,13 @@ export default function PaymentCompletePage({ quoteId }) {
     if (!paymentIntentId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setState('error')
-      setErrorMessage('Missing payment information. Please contact support.')
+      setErrorMessage(t('paymentCheckout.missingPayInfo'))
       return
     }
 
     if (redirectStatus === 'failed') {
       setState('failed')
-      setErrorMessage('Your payment was not completed. Please try again.')
+      setErrorMessage(t('paymentCheckout.paymentFailedMsg'))
       return
     }
 
@@ -39,14 +41,15 @@ export default function PaymentCompletePage({ quoteId }) {
           setOrderNumber(data.orderNumber)
           setState('success')
         } else {
-          setErrorMessage(data.error || 'Unable to confirm payment.')
+          setErrorMessage(data.error || t('paymentCheckout.unableConfirm'))
           setState('error')
         }
       })
       .catch(() => {
-        setErrorMessage('Unable to confirm payment. Please contact support with your quote ID.')
+        setErrorMessage(t('paymentCheckout.unableConfirmFull'))
         setState('error')
       })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, quoteId])
 
   return (
@@ -54,48 +57,42 @@ export default function PaymentCompletePage({ quoteId }) {
       <div className='site-shell page-stack'>
         {state === 'verifying' ? (
           <div className='info-card'>
-            <div className='kicker'>Please wait</div>
-            <h1>Confirming your payment…</h1>
-            <p>This will only take a moment.</p>
+            <div className='kicker'>{t('paymentCheckout.verifyingKicker')}</div>
+            <h1>{t('paymentCheckout.verifyingTitle')}</h1>
+            <p>{t('paymentCheckout.verifyingBody')}</p>
           </div>
         ) : null}
 
         {state === 'success' ? (
           <>
             <div className='info-card'>
-              <div className='kicker'>Payment confirmed</div>
-              <h1>Deposit received — thank you!</h1>
+              <div className='kicker'>{t('paymentCheckout.successDepositKicker')}</div>
+              <h1>{t('paymentCheckout.successDepositTitle')}</h1>
               <p>
-                Your inspection deposit has been received and your repair order
-                {orderNumber ? ` #${orderNumber}` : ''} is now active.
+                {t('paymentCheckout.successDepositBody', { orderNumber: orderNumber ? ` #${orderNumber}` : '' })}
               </p>
             </div>
 
             <div className='grid-2'>
               <div className='policy-card'>
-                <div className='kicker'>Next step</div>
-                <h3>Ship your device</h3>
-                <p>
-                  Follow the mail-in instructions to package and send your device to us. Include your quote
-                  ID <strong>{quoteId}</strong> inside the package.
-                </p>
+                <div className='kicker'>{t('paymentCheckout.nextStepKicker')}</div>
+                <h3>{t('paymentCheckout.shipDeviceTitle')}</h3>
+                <p>{t('paymentCheckout.shipDeviceBody', { quoteId })}</p>
                 <div className='inline-actions' style={{ marginTop: 16 }}>
-                  <Link href={`/mail-in/${quoteId}`} className='button button-primary'>
-                    View Mail-In Instructions
-                  </Link>
+                  <LocalizedLink href={`/mail-in/${quoteId}`} className='button button-primary'>
+                    {t('paymentCheckout.viewMailInLong')}
+                  </LocalizedLink>
                 </div>
               </div>
 
               <div className='policy-card'>
-                <div className='kicker'>Track your repair</div>
-                <h3>Stay updated</h3>
-                <p>
-                  You can check the status of your repair at any time using your quote ID and email address.
-                </p>
+                <div className='kicker'>{t('paymentCheckout.trackKicker')}</div>
+                <h3>{t('paymentCheckout.trackTitle')}</h3>
+                <p>{t('paymentCheckout.trackBody')}</p>
                 <div className='inline-actions' style={{ marginTop: 16 }}>
-                  <Link href={`/track/${quoteId}`} className='button button-secondary'>
-                    Open Tracking Page
-                  </Link>
+                  <LocalizedLink href={`/track/${quoteId}`} className='button button-secondary'>
+                    {t('paymentCheckout.openTracking')}
+                  </LocalizedLink>
                 </div>
               </div>
             </div>
@@ -104,28 +101,27 @@ export default function PaymentCompletePage({ quoteId }) {
 
         {state === 'failed' ? (
           <div className='policy-card'>
-            <div className='kicker'>Payment not completed</div>
-            <h3>Something went wrong</h3>
+            <div className='kicker'>{t('paymentCheckout.paymentFailedKicker')}</div>
+            <h3>{t('paymentCheckout.paymentFailedTitle')}</h3>
             <div className='notice' style={{ marginBottom: 16 }}>{errorMessage}</div>
             <div className='inline-actions'>
-              <Link href={`/pay/${quoteId}`} className='button button-primary'>
-                Try Again
-              </Link>
+              <LocalizedLink href={`/pay/${quoteId}`} className='button button-primary'>
+                {t('paymentCheckout.paymentFailedRetry')}
+              </LocalizedLink>
             </div>
           </div>
         ) : null}
 
         {state === 'error' ? (
           <div className='policy-card'>
-            <div className='kicker'>Error</div>
-            <h3>Unable to confirm payment</h3>
+            <div className='kicker'>{t('paymentCheckout.errorKicker')}</div>
+            <h3>{t('paymentCheckout.errorTitle')}</h3>
             <div className='notice' style={{ marginBottom: 16 }}>{errorMessage}</div>
             <p style={{ fontSize: 13, color: '#666' }}>
-              Quote ID: <code>{quoteId}</code>
+              {t('paymentCheckout.errorQuoteIdLabel')} <code>{quoteId}</code>
             </p>
             <p style={{ fontSize: 13, color: '#666', marginTop: 8 }}>
-              If you were charged and are seeing this message, please contact us with your quote ID and we will
-              look into it right away.
+              {t('paymentCheckout.errorContactNote')}
             </p>
           </div>
         ) : null}

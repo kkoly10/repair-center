@@ -1,5 +1,6 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import LocalizedLink from '../../../../lib/i18n/LocalizedLink'
+import { getT } from '../../../../lib/i18n/server'
 import { ARTICLE_MAP, CATEGORY_MAP, getRelatedArticles } from '../../../../lib/helpContent'
 import HelpArticleVote from '../../../../components/HelpArticleVote'
 
@@ -55,6 +56,7 @@ export default async function HelpArticlePage({ params }) {
   const article = ARTICLE_MAP[articleSlug]
   if (!article || article.category !== category) notFound()
 
+  const t = await getT()
   const cat = CATEGORY_MAP[category]
   const related = getRelatedArticles(articleSlug)
   const html = renderMarkdown(article.content.trim())
@@ -64,9 +66,9 @@ export default async function HelpArticlePage({ params }) {
 
       {/* Breadcrumb */}
       <nav style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Link href='/help' style={{ color: 'var(--blue)', textDecoration: 'none' }}>Help Center</Link>
+        <LocalizedLink href='/help' style={{ color: 'var(--blue)', textDecoration: 'none' }}>{t('helpCenter.breadcrumb')}</LocalizedLink>
         <span>›</span>
-        <Link href={`/help/${category}`} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{cat?.title}</Link>
+        <LocalizedLink href={`/help/${category}`} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{cat?.title}</LocalizedLink>
         <span>›</span>
         <span>{article.title}</span>
       </nav>
@@ -77,7 +79,7 @@ export default async function HelpArticlePage({ params }) {
           {article.title}
         </h1>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', color: 'var(--muted)', fontSize: 13 }}>
-          <span>{article.readMinutes} min read</span>
+          <span>{t('helpCenter.minRead', { minutes: article.readMinutes })}</span>
           <span>·</span>
           <span style={{
             background: cat?.color || 'var(--surface-alt)',
@@ -103,26 +105,26 @@ export default async function HelpArticlePage({ params }) {
       {related.length > 0 && (
         <div style={{ marginTop: 48, paddingTop: 24, borderTop: '1px solid var(--line)' }}>
           <h3 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: 14, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Related articles
+            {t('helpCenter.relatedArticles')}
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {related.map((rel) => (
-              <Link
+              <LocalizedLink
                 key={rel.slug}
                 href={`/help/${rel.category}/${rel.slug}`}
                 style={{ color: 'var(--blue)', textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 6 }}
               >
                 <span>→</span>
                 <span>{rel.title}</span>
-              </Link>
+              </LocalizedLink>
             ))}
           </div>
         </div>
       )}
 
       <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--line)', display: 'flex', gap: 16 }}>
-        <Link href={`/help/${category}`} style={{ fontSize: 13, color: 'var(--blue)', textDecoration: 'none' }}>← {cat?.title}</Link>
-        <Link href='/help' style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>Help Center home</Link>
+        <LocalizedLink href={`/help/${category}`} style={{ fontSize: 13, color: 'var(--blue)', textDecoration: 'none' }}>← {cat?.title}</LocalizedLink>
+        <LocalizedLink href='/help' style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>{t('helpCenter.homeLink')}</LocalizedLink>
       </div>
     </div>
   )

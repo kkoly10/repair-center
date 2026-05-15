@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 import QuoteStatusBadge from './QuoteStatusBadge'
 
 export default function CustomerPortal() {
+  const t = useT()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -28,13 +30,13 @@ export default function CustomerPortal() {
       const result = await response.json()
 
       if (!result.ok) {
-        setError(result.error || 'Something went wrong.')
+        setError(result.error || t('customerPortal.errorGeneric'))
         return
       }
 
       setData(result)
     } catch {
-      setError('Unable to connect. Please try again.')
+      setError(t('customerPortal.errorConnect'))
     } finally {
       setLoading(false)
     }
@@ -87,7 +89,7 @@ export default function CustomerPortal() {
       return `$${(quote.preliminary_price_min / 100).toFixed(2)} - $${(quote.preliminary_price_max / 100).toFixed(2)}`
     }
     if (quote.preliminary_price_min) {
-      return `From $${(quote.preliminary_price_min / 100).toFixed(2)}`
+      return `${t('customerPortal.fromPrefix')} $${(quote.preliminary_price_min / 100).toFixed(2)}`
     }
     return null
   }
@@ -95,11 +97,9 @@ export default function CustomerPortal() {
   return (
     <div className='site-shell'>
       <section className='page-hero'>
-        <p className='kicker'>Customer Portal</p>
-        <h1>My Repairs</h1>
-        <p className='muted'>
-          Look up your repair history and track active repairs.
-        </p>
+        <p className='kicker'>{t('customerPortal.kicker')}</p>
+        <h1>{t('customerPortal.title')}</h1>
+        <p className='muted'>{t('customerPortal.subtitle')}</p>
       </section>
 
       <div className='page-stack'>
@@ -110,13 +110,13 @@ export default function CustomerPortal() {
                 htmlFor='portal-email'
                 style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}
               >
-                Email address
+                {t('customerPortal.emailLabel')}
               </label>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 <input
                   id='portal-email'
                   type='email'
-                  placeholder='you@example.com'
+                  placeholder={t('customerPortal.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -133,7 +133,7 @@ export default function CustomerPortal() {
                   className='button button-primary'
                   disabled={loading}
                 >
-                  {loading ? 'Looking up...' : 'Look up my repairs'}
+                  {loading ? t('customerPortal.looking') : t('customerPortal.lookUp')}
                 </button>
               </div>
             </form>
@@ -150,11 +150,11 @@ export default function CustomerPortal() {
           <>
             <div className='info-card'>
               <p style={{ margin: 0 }}>
-                Welcome back, <strong>{data.customer.name}</strong>
+                {t('customerPortal.welcomeBack')} <strong>{data.customer.name}</strong>
               </p>
               <p className='muted' style={{ margin: '0.25rem 0 0' }}>
                 {data.customer.email}
-                {data.customer.phone ? ` \u00B7 ${data.customer.phone}` : ''}
+                {data.customer.phone ? ` · ${data.customer.phone}` : ''}
               </p>
               <button
                 className='button'
@@ -165,25 +165,25 @@ export default function CustomerPortal() {
                   setError('')
                 }}
               >
-                Look up a different email
+                {t('customerPortal.lookUpDifferent')}
               </button>
             </div>
 
             <div className='grid-4'>
               <div className='feature-card'>
-                <p className='kicker'>Total Repairs</p>
+                <p className='kicker'>{t('customerPortal.statTotalRepairs')}</p>
                 <p style={{ fontSize: '2rem', fontWeight: 700, margin: 0 }}>
                   {data.quotes.length}
                 </p>
               </div>
               <div className='feature-card'>
-                <p className='kicker'>Active Repairs</p>
+                <p className='kicker'>{t('customerPortal.statActiveRepairs')}</p>
                 <p style={{ fontSize: '2rem', fontWeight: 700, margin: 0 }}>
                   {activeRepairs}
                 </p>
               </div>
               <div className='feature-card'>
-                <p className='kicker'>Total Spent</p>
+                <p className='kicker'>{t('customerPortal.statTotalSpent')}</p>
                 <p style={{ fontSize: '2rem', fontWeight: 700, margin: 0 }}>
                   ${(totalSpent / 100).toFixed(2)}
                 </p>
@@ -191,9 +191,9 @@ export default function CustomerPortal() {
             </div>
 
             <section>
-              <h2>Repair History</h2>
+              <h2>{t('customerPortal.historyTitle')}</h2>
               {data.quotes.length === 0 && (
-                <p className='muted'>No repair requests found.</p>
+                <p className='muted'>{t('customerPortal.historyEmpty')}</p>
               )}
               {data.quotes.map((quote) => {
                 const order = ordersByQuote[quote.id]
@@ -212,7 +212,7 @@ export default function CustomerPortal() {
                       </div>
                       <div className='preview-meta-row'>
                         <span className='muted'>
-                          Submitted {formatDate(quote.created_at)}
+                          {t('customerPortal.submittedLabel')} {formatDate(quote.created_at)}
                         </span>
                         {price && (
                           <span style={{ fontWeight: 600 }}>{price}</span>
@@ -220,12 +220,12 @@ export default function CustomerPortal() {
                       </div>
                     </div>
                     <div className='inline-actions'>
-                      <Link
+                      <LocalizedLink
                         href={`/track/${quote.quote_id}`}
                         className='button button-primary'
                       >
-                        Track Repair
-                      </Link>
+                        {t('customerPortal.trackRepair')}
+                      </LocalizedLink>
                     </div>
                   </div>
                 )
@@ -234,7 +234,7 @@ export default function CustomerPortal() {
 
             {data.payments.length > 0 && (
               <section>
-                <h2>Payment History</h2>
+                <h2>{t('customerPortal.paymentsTitle')}</h2>
                 {data.payments.map((payment) => (
                   <div className='preview-card' key={payment.id}>
                     <div className='preview-meta'>

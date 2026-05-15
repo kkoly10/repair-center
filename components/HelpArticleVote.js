@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function HelpArticleVote({ articleSlug }) {
+  const t = useT()
   const [voted, setVoted] = useState(null) // 'yes' | 'no' | null
 
   if (voted) {
@@ -12,7 +14,7 @@ export default function HelpArticleVote({ articleSlug }) {
         background: 'var(--surface-alt)', borderRadius: 'var(--radius-md)',
         textAlign: 'center', fontSize: 14, color: 'var(--muted)',
       }}>
-        {voted === 'yes' ? '👍 Thanks! Glad this was helpful.' : '👎 Thanks for the feedback. We\'ll work on improving this article.'}
+        {voted === 'yes' ? t('helpCenter.voteThanksYes') : t('helpCenter.voteThanksNo')}
       </div>
     )
   }
@@ -24,7 +26,7 @@ export default function HelpArticleVote({ articleSlug }) {
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       gap: 12, flexWrap: 'wrap',
     }}>
-      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Was this article helpful?</span>
+      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{t('helpCenter.voteHelpful')}</span>
       <div style={{ display: 'flex', gap: 8 }}>
         <button
           onClick={() => setVoted('yes')}
@@ -34,9 +36,9 @@ export default function HelpArticleVote({ articleSlug }) {
             border: '1px solid var(--line)', background: 'var(--surface)',
             cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text)',
           }}
-          aria-label='Yes, this article was helpful'
+          aria-label={t('helpCenter.voteYesAria')}
         >
-          👍 Yes
+          {t('helpCenter.voteYes')}
         </button>
         <button
           onClick={() => setVoted('no')}
@@ -46,9 +48,9 @@ export default function HelpArticleVote({ articleSlug }) {
             border: '1px solid var(--line)', background: 'var(--surface)',
             cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text)',
           }}
-          aria-label='No, this article was not helpful'
+          aria-label={t('helpCenter.voteNoAria')}
         >
-          👎 No
+          {t('helpCenter.voteNo')}
         </button>
       </div>
     </div>

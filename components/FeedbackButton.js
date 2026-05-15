@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useT } from '../lib/i18n/TranslationProvider'
 import FeedbackPanel from './FeedbackPanel'
 
 export default function FeedbackButton({ orgId, prefillEmail }) {
+  const t = useT()
   const [open, setOpen] = useState(false)
 
   return (
@@ -21,10 +23,10 @@ export default function FeedbackButton({ orgId, prefillEmail }) {
         }}
         onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff' }}
         onMouseLeave={(e) => { e.currentTarget.style.background = ''; e.currentTarget.style.color = '' }}
-        title='Send feedback or report an issue'
+        title={t('customerPortal.feedbackTitle')}
       >
         <span style={{ fontSize: 16 }}>💬</span>
-        <span>Help &amp; Feedback</span>
+        <span>{t('customerPortal.feedbackButton')}</span>
       </button>
 
       {open && (
