@@ -463,7 +463,8 @@
     "phoneLabel": "Telemóvel",
     "turnaroundLabel": "Prazo",
     "turnaroundAfterIntake": "Após a análise na receção",
-    "unableToLoad": "Não foi possível carregar as instruções de envio."
+    "unableToLoad": "Não foi possível carregar as instruções de envio.",
+    "noRepairType": "Tipo de reparação não definido"
   },
   "booking": {
     "metaTitle": "Marcar uma consulta — Repair Center",

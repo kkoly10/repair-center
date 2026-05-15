@@ -20,8 +20,7 @@ const ORDER_TO_NODE = {
   shipped: 4, delivered: 4,
 }
 
-// Map status enum keys → tracking.desc* translation keys (agent's namespace)
-const STATUS_DESC_KEYS = {
+const STATUS_DESCRIPTION_KEYS = {
   submitted:                'tracking.descSubmitted',
   under_review:             'tracking.descUnderReview',
   estimate_sent:            'tracking.descEstimateSent',
@@ -40,10 +39,10 @@ const STATUS_DESC_KEYS = {
 }
 
 const SENDER_KEYS = {
-  admin:    'tracking.senderAdmin',
-  tech:     'tracking.senderTech',
+  admin: 'tracking.senderAdmin',
+  tech: 'tracking.senderTech',
   customer: 'tracking.senderCustomer',
-  system:   'tracking.senderSystem',
+  system: 'tracking.senderSystem',
 }
 
 function fmtRelTime(iso, t) {
@@ -83,10 +82,8 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
   const lastUpdated   = record?.order?.updated_at || record?.quote?.created_at
 
   const descriptionText = useMemo(() => {
-    const key = STATUS_DESC_KEYS[currentStatus]
-    if (!key) return ''
-    const v = t(key)
-    return v === key ? '' : v
+    const key = STATUS_DESCRIPTION_KEYS[currentStatus]
+    return key ? t(key) : ''
   }, [currentStatus, t])
 
   const msgCount = useMemo(() => (record?.messages || []).length, [record])
@@ -268,10 +265,10 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
               <div className='kicker'>{t('tracking.orderSummary')}</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 16, marginTop: 14 }}>
                 {[
-                  { label: t('tracking.deviceLabelSummary'),    value: [record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ') || '—' },
-                  { label: t('tracking.quoteIdLabel'),          value: <span className='id-mono'>{record.canonicalQuoteId || '—'}</span> },
-                  { label: t('tracking.orderNumberLabel'),      value: record.canonicalOrderNumber ? <span className='id-mono'>{record.canonicalOrderNumber}</span> : '—' },
-                  { label: t('tracking.estimateLabel'),         value: record.estimate?.total_amount != null ? `$${Number(record.estimate.total_amount).toFixed(2)}` : '—' },
+                  { label: t('tracking.deviceLabelSummary'), value: [record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ') || '—' },
+                  { label: t('tracking.quoteIdLabel'),       value: <span className='id-mono'>{record.canonicalQuoteId || '—'}</span> },
+                  { label: t('tracking.orderNumberLabel'),   value: record.canonicalOrderNumber ? <span className='id-mono'>{record.canonicalOrderNumber}</span> : '—' },
+                  { label: t('tracking.estimateLabel'),      value: record.estimate?.total_amount != null ? `$${Number(record.estimate.total_amount).toFixed(2)}` : '—' },
                   { label: t('tracking.submittedLabelSummary'), value: fmtDate(record.quote.created_at, locale) },
                   ...(record.depositRequired ? [{
                     label: t('tracking.depositLabelSummary'),
@@ -313,7 +310,7 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
             <details className='policy-card tracking-details'>
               <summary>
                 <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-                  {msgCount === 1 ? t('tracking.messagesOne') : (msgCount > 1 ? t('tracking.messagesMany', { count: msgCount }) : t('tracking.messagesLabel'))}
+                  {msgCount === 0 ? t('tracking.messagesLabel') : msgCount === 1 ? t('tracking.messagesOne') : t('tracking.messagesMany', { count: msgCount })}
                 </span>
                 <span style={{ fontSize: '0.8rem', color: 'var(--muted)', marginLeft: 8 }}>{t('tracking.messagesWithTeam')}</span>
               </summary>

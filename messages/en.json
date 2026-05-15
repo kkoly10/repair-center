@@ -463,7 +463,8 @@
     "phoneLabel": "Phone",
     "turnaroundLabel": "Turnaround",
     "turnaroundAfterIntake": "After intake review",
-    "unableToLoad": "Unable to load mail-in instructions."
+    "unableToLoad": "Unable to load mail-in instructions.",
+    "noRepairType": "Repair type not set"
   },
   "booking": {
     "metaTitle": "Book an appointment — Repair Center",

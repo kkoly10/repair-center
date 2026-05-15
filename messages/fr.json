@@ -463,7 +463,8 @@
     "phoneLabel": "Téléphone",
     "turnaroundLabel": "Délai",
     "turnaroundAfterIntake": "Après l'examen à la prise en charge",
-    "unableToLoad": "Impossible de charger les instructions d'envoi."
+    "unableToLoad": "Impossible de charger les instructions d'envoi.",
+    "noRepairType": "Type de réparation non défini"
   },
   "booking": {
     "metaTitle": "Prendre rendez-vous — Repair Center",

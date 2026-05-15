@@ -463,7 +463,8 @@
     "phoneLabel": "Teléfono",
     "turnaroundLabel": "Plazo",
     "turnaroundAfterIntake": "Tras la revisión en recepción",
-    "unableToLoad": "No se pudieron cargar las instrucciones de envío."
+    "unableToLoad": "No se pudieron cargar las instrucciones de envío.",
+    "noRepairType": "Tipo de reparación no definido"
   },
   "booking": {
     "metaTitle": "Reservar una cita — Repair Center",
