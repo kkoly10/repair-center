@@ -4,6 +4,7 @@ import { getDefaultOrgId } from '../../../lib/admin/org'
 import { checkRateLimit } from '../../../lib/rateLimiter'
 import { ALLOWED_PHOTO_MIME, MAX_PHOTO_BYTES, MAX_PHOTO_COUNT, extensionForMime } from '../../../lib/photoMime'
 import { sendNewQuoteAlertEmail } from '../../../lib/email'
+import { getLocale } from '../../../lib/i18n/server'
 
 export const runtime = 'nodejs'
 
@@ -269,6 +270,7 @@ export async function POST(request) {
           .map((m) => m.profiles?.email)
           .filter(Boolean)
         if (adminEmails.length > 0) {
+          const locale = await getLocale()
           await sendNewQuoteAlertEmail({
             to: adminEmails,
             orgName,
@@ -276,6 +278,7 @@ export async function POST(request) {
             customerName: [firstName, lastName].filter(Boolean).join(' '),
             device: [brand, model.model_name].filter(Boolean).join(' '),
             repairType: repairType.repair_name,
+            locale,
           })
         }
       } catch (alertError) {

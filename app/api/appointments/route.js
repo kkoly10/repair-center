@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../lib/supabase/admin'
 import { sendAppointmentConfirmationEmail } from '../../../lib/email'
 import { checkRateLimit } from '../../../lib/rateLimiter'
+import { getLocale } from '../../../lib/i18n/server'
 
 export const runtime = 'nodejs'
 
@@ -100,6 +101,7 @@ export async function POST(request) {
   // Fire-and-forget confirmation email
   ;(async () => {
     try {
+      const locale = await getLocale()
       await sendAppointmentConfirmationEmail({
         to: email,
         orgName: org.name,
@@ -107,6 +109,7 @@ export async function POST(request) {
         preferredAt: preferredDate,
         device: [brandName, modelName].filter(Boolean).join(' ') || null,
         repairDescription: repairDescription || null,
+        locale,
       })
     } catch (err) {
       console.error('[appointments] confirmation email failed:', err)

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../../../lib/supabase/admin'
 import { getSessionOrgId } from '../../../../../../lib/admin/getSessionOrgId'
 import { sendReceiptEmail } from '../../../../../../lib/email'
+import { getLocale } from '../../../../../../lib/i18n/server'
 
 export const runtime = 'nodejs'
 
@@ -118,8 +119,10 @@ export async function POST(request, context) {
       customer?.last_name || quoteRequest.last_name,
     ].filter(Boolean).join(' ') || 'Guest'
 
+    const locale = await getLocale()
     await sendReceiptEmail({
       to: toEmail,
+      locale,
       invoice: {
         org: { name: orgResult.data?.name || 'Repair Center', slug: orgResult.data?.slug || '' },
         quote: {

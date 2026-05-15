@@ -951,6 +951,7 @@
     "currentPlan": "Plan actual",
     "planField": "Plan",
     "trialEndsField": "Fin de la prueba",
+    "trialDaysLeft": "(quedan {days} día{plural})",
     "trialDaysLeftSingular": "({days} día restante)",
     "trialDaysLeftPlural": "({days} días restantes)",
     "trialExpiredShort": "(caducada)",
@@ -1021,19 +1022,28 @@
     "somethingWrong": "Algo salió mal."
   },
   "signup": {
-    "title": "Crear su taller",
-    "subtitle": "Comience su prueba gratuita de 14 días. Sin tarjeta de crédito.",
+    "title": "Cree su cuenta",
+    "subtitle": "Regístrese para abrir su taller de reparación.",
+    "kicker": "Comenzar",
     "orgName": "Nombre del taller",
     "orgSlug": "Slug URL (p. ej. 'mis-reparaciones')",
-    "ownerName": "Su nombre",
-    "ownerEmail": "Su correo electrónico",
+    "ownerName": "Nombre completo",
+    "ownerEmail": "Correo electrónico",
     "password": "Contraseña",
-    "submit": "Crear taller",
-    "submitting": "Creando…",
-    "error": "No se pudo crear su taller. Por favor, inténtelo de nuevo.",
+    "passwordHint": "(mínimo 8 caracteres)",
+    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
+    "namePlaceholder": "Juana García",
+    "emailPlaceholder": "usted@ejemplo.com",
+    "submit": "Crear cuenta",
+    "submitting": "Creando cuenta…",
+    "error": "No se pudo crear la cuenta.",
     "errorSlugTaken": "Esa URL ya está en uso.",
     "haveAccount": "¿Ya tiene una cuenta?",
-    "signinLink": "Iniciar sesión"
+    "signinLink": "Inicie sesión en /admin/login",
+    "successKicker": "Cuenta creada",
+    "successTitle": "Revise su correo",
+    "successBody1": "Hemos enviado un enlace de verificación a",
+    "successBody2": "Tras la verificación, vaya a"
   },
   "platformAdmin": {
     "title": "Administración de la plataforma",
@@ -1569,6 +1579,29 @@
     "roleTech": "Técnico",
     "roleViewer": "Observador",
     "roleUnknown": "Desconocido"
+  },
+  "staffAuth": {
+    "staffLogin": "Acceso del personal",
+    "adminDashboard": "Panel de administración",
+    "logout": "Cerrar sesión",
+    "loggingOut": "Cerrando sesión…"
+  },
+  "connectReturn": {
+    "title": "Cuenta de Stripe conectada",
+    "body": "Su cuenta de Stripe se ha conectado. Puede tardar un momento en que las capacidades se activen por completo — pulse Actualizar estado en la página de Facturación para comprobarlo.",
+    "goToBilling": "Ir a facturación"
+  },
+  "connectRefresh": {
+    "title": "Enlace de incorporación caducado",
+    "body": "Su enlace de incorporación de Stripe ha caducado. Vuelva a Facturación para reiniciar el proceso de configuración.",
+    "backToBilling": "Volver a facturación"
+  },
+  "feedbackPage": {
+    "title": "Enviar comentarios",
+    "description": "Comparta su opinión, reporte un error o sugiera una nueva funcionalidad.",
+    "back": "← Atrás",
+    "heading": "Envíenos sus comentarios",
+    "subhead": "Leemos cada envío. ¿Encontró un error? ¿Tiene una idea? ¿Solo quiere saludar?"
   },
   "errors": {
     "notFound": "Página no encontrada",

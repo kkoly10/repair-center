@@ -1,12 +1,14 @@
 'use client'
 
-import Link from 'next/link'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabaseBrowser } from '../lib/supabase/browser'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function StaffAuthActions({ mobile = false }) {
   const router = useRouter()
+  const t = useT()
   const [loading, setLoading] = useState(true)
   const [isStaff, setIsStaff] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
@@ -91,30 +93,30 @@ export default function StaffAuthActions({ mobile = false }) {
 
   if (!isStaff) {
     return (
-      <Link
+      <LocalizedLink
         href='/login'
         className={mobile ? 'button button-ghost' : 'button button-ghost button-compact'}
       >
-        Staff Login
-      </Link>
+        {t('staffAuth.staffLogin')}
+      </LocalizedLink>
     )
   }
 
   return (
     <>
-      <Link
+      <LocalizedLink
         href='/admin/quotes'
         className={mobile ? 'button button-secondary' : 'button button-secondary button-compact'}
       >
-        Admin Dashboard
-      </Link>
+        {t('staffAuth.adminDashboard')}
+      </LocalizedLink>
       <button
         type='button'
         onClick={handleSignOut}
         disabled={signingOut}
         className={mobile ? 'button button-ghost' : 'button button-ghost button-compact'}
       >
-        {signingOut ? 'Logging out…' : 'Logout'}
+        {signingOut ? t('staffAuth.loggingOut') : t('staffAuth.logout')}
       </button>
     </>
   )

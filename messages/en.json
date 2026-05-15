@@ -1580,6 +1580,29 @@
     "roleViewer": "Viewer",
     "roleUnknown": "Unknown"
   },
+  "staffAuth": {
+    "staffLogin": "Staff Login",
+    "adminDashboard": "Admin Dashboard",
+    "logout": "Logout",
+    "loggingOut": "Logging out…"
+  },
+  "connectReturn": {
+    "title": "Stripe Account Connected",
+    "body": "Your Stripe account has been connected. It may take a moment for your capabilities to fully activate — click Refresh Status on the Billing page to check.",
+    "goToBilling": "Go to Billing"
+  },
+  "connectRefresh": {
+    "title": "Onboarding Link Expired",
+    "body": "Your Stripe onboarding link has expired. Return to Billing to restart the setup process.",
+    "backToBilling": "Back to Billing"
+  },
+  "feedbackPage": {
+    "title": "Send Feedback",
+    "description": "Share your thoughts, report a bug, or suggest a new feature.",
+    "back": "← Back",
+    "heading": "Send us feedback",
+    "subhead": "We read every submission. Found a bug? Have an idea? Just want to say hi?"
+  },
   "errors": {
     "notFound": "Page not found",
     "notFoundText": "The page you're looking for doesn't exist or has moved.",

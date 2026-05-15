@@ -951,6 +951,7 @@
     "currentPlan": "Forfait actuel",
     "planField": "Forfait",
     "trialEndsField": "Fin de l'essai",
+    "trialDaysLeft": "({days} jour{plural} restant{plural})",
     "trialDaysLeftSingular": "({days} jour restant)",
     "trialDaysLeftPlural": "({days} jours restants)",
     "trialExpiredShort": "(expiré)",
@@ -1021,19 +1022,28 @@
     "somethingWrong": "Une erreur s'est produite."
   },
   "signup": {
-    "title": "Créer votre atelier",
-    "subtitle": "Commencez votre essai gratuit de 14 jours. Aucune carte de crédit requise.",
+    "title": "Créer votre compte",
+    "subtitle": "Inscrivez-vous pour ouvrir votre atelier de réparation.",
+    "kicker": "Commencer",
     "orgName": "Nom de l'atelier",
     "orgSlug": "Slug URL (par ex. 'mes-reparations')",
-    "ownerName": "Votre nom",
-    "ownerEmail": "Votre e-mail",
+    "ownerName": "Nom complet",
+    "ownerEmail": "E-mail",
     "password": "Mot de passe",
-    "submit": "Créer l'atelier",
-    "submitting": "Création…",
-    "error": "Impossible de créer votre atelier. Veuillez réessayer.",
+    "passwordHint": "(8 caractères minimum)",
+    "passwordTooShort": "Le mot de passe doit comporter au moins 8 caractères.",
+    "namePlaceholder": "Jeanne Dupont",
+    "emailPlaceholder": "vous@exemple.com",
+    "submit": "Créer le compte",
+    "submitting": "Création du compte…",
+    "error": "Impossible de créer le compte.",
     "errorSlugTaken": "Cette URL est déjà prise.",
     "haveAccount": "Vous avez déjà un compte ?",
-    "signinLink": "Se connecter"
+    "signinLink": "Connectez-vous sur /admin/login",
+    "successKicker": "Compte créé",
+    "successTitle": "Vérifiez votre e-mail",
+    "successBody1": "Nous avons envoyé un lien de vérification à",
+    "successBody2": "Après vérification, rendez-vous sur"
   },
   "platformAdmin": {
     "title": "Administration plateforme",
@@ -1569,6 +1579,29 @@
     "roleTech": "Technicien",
     "roleViewer": "Observateur",
     "roleUnknown": "Inconnu"
+  },
+  "staffAuth": {
+    "staffLogin": "Connexion personnel",
+    "adminDashboard": "Tableau de bord admin",
+    "logout": "Déconnexion",
+    "loggingOut": "Déconnexion…"
+  },
+  "connectReturn": {
+    "title": "Compte Stripe connecté",
+    "body": "Votre compte Stripe est connecté. L'activation complète des capacités peut prendre un moment — cliquez sur Actualiser le statut sur la page Facturation pour vérifier.",
+    "goToBilling": "Aller à la facturation"
+  },
+  "connectRefresh": {
+    "title": "Lien d'inscription expiré",
+    "body": "Votre lien d'inscription Stripe a expiré. Retournez à la page Facturation pour redémarrer le processus.",
+    "backToBilling": "Retour à la facturation"
+  },
+  "feedbackPage": {
+    "title": "Envoyer un commentaire",
+    "description": "Partagez votre avis, signalez un bug ou suggérez une fonctionnalité.",
+    "back": "← Retour",
+    "heading": "Envoyez-nous vos commentaires",
+    "subhead": "Nous lisons chaque message. Un bug ? Une idée ? Juste un bonjour ?"
   },
   "errors": {
     "notFound": "Page introuvable",

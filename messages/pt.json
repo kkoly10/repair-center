@@ -951,6 +951,7 @@
     "currentPlan": "Plano atual",
     "planField": "Plano",
     "trialEndsField": "Fim do período de teste",
+    "trialDaysLeft": "({days} dia{plural} restante{plural})",
     "trialDaysLeftSingular": "({days} dia restante)",
     "trialDaysLeftPlural": "({days} dias restantes)",
     "trialExpiredShort": "(expirado)",
@@ -1021,19 +1022,28 @@
     "somethingWrong": "Algo correu mal."
   },
   "signup": {
-    "title": "Criar a sua oficina",
-    "subtitle": "Comece o seu teste gratuito de 14 dias. Sem cartão de crédito.",
+    "title": "Crie a sua conta",
+    "subtitle": "Registe-se para abrir a sua oficina de reparação.",
+    "kicker": "Começar",
     "orgName": "Nome da oficina",
     "orgSlug": "Slug URL (p. ex. 'minhas-reparacoes')",
-    "ownerName": "O seu nome",
-    "ownerEmail": "O seu e-mail",
+    "ownerName": "Nome completo",
+    "ownerEmail": "E-mail",
     "password": "Palavra-passe",
-    "submit": "Criar oficina",
-    "submitting": "A criar…",
-    "error": "Não foi possível criar a sua oficina. Por favor, tente novamente.",
+    "passwordHint": "(mínimo 8 caracteres)",
+    "passwordTooShort": "A palavra-passe deve ter pelo menos 8 caracteres.",
+    "namePlaceholder": "Joana Silva",
+    "emailPlaceholder": "voce@exemplo.com",
+    "submit": "Criar conta",
+    "submitting": "A criar conta…",
+    "error": "Não foi possível criar a conta.",
     "errorSlugTaken": "Esse URL já está em uso.",
     "haveAccount": "Já tem uma conta?",
-    "signinLink": "Iniciar sessão"
+    "signinLink": "Inicie sessão em /admin/login",
+    "successKicker": "Conta criada",
+    "successTitle": "Verifique o seu e-mail",
+    "successBody1": "Enviámos um link de verificação para",
+    "successBody2": "Após verificar, vá para"
   },
   "platformAdmin": {
     "title": "Administração da plataforma",
@@ -1569,6 +1579,29 @@
     "roleTech": "Técnico",
     "roleViewer": "Observador",
     "roleUnknown": "Desconhecido"
+  },
+  "staffAuth": {
+    "staffLogin": "Acesso da equipa",
+    "adminDashboard": "Painel de administração",
+    "logout": "Terminar sessão",
+    "loggingOut": "A terminar sessão…"
+  },
+  "connectReturn": {
+    "title": "Conta Stripe ligada",
+    "body": "A sua conta Stripe foi ligada. Pode demorar um momento até as capacidades ficarem totalmente ativas — clique em Atualizar estado na página de Faturação para verificar.",
+    "goToBilling": "Ir para a faturação"
+  },
+  "connectRefresh": {
+    "title": "Link de integração expirado",
+    "body": "O seu link de integração Stripe expirou. Volte à página de Faturação para reiniciar o processo de configuração.",
+    "backToBilling": "Voltar à faturação"
+  },
+  "feedbackPage": {
+    "title": "Enviar comentários",
+    "description": "Partilhe a sua opinião, comunique um erro ou sugira uma nova funcionalidade.",
+    "back": "← Voltar",
+    "heading": "Envie-nos os seus comentários",
+    "subhead": "Lemos todas as mensagens. Encontrou um erro? Tem uma ideia? Só quer dizer olá?"
   },
   "errors": {
     "notFound": "Página não encontrada",
