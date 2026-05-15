@@ -40,6 +40,7 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
+      orgId,
       billing: {
         status: org.status,
         planKey: sub?.plan_key || org.plan_key || 'pro',

@@ -111,7 +111,7 @@ function AdminCustomersInner() {
         ) : !filtered.length ? (
           <div className='policy-card center-card'>No customers match your search.</div>
         ) : (
-          <div className='policy-card' style={{ padding: 0, overflowX: 'auto' }}>
+          <div className='policy-card data-table-stack' style={{ padding: 0 }}>
             <table className='data-table'>
               <thead>
                 <tr>
@@ -126,19 +126,19 @@ function AdminCustomersInner() {
               <tbody>
                 {filtered.map((c) => (
                   <tr key={c.id}>
-                    <td style={{ fontWeight: 600 }}>
+                    <td data-label="Name" style={{ fontWeight: 600 }}>
                       {c.name}
                       {c.is_repeat && (
                         <span className='mini-chip' style={{ marginLeft: 6, background: '#dbeafe', color: '#1d4ed8' }}>repeat</span>
                       )}
                     </td>
-                    <td style={{ color: '#555' }}>{c.email || '—'}</td>
-                    <td><strong>{c.order_count}</strong></td>
-                    <td>{c.completed_count}</td>
-                    <td style={{ color: '#777', fontSize: 13 }}>
+                    <td data-label="Email" style={{ color: '#555' }}>{c.email || '—'}</td>
+                    <td data-label="Orders"><strong>{c.order_count}</strong></td>
+                    <td data-label="Completed">{c.completed_count}</td>
+                    <td data-label="Last order" style={{ color: '#777', fontSize: 13 }}>
                       {c.last_order_at ? new Date(c.last_order_at).toLocaleDateString() : '—'}
                     </td>
-                    <td>
+                    <td data-label="">
                       <Link
                         href={`/admin/customers/${c.id}`}
                         className='button button-secondary'

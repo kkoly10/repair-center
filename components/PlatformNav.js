@@ -9,8 +9,9 @@ export default function PlatformNav() {
   const t = useT()
 
   const NAV_LINKS = [
-    { href: '/platform',       label: t('platformAdmin.navDashboard') },
-    { href: '/platform/orgs',  label: t('platformAdmin.navOrgs') },
+    { href: '/platform',          label: t('platformAdmin.navDashboard') },
+    { href: '/platform/orgs',     label: t('platformAdmin.navOrgs') },
+    { href: '/platform/feedback', label: t('platformAdmin.navFeedback') },
   ]
 
   return (

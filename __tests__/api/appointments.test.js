@@ -8,12 +8,12 @@
  */
 
 jest.mock('../../lib/supabase/admin', () => ({ getSupabaseAdmin: jest.fn() }))
-jest.mock('../../lib/admin/getSessionOrgId', () => ({ getSessionOrgId: jest.fn() }))
+jest.mock('../../lib/admin/getSessionOrgId', () => ({ getSessionOrgId: jest.fn(), getSessionContext: jest.fn() }))
 jest.mock('../../lib/email', () => ({ sendAppointmentConfirmationEmail: jest.fn().mockResolvedValue(undefined) }))
 jest.mock('../../lib/rateLimiter', () => ({ checkRateLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 9 }) }))
 
 const { getSupabaseAdmin } = require('../../lib/supabase/admin')
-const { getSessionOrgId } = require('../../lib/admin/getSessionOrgId')
+const { getSessionOrgId, getSessionContext } = require('../../lib/admin/getSessionOrgId')
 const { sendAppointmentConfirmationEmail } = require('../../lib/email')
 
 const ORG_ID = 'org-aaa'
@@ -231,11 +231,12 @@ describe('PATCH /admin/api/appointments/[appointmentId]', () => {
 
   beforeEach(() => {
     getSessionOrgId.mockResolvedValue(ORG_ID)
+    getSessionContext.mockResolvedValue({ orgId: ORG_ID, userId: 'user-1' })
     getSupabaseAdmin.mockReset()
   })
 
   it('returns 401 when not authenticated', async () => {
-    getSessionOrgId.mockRejectedValue(Object.assign(new Error('Unauthorized'), { status: 401 }))
+    getSessionContext.mockRejectedValue(Object.assign(new Error('Unauthorized'), { status: 401 }))
     const res = await PATCH(makeAdminRequest({ status: 'confirmed' }), makeContext({ appointmentId: APPT_ID }))
     expect(res.status).toBe(401)
   })
