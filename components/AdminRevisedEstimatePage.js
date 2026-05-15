@@ -1,10 +1,11 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 import AdminSignOutButton from './AdminSignOutButton'
 import QuoteStatusBadge from './QuoteStatusBadge'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 import { getSupabaseBrowser } from '../lib/supabase/browser'
 
 const EMPTY_ITEM = () => ({
@@ -23,6 +24,7 @@ export default function AdminRevisedEstimatePage({ quoteId }) {
 }
 
 function AdminRevisedEstimateInner({ quoteId }) {
+  const t = useT()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -59,7 +61,7 @@ function AdminRevisedEstimateInner({ quoteId }) {
           .maybeSingle()
 
         if (quoteError) throw quoteError
-        if (!quote) throw new Error('Quote request not found.')
+        if (!quote) throw new Error(t('adminEstimateBuilder.quoteNotFound'))
 
         const [customerResult, latestEstimateResult] = await Promise.all([
           quote.customer_id
@@ -117,7 +119,7 @@ function AdminRevisedEstimateInner({ quoteId }) {
                   : [quote.first_name, quote.last_name]
               )
                 .filter(Boolean)
-                .join(' ') || 'Guest customer',
+                .join(' ') || t('adminEstimateBuilder.guestCustomer'),
           })
 
           setItems(editableItems.length ? editableItems : [EMPTY_ITEM()])
@@ -132,7 +134,7 @@ function AdminRevisedEstimateInner({ quoteId }) {
         }
       } catch (loadError) {
         if (!ignore) {
-          setError(loadError.message || 'Unable to load revised estimate data.')
+          setError(loadError.message || t('adminEstimateBuilder.revisedLoadFailed'))
         }
       } finally {
         if (!ignore) setLoading(false)
@@ -143,7 +145,7 @@ function AdminRevisedEstimateInner({ quoteId }) {
     return () => {
       ignore = true
     }
-  }, [quoteId])
+  }, [quoteId, t])
 
   const subtotal = useMemo(
     () =>
@@ -231,9 +233,9 @@ function AdminRevisedEstimateInner({ quoteId }) {
       )
 
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Unable to send revised estimate.')
+      if (!response.ok) throw new Error(result.error || t('adminEstimateBuilder.revisedSendFailed'))
 
-      setSuccess(`Revised estimate ${result.estimateId} sent successfully.`)
+      setSuccess(t('adminEstimateBuilder.revisedSuccess', { id: result.estimateId }))
       setReviewPath(result.reviewPath || `/estimate-review/${quoteId}`)
       setTrackingPath(result.trackingPath || `/track/${quoteId}`)
       setRecord((current) =>
@@ -248,7 +250,7 @@ function AdminRevisedEstimateInner({ quoteId }) {
           : current
       )
     } catch (submitError) {
-      setError(submitError.message || 'Unable to send revised estimate.')
+      setError(submitError.message || t('adminEstimateBuilder.revisedSendFailed'))
     } finally {
       setSaving(false)
     }
@@ -258,7 +260,7 @@ function AdminRevisedEstimateInner({ quoteId }) {
     return (
       <main className='page-hero'>
         <div className='site-shell'>
-          <div className='policy-card center-card'>Loading revised estimate…</div>
+          <div className='policy-card center-card'>{t('adminEstimateBuilder.revisedLoading')}</div>
         </div>
       </main>
     )
@@ -269,12 +271,12 @@ function AdminRevisedEstimateInner({ quoteId }) {
       <main className='page-hero'>
         <div className='site-shell'>
           <div className='policy-card center-card'>
-            <h1>Unable to open revised estimate</h1>
+            <h1>{t('adminEstimateBuilder.revisedHeadingUnableToOpen')}</h1>
             <p>{error}</p>
             <div className='inline-actions'>
-              <Link href={`/admin/quotes/${quoteId}/order`} className='button button-secondary'>
-                Back to repair order
-              </Link>
+              <LocalizedLink href={`/admin/quotes/${quoteId}/order`} className='button button-secondary'>
+                {t('adminEstimateBuilder.backToRepairOrder')}
+              </LocalizedLink>
             </div>
           </div>
         </div>
@@ -289,10 +291,10 @@ function AdminRevisedEstimateInner({ quoteId }) {
           <div className='quote-top'>
             <div>
               <div className='quote-id'>{record.quote.quote_id}</div>
-              <h1 className='quote-title'>Revised estimate for {record.customerName}</h1>
+              <h1 className='quote-title'>{t('adminEstimateBuilder.revisedEstimateFor', { name: record.customerName })}</h1>
               <p className='muted'>
                 {[record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ')} ·{' '}
-                {record.quote.repair_type_key || 'Repair type not set'}
+                {record.quote.repair_type_key || t('adminEstimateBuilder.repairTypeNotSet')}
               </p>
             </div>
             <div className='inline-actions' style={{ margin: 0 }}>
@@ -302,63 +304,63 @@ function AdminRevisedEstimateInner({ quoteId }) {
           </div>
 
           <div className='inline-actions' style={{ marginTop: 0 }}>
-            <Link
+            <LocalizedLink
               href={`/admin/quotes/${quoteId}/order`}
               className='button button-secondary button-compact'
             >
-              Back to repair order
-            </Link>
-            <Link
+              {t('adminEstimateBuilder.backToRepairOrder')}
+            </LocalizedLink>
+            <LocalizedLink
               href={`/track/${quoteId}`}
               className='button button-secondary button-compact'
             >
-              Open Tracking Page
-            </Link>
+              {t('adminEstimateBuilder.openTrackingPage')}
+            </LocalizedLink>
           </div>
         </div>
 
         <div className='grid-2'>
           <div className='policy-card'>
-            <div className='kicker'>Customer review link</div>
-            <h3>Send this revised approval URL</h3>
+            <div className='kicker'>{t('adminEstimateBuilder.reviewKicker')}</div>
+            <h3>{t('adminEstimateBuilder.revisedReviewTitle')}</h3>
             <div className='notice' style={{ marginTop: 18 }}>{reviewPath}</div>
             <div className='inline-actions'>
-              <Link href={reviewPath} className='button button-secondary'>
-                Open Review Page
-              </Link>
+              <LocalizedLink href={reviewPath} className='button button-secondary'>
+                {t('adminEstimateBuilder.openReviewPage')}
+              </LocalizedLink>
             </div>
           </div>
 
           <div className='policy-card'>
-            <div className='kicker'>Tracking link</div>
-            <h3>Use after approval</h3>
+            <div className='kicker'>{t('adminEstimateBuilder.trackingKicker')}</div>
+            <h3>{t('adminEstimateBuilder.trackingTitle')}</h3>
             <div className='notice' style={{ marginTop: 18 }}>{trackingPath}</div>
             <div className='inline-actions'>
-              <Link href={trackingPath} className='button button-secondary'>
-                Open Tracking Page
-              </Link>
+              <LocalizedLink href={trackingPath} className='button button-secondary'>
+                {t('adminEstimateBuilder.openTrackingPage')}
+              </LocalizedLink>
             </div>
           </div>
         </div>
 
         <form className='page-stack' onSubmit={handleSubmit}>
           <div className='policy-card'>
-            <div className='kicker'>Approval workflow</div>
-            <h3>Revised or final estimate</h3>
+            <div className='kicker'>{t('adminEstimateBuilder.approvalKicker')}</div>
+            <h3>{t('adminEstimateBuilder.approvalTitle')}</h3>
             <div className='form-grid'>
               <div className='field'>
-                <label htmlFor='estimate-kind'>Estimate type</label>
+                <label htmlFor='estimate-kind'>{t('adminEstimateBuilder.estimateTypeLabel')}</label>
                 <select
                   id='estimate-kind'
                   value={estimateKind}
                   onChange={(event) => setEstimateKind(event.target.value)}
                 >
-                  <option value='revised'>Revised</option>
-                  <option value='final'>Final</option>
+                  <option value='revised'>{t('adminEstimateBuilder.estimateKindRevised')}</option>
+                  <option value='final'>{t('adminEstimateBuilder.estimateKindFinal')}</option>
                 </select>
               </div>
               <div className='field'>
-                <label htmlFor='warranty-days'>Warranty days</label>
+                <label htmlFor='warranty-days'>{t('adminEstimateBuilder.warrantyDaysLabel')}</label>
                 <input
                   id='warranty-days'
                   value={warrantyDays}
@@ -368,49 +370,49 @@ function AdminRevisedEstimateInner({ quoteId }) {
             </div>
 
             <div className='field' style={{ marginTop: 14 }}>
-              <label htmlFor='turnaround-note'>Turnaround note</label>
+              <label htmlFor='turnaround-note'>{t('adminEstimateBuilder.turnaroundLabel')}</label>
               <input
                 id='turnaround-note'
                 value={turnaroundNote}
                 onChange={(event) => setTurnaroundNote(event.target.value)}
-                placeholder='Repair continues after approval'
+                placeholder={t('adminEstimateBuilder.revisedTurnaroundPlaceholder')}
               />
             </div>
           </div>
 
           <div className='policy-card'>
-            <div className='kicker'>Line items</div>
-            <h3>Updated services and charges</h3>
+            <div className='kicker'>{t('adminEstimateBuilder.lineItemsKicker')}</div>
+            <h3>{t('adminEstimateBuilder.revisedLineItemsTitle')}</h3>
 
             <div className='page-stack' style={{ marginTop: 18 }}>
               {items.map((item, index) => (
                 <div key={index} className='feature-card'>
                   <div className='form-grid'>
                     <div className='field'>
-                      <label>Type</label>
+                      <label>{t('adminEstimateBuilder.lineTypeLabel')}</label>
                       <select
                         value={item.line_type}
                         onChange={(event) =>
                           updateItem(index, 'line_type', event.target.value)
                         }
                       >
-                        <option value='labor'>Labor</option>
-                        <option value='part'>Part</option>
-                        <option value='fee'>Fee</option>
+                        <option value='labor'>{t('adminEstimateBuilder.lineTypeLabor')}</option>
+                        <option value='part'>{t('adminEstimateBuilder.lineTypePart')}</option>
+                        <option value='fee'>{t('adminEstimateBuilder.lineTypeFee')}</option>
                       </select>
                     </div>
                     <div className='field'>
-                      <label>Description</label>
+                      <label>{t('adminEstimateBuilder.descriptionLabel')}</label>
                       <input
                         value={item.description}
                         onChange={(event) =>
                           updateItem(index, 'description', event.target.value)
                         }
-                        placeholder='Additional board repair labor'
+                        placeholder={t('adminEstimateBuilder.revisedDescriptionPlaceholder')}
                       />
                     </div>
                     <div className='field'>
-                      <label>Quantity</label>
+                      <label>{t('adminEstimateBuilder.quantityLabel')}</label>
                       <input
                         value={item.quantity}
                         onChange={(event) =>
@@ -419,13 +421,13 @@ function AdminRevisedEstimateInner({ quoteId }) {
                       />
                     </div>
                     <div className='field'>
-                      <label>Unit amount</label>
+                      <label>{t('adminEstimateBuilder.unitAmountLabel')}</label>
                       <input
                         value={item.unit_amount}
                         onChange={(event) =>
                           updateItem(index, 'unit_amount', event.target.value)
                         }
-                        placeholder='49'
+                        placeholder={t('adminEstimateBuilder.revisedUnitAmountPlaceholder')}
                       />
                     </div>
                   </div>
@@ -435,7 +437,7 @@ function AdminRevisedEstimateInner({ quoteId }) {
                       className='button button-secondary button-compact'
                       onClick={() => removeItem(index)}
                     >
-                      Remove item
+                      {t('adminEstimateBuilder.removeItem')}
                     </button>
                   </div>
                 </div>
@@ -447,7 +449,7 @@ function AdminRevisedEstimateInner({ quoteId }) {
                   className='button button-secondary'
                   onClick={addItem}
                 >
-                  Add line item
+                  {t('adminEstimateBuilder.addLineItem')}
                 </button>
               </div>
             </div>
@@ -455,11 +457,11 @@ function AdminRevisedEstimateInner({ quoteId }) {
 
           <div className='grid-2'>
             <div className='policy-card'>
-              <div className='kicker'>Amounts</div>
-              <h3>Updated totals</h3>
+              <div className='kicker'>{t('adminEstimateBuilder.amountsKicker')}</div>
+              <h3>{t('adminEstimateBuilder.revisedAmountsTitle')}</h3>
               <div className='page-stack' style={{ marginTop: 18 }}>
                 <div className='field'>
-                  <label htmlFor='shipping-amount'>Shipping amount</label>
+                  <label htmlFor='shipping-amount'>{t('adminEstimateBuilder.shippingLabel')}</label>
                   <input
                     id='shipping-amount'
                     value={shippingAmount}
@@ -467,7 +469,7 @@ function AdminRevisedEstimateInner({ quoteId }) {
                   />
                 </div>
                 <div className='field'>
-                  <label htmlFor='tax-amount'>Tax amount</label>
+                  <label htmlFor='tax-amount'>{t('adminEstimateBuilder.taxLabel')}</label>
                   <input
                     id='tax-amount'
                     value={taxAmount}
@@ -475,7 +477,7 @@ function AdminRevisedEstimateInner({ quoteId }) {
                   />
                 </div>
                 <div className='field'>
-                  <label htmlFor='discount-amount'>Discount amount</label>
+                  <label htmlFor='discount-amount'>{t('adminEstimateBuilder.discountLabel')}</label>
                   <input
                     id='discount-amount'
                     value={discountAmount}
@@ -483,7 +485,7 @@ function AdminRevisedEstimateInner({ quoteId }) {
                   />
                 </div>
                 <div className='field'>
-                  <label htmlFor='deposit-credit-amount'>Deposit credit</label>
+                  <label htmlFor='deposit-credit-amount'>{t('adminEstimateBuilder.depositCreditLabel')}</label>
                   <input
                     id='deposit-credit-amount'
                     value={depositCreditAmount}
@@ -494,44 +496,44 @@ function AdminRevisedEstimateInner({ quoteId }) {
             </div>
 
             <div className='policy-card'>
-              <div className='kicker'>Preview</div>
-              <h3>Revised total</h3>
+              <div className='kicker'>{t('adminEstimateBuilder.previewKicker')}</div>
+              <h3>{t('adminEstimateBuilder.revisedPreviewTitle')}</h3>
               <div className='preview-meta' style={{ marginTop: 18 }}>
-                <div className='preview-meta-row'><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-                <div className='preview-meta-row'><span>Shipping</span><span>${Number(shippingAmount || 0).toFixed(2)}</span></div>
-                <div className='preview-meta-row'><span>Tax</span><span>${Number(taxAmount || 0).toFixed(2)}</span></div>
-                <div className='preview-meta-row'><span>Discount</span><span>-${Number(discountAmount || 0).toFixed(2)}</span></div>
-                <div className='preview-meta-row'><span>Deposit credit</span><span>-${Number(depositCreditAmount || 0).toFixed(2)}</span></div>
-                <div className='preview-meta-row'><span>Total</span><span>${total.toFixed(2)}</span></div>
+                <div className='preview-meta-row'><span>{t('adminEstimateBuilder.subtotalLabel')}</span><span>${subtotal.toFixed(2)}</span></div>
+                <div className='preview-meta-row'><span>{t('adminEstimateBuilder.shippingPreviewLabel')}</span><span>${Number(shippingAmount || 0).toFixed(2)}</span></div>
+                <div className='preview-meta-row'><span>{t('adminEstimateBuilder.taxPreviewLabel')}</span><span>${Number(taxAmount || 0).toFixed(2)}</span></div>
+                <div className='preview-meta-row'><span>{t('adminEstimateBuilder.discountPreviewLabel')}</span><span>-${Number(discountAmount || 0).toFixed(2)}</span></div>
+                <div className='preview-meta-row'><span>{t('adminEstimateBuilder.depositCreditPreviewLabel')}</span><span>-${Number(depositCreditAmount || 0).toFixed(2)}</span></div>
+                <div className='preview-meta-row'><span>{t('adminEstimateBuilder.totalLabel')}</span><span>${total.toFixed(2)}</span></div>
               </div>
             </div>
           </div>
 
           <div className='grid-2'>
             <div className='policy-card'>
-              <div className='kicker'>Customer note</div>
-              <h3>Visible explanation</h3>
+              <div className='kicker'>{t('adminEstimateBuilder.customerNoteKicker')}</div>
+              <h3>{t('adminEstimateBuilder.revisedCustomerNoteTitle')}</h3>
               <div className='field' style={{ marginTop: 18 }}>
-                <label htmlFor='customer-visible-notes'>Customer-facing notes</label>
+                <label htmlFor='customer-visible-notes'>{t('adminEstimateBuilder.customerVisibleNotesLabel')}</label>
                 <textarea
                   id='customer-visible-notes'
                   value={customerVisibleNotes}
                   onChange={(event) => setCustomerVisibleNotes(event.target.value)}
-                  placeholder='Example: During inspection we found additional board-level damage that changes the repair total.'
+                  placeholder={t('adminEstimateBuilder.revisedCustomerVisibleNotesPlaceholder')}
                 />
               </div>
             </div>
 
             <div className='policy-card'>
-              <div className='kicker'>Internal note</div>
-              <h3>Admin-only notes</h3>
+              <div className='kicker'>{t('adminEstimateBuilder.internalNoteKicker')}</div>
+              <h3>{t('adminEstimateBuilder.internalNoteTitle')}</h3>
               <div className='field' style={{ marginTop: 18 }}>
-                <label htmlFor='internal-notes'>Internal notes</label>
+                <label htmlFor='internal-notes'>{t('adminEstimateBuilder.internalNotesLabel')}</label>
                 <textarea
                   id='internal-notes'
                   value={internalNotes}
                   onChange={(event) => setInternalNotes(event.target.value)}
-                  placeholder='Internal repair findings and quote rationale.'
+                  placeholder={t('adminEstimateBuilder.revisedInternalNotesPlaceholder')}
                 />
               </div>
             </div>
@@ -542,16 +544,16 @@ function AdminRevisedEstimateInner({ quoteId }) {
 
           {showConfirm ? (
             <div className='notice notice-warn'>
-              <strong style={{ display: 'block', marginBottom: 8 }}>Confirm: Send this revised estimate to the customer?</strong>
+              <strong style={{ display: 'block', marginBottom: 8 }}>{t('adminEstimateBuilder.confirmRevisedSendTitle')}</strong>
               <p style={{ margin: '0 0 12px' }}>
-                This will email the revised estimate to {record.quote.guest_email || record.customerName} and set the order to awaiting final approval.
+                {t('adminEstimateBuilder.confirmRevisedSendBody', { recipient: record.quote.guest_email || record.customerName })}
               </p>
               <div className='inline-actions' style={{ margin: 0 }}>
                 <button type='submit' className='button button-primary button-compact' disabled={saving}>
-                  {saving ? 'Sending…' : 'Yes, send revised estimate'}
+                  {saving ? t('adminEstimateBuilder.sendingEllipsis') : t('adminEstimateBuilder.confirmRevisedSendYes')}
                 </button>
                 <button type='button' className='button button-ghost button-compact' onClick={() => setShowConfirm(false)}>
-                  Cancel
+                  {t('adminEstimateBuilder.confirmCancel')}
                 </button>
               </div>
             </div>
@@ -559,14 +561,14 @@ function AdminRevisedEstimateInner({ quoteId }) {
 
           <div className='inline-actions'>
             <button type='submit' className='button button-primary' disabled={saving}>
-              {saving ? 'Sending…' : 'Send Revised Estimate'}
+              {saving ? t('adminEstimateBuilder.sendingEllipsis') : t('adminEstimateBuilder.sendRevised')}
             </button>
-            <Link href={reviewPath} className='button button-secondary'>
-              Open Review Page
-            </Link>
-            <Link href={trackingPath} className='button button-secondary'>
-              Open Tracking Page
-            </Link>
+            <LocalizedLink href={reviewPath} className='button button-secondary'>
+              {t('adminEstimateBuilder.openReviewPage')}
+            </LocalizedLink>
+            <LocalizedLink href={trackingPath} className='button button-secondary'>
+              {t('adminEstimateBuilder.openTrackingPage')}
+            </LocalizedLink>
           </div>
         </form>
       </div>

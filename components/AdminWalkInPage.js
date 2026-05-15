@@ -137,9 +137,9 @@ function WalkInWizard() {
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='info-card'>
-          <div className='kicker'>Admin workspace</div>
-          <h1>Walk-in intake</h1>
-          <p>Create a repair order for a customer who has arrived in person.</p>
+          <div className='kicker'>{t('adminWalkin.kicker')}</div>
+          <h1>{t('adminWalkin.heading')}</h1>
+          <p>{t('adminWalkin.intro')}</p>
         </div>
 
         {/* Step progress */}
@@ -157,26 +157,26 @@ function WalkInWizard() {
             >{n}</span>
           ))}
           <span style={{ color: 'var(--muted)', fontSize: 12, marginLeft: 4 }}>
-            {step === 1 ? 'Customer' : step === 2 ? 'Device & Repair' : 'Finalize'}
+            {step === 1 ? t('adminWalkin.stepCustomer') : step === 2 ? t('adminWalkin.stepDevice') : t('adminWalkin.stepFinalize')}
           </span>
         </div>
 
         {/* ── Step 1: Customer ──────────────────────────────────────────────── */}
         {step === 1 && (
           <div className='info-card page-stack'>
-            <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Find or add customer</h2>
+            <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{t('adminWalkin.findOrAdd')}</h2>
 
             {!selectedCustomer && !isNewCustomer && (
               <>
                 <input
                   type='text'
                   className='input'
-                  placeholder='Search by name, phone, or email…'
+                  placeholder={t('adminWalkin.searchPlaceholder')}
                   value={customerQuery}
                   onChange={(e) => setCustomerQuery(e.target.value)}
                   autoFocus
                 />
-                {searching && <div style={{ fontSize: 13, color: 'var(--muted)' }}>Searching…</div>}
+                {searching && <div style={{ fontSize: 13, color: 'var(--muted)' }}>{t('adminWalkin.searching')}</div>}
                 {suggestions.length > 0 && (
                   <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
                     {suggestions.map((c) => (
@@ -199,7 +199,7 @@ function WalkInWizard() {
                   </div>
                 )}
                 <button className='button button-secondary' onClick={startNewCustomer}>
-                  + New customer
+                  {t('adminWalkin.newCustomer')}
                 </button>
               </>
             )}
@@ -215,30 +215,30 @@ function WalkInWizard() {
                 <button
                   onClick={() => { setSelectedCustomer(null); setIsNewCustomer(false) }}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 13 }}
-                >Change</button>
+                >{t('adminWalkin.change')}</button>
               </div>
             )}
 
             {isNewCustomer && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>First name *</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminWalkin.firstNameRequired')}</label>
                   <input type='text' className='input' value={firstName} onChange={(e) => setFirstName(e.target.value)} autoFocus />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Last name</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminWalkin.lastName')}</label>
                   <input type='text' className='input' value={lastName} onChange={(e) => setLastName(e.target.value)} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Phone *</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminWalkin.phoneRequired')}</label>
                   <input type='tel' className='input' value={phone} onChange={(e) => setPhone(e.target.value)} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Email</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminWalkin.email')}</label>
                   <input type='email' className='input' value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <button className='button button-ghost' style={{ fontSize: 13 }} onClick={() => setIsNewCustomer(false)}>← Back to search</button>
+                  <button className='button button-ghost' style={{ fontSize: 13 }} onClick={() => setIsNewCustomer(false)}>{t('adminWalkin.backToSearch')}</button>
                 </div>
               </div>
             )}
@@ -248,7 +248,7 @@ function WalkInWizard() {
                 className='button'
                 disabled={!step1Valid()}
                 onClick={() => setStep(2)}
-              >Continue →</button>
+              >{t('adminWalkin.continue')}</button>
             </div>
           </div>
         )}
@@ -256,7 +256,7 @@ function WalkInWizard() {
         {/* ── Step 2: Device & Repair ───────────────────────────────────────── */}
         {step === 2 && (
           <div className='info-card page-stack'>
-            <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Device & repair</h2>
+            <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{t('adminWalkin.deviceRepair')}</h2>
 
             {/* Category tiles */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
@@ -281,21 +281,21 @@ function WalkInWizard() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Brand</label>
-                <input type='text' className='input' placeholder='e.g. Apple, Samsung' value={brandName} onChange={(e) => setBrandName(e.target.value)} />
+                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminWalkin.brand')}</label>
+                <input type='text' className='input' placeholder={t('adminWalkin.brandPlaceholder')} value={brandName} onChange={(e) => setBrandName(e.target.value)} />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Model</label>
-                <input type='text' className='input' placeholder='e.g. iPhone 14, Galaxy S23' value={modelName} onChange={(e) => setModelName(e.target.value)} />
+                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminWalkin.model')}</label>
+                <input type='text' className='input' placeholder={t('adminWalkin.modelPlaceholder')} value={modelName} onChange={(e) => setModelName(e.target.value)} />
               </div>
             </div>
 
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Repair description *</label>
+              <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminWalkin.repairDescriptionRequired')}</label>
               <textarea
                 className='input'
                 rows={3}
-                placeholder='What needs to be repaired?'
+                placeholder={t('adminWalkin.repairDescriptionPlaceholder')}
                 value={repairDescription}
                 onChange={(e) => setRepairDescription(e.target.value)}
                 style={{ resize: 'vertical' }}
@@ -303,12 +303,12 @@ function WalkInWizard() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button className='button button-ghost' onClick={() => setStep(1)}>← Back</button>
+              <button className='button button-ghost' onClick={() => setStep(1)}>{t('adminWalkin.back')}</button>
               <button
                 className='button'
                 disabled={!step2Valid()}
                 onClick={() => setStep(3)}
-              >Continue →</button>
+              >{t('adminWalkin.continue')}</button>
             </div>
           </div>
         )}
@@ -316,10 +316,10 @@ function WalkInWizard() {
         {/* ── Step 3: Finalize ──────────────────────────────────────────────── */}
         {step === 3 && (
           <div className='info-card page-stack'>
-            <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Finalize order</h2>
+            <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{t('adminWalkin.finalizeOrder')}</h2>
 
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Agreed price (optional)</label>
+              <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminWalkin.agreedPriceLabel')}</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 16, color: 'var(--muted)' }}>$</span>
                 <input
@@ -336,28 +336,28 @@ function WalkInWizard() {
             </div>
 
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Assign technician</label>
+              <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminWalkin.assignTechnician')}</label>
               <select
                 className='input'
                 value={technicianId}
                 onChange={(e) => setTechnicianId(e.target.value)}
                 style={{ maxWidth: 300 }}
               >
-                <option value=''>Unassigned</option>
-                {techs.map((t) => (
-                  <option key={t.user_id} value={t.user_id}>
-                    {t.full_name || t.user_id}
+                <option value=''>{t('adminWalkin.unassigned')}</option>
+                {techs.map((tech) => (
+                  <option key={tech.user_id} value={tech.user_id}>
+                    {tech.full_name || tech.user_id}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Internal notes</label>
+              <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminWalkin.internalNotes')}</label>
               <textarea
                 className='input'
                 rows={3}
-                placeholder='Staff-only notes about this job…'
+                placeholder={t('adminWalkin.internalNotesPlaceholder')}
                 value={internalNotes}
                 onChange={(e) => setInternalNotes(e.target.value)}
                 style={{ resize: 'vertical' }}
@@ -366,22 +366,22 @@ function WalkInWizard() {
 
             {/* Order summary */}
             <div style={{ padding: '12px 14px', background: 'var(--surface-alt)', borderRadius: 'var(--radius-sm)', fontSize: 13 }}>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Order summary</div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('adminWalkin.orderSummary')}</div>
               <div style={{ color: 'var(--muted)' }}>
                 <div>{firstName} {lastName}</div>
-                <div>{[brandName, modelName].filter(Boolean).join(' ') || category} · {repairDescription}</div>
+                <div>{[brandName, modelName].filter(Boolean).join(' ') || t(`adminWalkin.category_${category}`)} · {repairDescription}</div>
               </div>
             </div>
 
             {submitError && <div className='notice notice-error'>{submitError}</div>}
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button className='button button-ghost' onClick={() => setStep(2)}>← Back</button>
+              <button className='button button-ghost' onClick={() => setStep(2)}>{t('adminWalkin.back')}</button>
               <button
                 className='button'
                 disabled={submitting}
                 onClick={handleSubmit}
-              >{submitting ? 'Creating…' : 'Create order'}</button>
+              >{submitting ? t('adminWalkin.creating') : t('adminWalkin.createOrder')}</button>
             </div>
           </div>
         )}

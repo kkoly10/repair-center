@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import AdminAuthGate from './AdminAuthGate'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
+import { statusPill } from '../lib/statusPills'
 
 export default function AdminInvoicePage({ quoteId }) {
   return (
@@ -16,11 +18,8 @@ function fmt(amount) {
   return `$${Number(amount || 0).toFixed(2)}`
 }
 
-function statusLabel(status) {
-  return status?.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ') || '—'
-}
-
 function AdminInvoiceInner({ quoteId }) {
+  const t = useT()
   const [invoice, setInvoice] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -32,7 +31,7 @@ function AdminInvoiceInner({ quoteId }) {
       .then((data) => {
         if (!cancelled) {
           if (data.ok) setInvoice(data.invoice)
-          else setError(data.error || 'Failed to load invoice.')
+          else setError(data.error || t('adminInvoice.failed'))
           setLoading(false)
         }
       })
@@ -40,9 +39,9 @@ function AdminInvoiceInner({ quoteId }) {
         if (!cancelled) { setError(err.message); setLoading(false) }
       })
     return () => { cancelled = true }
-  }, [quoteId])
+  }, [quoteId, t])
 
-  if (loading) return <div className='policy-card center-card' style={{ marginTop: 40 }}>Loading invoice…</div>
+  if (loading) return <div className='policy-card center-card' style={{ marginTop: 40 }}>{t('adminInvoice.loading')}</div>
   if (error) return <div className='notice notice-error' style={{ margin: 40 }}>{error}</div>
   if (!invoice) return null
 
@@ -65,8 +64,8 @@ function AdminInvoiceInner({ quoteId }) {
       `}</style>
 
       <div className='no-print' style={{ background: '#f5f5f5', padding: '16px 24px', display: 'flex', gap: 10, alignItems: 'center' }}>
-        <Link href={`/admin/quotes/${quoteId}`} className='button button-secondary' style={{ fontSize: 13 }}>← Back to order</Link>
-        <button className='button' style={{ fontSize: 13 }} onClick={() => window.print()}>Print / Save PDF</button>
+        <LocalizedLink href={`/admin/quotes/${quoteId}`} className='button button-secondary' style={{ fontSize: 13 }}>{t('adminInvoice.backToOrder')}</LocalizedLink>
+        <button className='button' style={{ fontSize: 13 }} onClick={() => window.print()}>{t('adminInvoice.printOrSave')}</button>
       </div>
 
       <div style={{ background: '#f5f5f5', minHeight: '100vh', padding: '32px 24px' }}>
@@ -76,7 +75,7 @@ function AdminInvoiceInner({ quoteId }) {
           <div style={{ background: '#111', color: '#fff', padding: '28px 36px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>{org.name}</div>
-              <div style={{ fontSize: 13, color: '#aaa', marginTop: 4 }}>Receipt / Invoice</div>
+              <div style={{ fontSize: 13, color: '#aaa', marginTop: 4 }}>{t('adminInvoice.receiptInvoice')}</div>
             </div>
             <div style={{ textAlign: 'right' }}>
               {order?.order_number && <div style={{ fontSize: 18, fontWeight: 700 }}>#{order.order_number}</div>}
@@ -94,17 +93,17 @@ function AdminInvoiceInner({ quoteId }) {
             {/* Billed to + Device */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 28 }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', marginBottom: 6 }}>Billed to</div>
+                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', marginBottom: 6 }}>{t('adminInvoice.billedTo')}</div>
                 {customer.name && <div style={{ fontWeight: 600, fontSize: 15 }}>{customer.name}</div>}
                 {customer.email && <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>{customer.email}</div>}
                 {customer.phone && <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>{customer.phone}</div>}
               </div>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', marginBottom: 6 }}>Device</div>
+                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', marginBottom: 6 }}>{t('adminInvoice.deviceLabel')}</div>
                 <div style={{ fontWeight: 600, fontSize: 15 }}>{device}</div>
                 {repairType && <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>{repairType}</div>}
                 {order?.current_status && (
-                  <div style={{ fontSize: 12, color: '#777', marginTop: 4 }}>Status: {statusLabel(order.current_status)}</div>
+                  <div style={{ fontSize: 12, color: '#777', marginTop: 4 }}>{t('adminInvoice.statusLabel', { label: statusPill(order.current_status, t).label })}</div>
                 )}
               </div>
             </div>
@@ -114,10 +113,10 @@ function AdminInvoiceInner({ quoteId }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #111' }}>
-                    <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', paddingBottom: 8 }}>Description</th>
-                    <th style={{ textAlign: 'right', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', paddingBottom: 8 }}>Qty</th>
-                    <th style={{ textAlign: 'right', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', paddingBottom: 8 }}>Unit</th>
-                    <th style={{ textAlign: 'right', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', paddingBottom: 8 }}>Total</th>
+                    <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', paddingBottom: 8 }}>{t('adminInvoice.descriptionCol')}</th>
+                    <th style={{ textAlign: 'right', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', paddingBottom: 8 }}>{t('adminInvoice.qtyCol')}</th>
+                    <th style={{ textAlign: 'right', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', paddingBottom: 8 }}>{t('adminInvoice.unitCol')}</th>
+                    <th style={{ textAlign: 'right', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', paddingBottom: 8 }}>{t('adminInvoice.totalCol')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -137,19 +136,19 @@ function AdminInvoiceInner({ quoteId }) {
             {estimate && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, borderTop: '2px solid #111', paddingTop: 14, marginBottom: 28 }}>
                 <div style={{ display: 'flex', gap: 48, fontSize: 14 }}>
-                  <span style={{ color: '#555' }}>Subtotal</span>
+                  <span style={{ color: '#555' }}>{t('adminInvoice.subtotal')}</span>
                   <span style={{ fontWeight: 600 }}>{fmt(estimate.total_amount)}</span>
                 </div>
                 {payments.map((p, i) => (
                   <div key={i} style={{ display: 'flex', gap: 48, fontSize: 14 }}>
                     <span style={{ color: '#555' }}>
-                      {p.kind?.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Payment'}
+                      {p.kind?.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || t('adminInvoice.payment')}
                     </span>
                     <span style={{ color: '#16a34a', fontWeight: 600 }}>−{fmt(p.amount)}</span>
                   </div>
                 ))}
                 <div style={{ display: 'flex', gap: 48, fontSize: 16, borderTop: '1px solid #e0e0e0', paddingTop: 10, marginTop: 4 }}>
-                  <span style={{ fontWeight: 700 }}>Balance due</span>
+                  <span style={{ fontWeight: 700 }}>{t('adminInvoice.balanceDue')}</span>
                   <span style={{ fontWeight: 700 }}>{fmt(balance)}</span>
                 </div>
               </div>
@@ -158,25 +157,25 @@ function AdminInvoiceInner({ quoteId }) {
             {/* Payments received */}
             {payments.length > 0 && (
               <div style={{ background: '#f8f8f8', borderRadius: 6, padding: '16px 20px' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', marginBottom: 10 }}>Payments received</div>
+                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', marginBottom: 10 }}>{t('adminInvoice.paymentsReceived')}</div>
                 {payments.map((p, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#555', paddingBottom: 6 }}>
                     <span>
-                      {p.kind?.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Payment'}
+                      {p.kind?.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || t('adminInvoice.payment')}
                       {p.provider && p.provider !== 'stripe' ? ` · ${p.provider}` : ''}
                     </span>
                     <span style={{ fontWeight: 600, color: '#111' }}>{fmt(p.amount)}</span>
                   </div>
                 ))}
                 <div style={{ borderTop: '1px solid #e0e0e0', marginTop: 6, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700 }}>
-                  <span>Total paid</span>
+                  <span>{t('adminInvoice.totalPaid')}</span>
                   <span>{fmt(totalPaid)}</span>
                 </div>
               </div>
             )}
 
             <div style={{ marginTop: 32, fontSize: 12, color: '#aaa', textAlign: 'center' }}>
-              Thank you for choosing {org.name}.
+              {t('adminInvoice.thankYou', { orgName: org.name })}
             </div>
           </div>
         </div>

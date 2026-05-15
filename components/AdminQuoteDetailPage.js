@@ -1,21 +1,22 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 import AdminSignOutButton from './AdminSignOutButton'
 import QuoteStatusBadge from './QuoteStatusBadge'
 import AdminPaymentSummaryCard from './AdminPaymentSummaryCard'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 import { getSupabaseBrowser } from '../lib/supabase/browser'
 
-const STATUS_OPTIONS = [
-  { value: 'submitted', label: 'Submitted' },
-  { value: 'under_review', label: 'Under review' },
-  { value: 'estimate_sent', label: 'Estimate sent' },
-  { value: 'awaiting_customer', label: 'Awaiting customer' },
-  { value: 'approved_for_mail_in', label: 'Approved for mail-in' },
-  { value: 'declined', label: 'Declined' },
-  { value: 'archived', label: 'Archived' },
+const STATUS_KEYS = [
+  { value: 'submitted', tKey: 'adminQuotes.statusOptionSubmitted' },
+  { value: 'under_review', tKey: 'adminQuotes.statusOptionUnderReview' },
+  { value: 'estimate_sent', tKey: 'adminQuotes.statusOptionEstimateSent' },
+  { value: 'awaiting_customer', tKey: 'adminQuotes.statusOptionAwaitingCustomer' },
+  { value: 'approved_for_mail_in', tKey: 'adminQuotes.statusOptionApprovedForMailIn' },
+  { value: 'declined', tKey: 'adminQuotes.statusOptionDeclined' },
+  { value: 'archived', tKey: 'adminQuotes.statusOptionArchived' },
 ]
 
 export default function AdminQuoteDetailPage({ quoteId }) {
@@ -27,6 +28,7 @@ export default function AdminQuoteDetailPage({ quoteId }) {
 }
 
 function AdminQuoteDetailInner({ quoteId }) {
+  const t = useT()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -63,7 +65,7 @@ function AdminQuoteDetailInner({ quoteId }) {
           .maybeSingle()
 
         if (quoteError) throw quoteError
-        if (!quote) throw new Error('Quote request not found.')
+        if (!quote) throw new Error(t('adminQuoteDetail.quoteNotFound'))
 
         const [
           photosResult,
@@ -137,7 +139,7 @@ function AdminQuoteDetailInner({ quoteId }) {
                 : [quote.first_name, quote.last_name]
             )
               .filter(Boolean)
-              .join(' ') || 'Guest customer',
+              .join(' ') || t('adminQuoteDetail.guestCustomer'),
         }
 
         if (!ignore) {
@@ -152,7 +154,7 @@ function AdminQuoteDetailInner({ quoteId }) {
         }
       } catch (loadError) {
         if (!ignore) {
-          setError(loadError.message || 'Unable to load quote request.')
+          setError(loadError.message || t('adminQuoteDetail.loadFailed'))
         }
       } finally {
         if (!ignore) setLoading(false)
@@ -163,20 +165,20 @@ function AdminQuoteDetailInner({ quoteId }) {
     return () => {
       ignore = true
     }
-  }, [quoteId])
+  }, [quoteId, t])
 
   const priceDisplay = useMemo(() => {
     if (priceFixed !== '') return `$${Number(priceFixed || 0).toFixed(2)}`
     if (priceMin !== '' && priceMax !== '') {
       return `$${Number(priceMin || 0).toFixed(2)}–$${Number(priceMax || 0).toFixed(2)}`
     }
-    return 'Manual review'
-  }, [priceFixed, priceMax, priceMin])
+    return t('adminQuotes.manualReview')
+  }, [priceFixed, priceMax, priceMin, t])
 
   const estimateActionLabel = useMemo(() => {
-    if (!record?.estimates?.length) return 'Create Estimate'
-    return 'Open Estimate Builder'
-  }, [record])
+    if (!record?.estimates?.length) return t('adminQuoteDetail.createEstimate')
+    return t('adminQuoteDetail.openEstimateBuilder')
+  }, [record, t])
 
   const latestEstimate = useMemo(() => {
     return record?.estimates?.[0] || null
@@ -194,7 +196,7 @@ function AdminQuoteDetailInner({ quoteId }) {
     try {
       const res = await fetch(`/admin/api/quotes/${quoteId}/deposit`, { method: 'POST' })
       const body = await res.json()
-      if (!res.ok) throw new Error(body.error || 'Failed to mark deposit as paid.')
+      if (!res.ok) throw new Error(body.error || t('adminQuoteDetail.depositMarkFailed'))
       setDepositPaidSuccess(true)
       const refreshRes = await fetch(`/admin/api/quotes/${quoteId}/payment-summary`, { cache: 'no-store' })
       if (refreshRes.ok) setPaymentData(await refreshRes.json())
@@ -250,9 +252,9 @@ function AdminQuoteDetailInner({ quoteId }) {
           : current
       )
 
-      setSuccess('Quote review saved.')
+      setSuccess(t('adminQuoteDetail.quoteSaved'))
     } catch (saveError) {
-      setError(saveError.message || 'Unable to save quote review.')
+      setError(saveError.message || t('adminQuoteDetail.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -287,7 +289,7 @@ function AdminQuoteDetailInner({ quoteId }) {
     return (
       <main className='page-hero'>
         <div className='site-shell'>
-          <div className='policy-card center-card'>Loading quote request…</div>
+          <div className='policy-card center-card'>{t('adminQuoteDetail.loading')}</div>
         </div>
       </main>
     )
@@ -298,13 +300,13 @@ function AdminQuoteDetailInner({ quoteId }) {
       <main className='page-hero'>
         <div className='site-shell page-stack'>
           <div className='policy-card center-card'>
-            <div className='kicker'>Admin quote</div>
-            <h1>Unable to open quote</h1>
+            <div className='kicker'>{t('adminQuoteDetail.kicker')}</div>
+            <h1>{t('adminQuoteDetail.headingUnableToOpen')}</h1>
             <p>{error}</p>
             <div className='inline-actions'>
-              <Link href='/admin/quotes' className='button button-secondary'>
-                Back to quotes
-              </Link>
+              <LocalizedLink href='/admin/quotes' className='button button-secondary'>
+                {t('adminQuoteDetail.backToQuotes')}
+              </LocalizedLink>
             </div>
           </div>
         </div>
@@ -322,7 +324,7 @@ function AdminQuoteDetailInner({ quoteId }) {
               <h1 className='quote-title'>{record.customerName}</h1>
               <p className='muted'>
                 {[record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ')} ·{' '}
-                {record.quote.repair_type_key || 'Repair type not set'}
+                {record.quote.repair_type_key || t('adminQuoteDetail.repairTypeNotSet')}
               </p>
             </div>
             <div className='inline-actions' style={{ margin: 0 }}>
@@ -332,44 +334,44 @@ function AdminQuoteDetailInner({ quoteId }) {
           </div>
 
           <div className='inline-actions' style={{ marginTop: 0 }}>
-            <Link href='/admin/quotes' className='button button-secondary button-compact'>
-              Back to queue
-            </Link>
-            <Link
+            <LocalizedLink href='/admin/quotes' className='button button-secondary button-compact'>
+              {t('adminQuoteDetail.backToQueue')}
+            </LocalizedLink>
+            <LocalizedLink
               href={`/admin/quotes/${quoteId}/estimate`}
               className='button button-primary button-compact'
             >
               {estimateActionLabel}
-            </Link>
-            <Link
+            </LocalizedLink>
+            <LocalizedLink
               href={`/admin/quotes/${quoteId}/order`}
               className='button button-secondary button-compact'
             >
-              Manage Repair Order
-            </Link>
-            <Link
+              {t('adminQuoteDetail.manageRepairOrder')}
+            </LocalizedLink>
+            <LocalizedLink
               href={paymentsPath}
               className='button button-secondary button-compact'
             >
-              Manage Payments
-            </Link>
+              {t('adminQuoteDetail.managePayments')}
+            </LocalizedLink>
           </div>
 
           <div className='quote-summary'>
             <div className='quote-summary-card'>
-              <strong>Estimate preview</strong>
+              <strong>{t('adminQuoteDetail.estimatePreviewLabel')}</strong>
               <span>{priceDisplay}</span>
             </div>
             <div className='quote-summary-card'>
-              <strong>Submitted</strong>
+              <strong>{t('adminQuoteDetail.submittedLabel')}</strong>
               <span>{new Date(record.quote.created_at).toLocaleString()}</span>
             </div>
             <div className='quote-summary-card'>
-              <strong>Preferred contact</strong>
+              <strong>{t('adminQuoteDetail.preferredContactLabel')}</strong>
               <span>
                 {record.customer?.preferred_contact_method ||
                   record.quote.preferred_contact_method ||
-                  'either'}
+                  t('adminQuoteDetail.preferredContactDefault')}
               </span>
             </div>
           </div>
@@ -378,49 +380,49 @@ function AdminQuoteDetailInner({ quoteId }) {
         <div className='grid-2'>
           <div className='page-stack'>
             <div className='policy-card'>
-              <div className='kicker'>Customer</div>
-              <h3>Contact details</h3>
+              <div className='kicker'>{t('adminQuoteDetail.customerKicker')}</div>
+              <h3>{t('adminQuoteDetail.contactDetailsTitle')}</h3>
               <div className='preview-meta'>
-                <div className='preview-meta-row'><span>Name</span><span>{record.customerName}</span></div>
-                <div className='preview-meta-row'><span>Email</span><span>{record.customer?.email || record.quote.guest_email || '—'}</span></div>
-                <div className='preview-meta-row'><span>Phone</span><span>{record.customer?.phone || record.quote.guest_phone || '—'}</span></div>
+                <div className='preview-meta-row'><span>{t('adminQuoteDetail.nameLabel')}</span><span>{record.customerName}</span></div>
+                <div className='preview-meta-row'><span>{t('adminQuoteDetail.emailLabel')}</span><span>{record.customer?.email || record.quote.guest_email || '—'}</span></div>
+                <div className='preview-meta-row'><span>{t('adminQuoteDetail.phoneLabel')}</span><span>{record.customer?.phone || record.quote.guest_phone || '—'}</span></div>
               </div>
             </div>
 
             <div className='policy-card'>
-              <div className='kicker'>Issue details</div>
-              <h3>Customer notes</h3>
-              <p>{record.quote.issue_description || 'No issue description provided.'}</p>
+              <div className='kicker'>{t('adminQuoteDetail.issueKicker')}</div>
+              <h3>{t('adminQuoteDetail.customerNotesTitle')}</h3>
+              <p>{record.quote.issue_description || t('adminQuoteDetail.noIssueDescription')}</p>
               <div className='preview-meta' style={{ marginTop: 18 }}>
-                <div className='preview-meta-row'><span>Powers on</span><span>{record.quote.powers_on || '—'}</span></div>
-                <div className='preview-meta-row'><span>Charges</span><span>{record.quote.charges || '—'}</span></div>
-                <div className='preview-meta-row'><span>Liquid damage</span><span>{record.quote.liquid_damage || '—'}</span></div>
-                <div className='preview-meta-row'><span>Prior repairs</span><span>{record.quote.prior_repairs || '—'}</span></div>
-                <div className='preview-meta-row'><span>Preserve data</span><span>{record.quote.preserve_data || '—'}</span></div>
+                <div className='preview-meta-row'><span>{t('adminQuoteDetail.powersOnLabel')}</span><span>{record.quote.powers_on || '—'}</span></div>
+                <div className='preview-meta-row'><span>{t('adminQuoteDetail.chargesLabel')}</span><span>{record.quote.charges || '—'}</span></div>
+                <div className='preview-meta-row'><span>{t('adminQuoteDetail.liquidDamageLabel')}</span><span>{record.quote.liquid_damage || '—'}</span></div>
+                <div className='preview-meta-row'><span>{t('adminQuoteDetail.priorRepairsLabel')}</span><span>{record.quote.prior_repairs || '—'}</span></div>
+                <div className='preview-meta-row'><span>{t('adminQuoteDetail.preserveDataLabel')}</span><span>{record.quote.preserve_data || '—'}</span></div>
               </div>
             </div>
 
             <form className='policy-card' onSubmit={handleSave}>
-              <div className='kicker'>Review actions</div>
-              <h3>Update quote</h3>
+              <div className='kicker'>{t('adminQuoteDetail.reviewActionsKicker')}</div>
+              <h3>{t('adminQuoteDetail.updateQuoteTitle')}</h3>
               <div className='page-stack' style={{ marginTop: 18 }}>
                 <div className='field'>
-                  <label htmlFor='admin-status'>Status</label>
+                  <label htmlFor='admin-status'>{t('adminQuoteDetail.statusFieldLabel')}</label>
                   <select
                     id='admin-status'
                     value={status}
                     onChange={(event) => setStatus(event.target.value)}
                   >
-                    {STATUS_OPTIONS.map((option) => (
+                    {STATUS_KEYS.map((option) => (
                       <option key={option.value} value={option.value}>
-                        {option.label}
+                        {t(option.tKey)}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div className='field'>
-                  <label htmlFor='admin-summary'>Customer-facing summary</label>
+                  <label htmlFor='admin-summary'>{t('adminQuoteDetail.customerSummaryLabel')}</label>
                   <textarea
                     id='admin-summary'
                     value={quoteSummary}
@@ -430,7 +432,7 @@ function AdminQuoteDetailInner({ quoteId }) {
 
                 <div className='form-grid'>
                   <div className='field'>
-                    <label htmlFor='admin-price-fixed'>Fixed price</label>
+                    <label htmlFor='admin-price-fixed'>{t('adminQuoteDetail.priceFixedLabel')}</label>
                     <input
                       id='admin-price-fixed'
                       value={priceFixed}
@@ -438,7 +440,7 @@ function AdminQuoteDetailInner({ quoteId }) {
                     />
                   </div>
                   <div className='field'>
-                    <label htmlFor='admin-price-min'>Price min</label>
+                    <label htmlFor='admin-price-min'>{t('adminQuoteDetail.priceMinLabel')}</label>
                     <input
                       id='admin-price-min'
                       value={priceMin}
@@ -446,7 +448,7 @@ function AdminQuoteDetailInner({ quoteId }) {
                     />
                   </div>
                   <div className='field'>
-                    <label htmlFor='admin-price-max'>Price max</label>
+                    <label htmlFor='admin-price-max'>{t('adminQuoteDetail.priceMaxLabel')}</label>
                     <input
                       id='admin-price-max'
                       value={priceMax}
@@ -456,7 +458,7 @@ function AdminQuoteDetailInner({ quoteId }) {
                 </div>
 
                 <div className='field'>
-                  <label htmlFor='admin-internal-notes'>Internal notes</label>
+                  <label htmlFor='admin-internal-notes'>{t('adminQuoteDetail.internalNotesLabel')}</label>
                   <textarea
                     id='admin-internal-notes'
                     value={internalNotes}
@@ -469,26 +471,26 @@ function AdminQuoteDetailInner({ quoteId }) {
 
                 <div className='inline-actions'>
                   <button type='submit' className='button button-primary' disabled={saving}>
-                    {saving ? 'Saving…' : 'Save review'}
+                    {saving ? t('adminQuoteDetail.savingEllipsis') : t('adminQuoteDetail.saveReview')}
                   </button>
-                  <Link
+                  <LocalizedLink
                     href={`/admin/quotes/${quoteId}/estimate`}
                     className='button button-secondary'
                   >
                     {estimateActionLabel}
-                  </Link>
-                  <Link
+                  </LocalizedLink>
+                  <LocalizedLink
                     href={`/admin/quotes/${quoteId}/order`}
                     className='button button-secondary'
                   >
-                    Manage Repair Order
-                  </Link>
-                  <Link
+                    {t('adminQuoteDetail.manageRepairOrder')}
+                  </LocalizedLink>
+                  <LocalizedLink
                     href={paymentsPath}
                     className='button button-secondary'
                   >
-                    Manage Payments
-                  </Link>
+                    {t('adminQuoteDetail.managePayments')}
+                  </LocalizedLink>
                 </div>
               </div>
             </form>
@@ -496,22 +498,19 @@ function AdminQuoteDetailInner({ quoteId }) {
 
           <div className='page-stack'>
             <div className='policy-card'>
-              <div className='kicker'>Estimate workflow</div>
-              <h3>Estimate builder</h3>
-              <p>
-                Move this reviewed quote into the estimate builder to create line items,
-                shipping, discount logic, and send a real estimate record to the customer flow.
-              </p>
+              <div className='kicker'>{t('adminQuoteDetail.estimateWorkflowKicker')}</div>
+              <h3>{t('adminQuoteDetail.estimateBuilderTitle')}</h3>
+              <p>{t('adminQuoteDetail.estimateBuilderIntro')}</p>
 
               <div className='preview-meta' style={{ marginTop: 18 }}>
-                <div className='preview-meta-row'><span>Existing estimates</span><span>{record.estimates.length}</span></div>
-                <div className='preview-meta-row'><span>Latest estimate</span><span>{latestEstimate ? `${latestEstimate.estimate_kind} · ${latestEstimate.status}` : 'None yet'}</span></div>
-                <div className='preview-meta-row'><span>Latest total</span><span>{latestEstimate?.total_amount != null ? `$${Number(latestEstimate.total_amount).toFixed(2)}` : '—'}</span></div>
+                <div className='preview-meta-row'><span>{t('adminQuoteDetail.existingEstimatesLabel')}</span><span>{record.estimates.length}</span></div>
+                <div className='preview-meta-row'><span>{t('adminQuoteDetail.latestEstimateLabel')}</span><span>{latestEstimate ? `${latestEstimate.estimate_kind} · ${latestEstimate.status}` : t('adminQuoteDetail.latestEstimateNone')}</span></div>
+                <div className='preview-meta-row'><span>{t('adminQuoteDetail.latestTotalLabel')}</span><span>{latestEstimate?.total_amount != null ? `$${Number(latestEstimate.total_amount).toFixed(2)}` : '—'}</span></div>
               </div>
 
               {record.estimates.length > 0 && (
                 <div style={{ marginTop: 18 }}>
-                  <strong style={{ fontSize: 13 }}>Estimate history</strong>
+                  <strong style={{ fontSize: 13 }}>{t('adminQuoteDetail.estimateHistoryHeading')}</strong>
                   <div className='preview-meta' style={{ marginTop: 8 }}>
                     {record.estimates.map((est) => {
                       const isExpanded = expandedEstimateId === est.id
@@ -527,9 +526,9 @@ function AdminQuoteDetailInner({ quoteId }) {
                           <div className='preview-meta-row'>
                             <span>
                               {est.estimate_kind} · {est.status}
-                              {expired ? ' · EXPIRED' : ''}
+                              {expired ? ` · ${t('adminQuoteDetail.estimateExpiredBadge')}` : ''}
                               {est.expires_at && est.status === 'sent' && !expired
-                                ? ` · expires ${new Date(est.expires_at).toLocaleDateString()}`
+                                ? ` · ${t('adminQuoteDetail.estimateExpiresOn', { date: new Date(est.expires_at).toLocaleDateString() })}`
                                 : ''}
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -546,7 +545,7 @@ function AdminQuoteDetailInner({ quoteId }) {
                                   textDecoration: 'underline',
                                 }}
                               >
-                                {isExpanded ? 'hide' : 'view'}
+                                {isExpanded ? t('adminQuoteDetail.hideAction') : t('adminQuoteDetail.viewAction')}
                               </button>
                             </span>
                           </div>
@@ -555,18 +554,18 @@ function AdminQuoteDetailInner({ quoteId }) {
                             <div style={{ paddingLeft: 12, paddingBottom: 8 }}>
                               {!detail ? (
                                 <div style={{ fontSize: 13, color: '#888', padding: '4px 0' }}>
-                                  Loading…
+                                  {t('adminQuoteDetail.estimateLoading')}
                                 </div>
                               ) : detail.items.length === 0 ? (
                                 <div style={{ fontSize: 13, color: '#888', padding: '4px 0' }}>
-                                  No line items.
+                                  {t('adminQuoteDetail.estimateNoItems')}
                                 </div>
                               ) : (
                                 <div className='preview-meta' style={{ marginTop: 4 }}>
                                   {detail.items.map((item) => (
                                     <div key={item.id} className='preview-meta-row'>
                                       <span style={{ fontSize: 13 }}>
-                                        [{item.line_type}] {item.description} × {item.quantity}
+                                        {t('adminQuoteDetail.estimateLineItem', { type: item.line_type, description: item.description, quantity: item.quantity })}
                                       </span>
                                       <span style={{ fontSize: 13 }}>
                                         ${Number(item.line_total).toFixed(2)}
@@ -576,7 +575,7 @@ function AdminQuoteDetailInner({ quoteId }) {
                                   {detail.estimate.customer_visible_notes && (
                                     <div className='preview-meta-row'>
                                       <span style={{ fontSize: 13, fontStyle: 'italic' }}>
-                                        Note: {detail.estimate.customer_visible_notes}
+                                        {t('adminQuoteDetail.estimateNoteLabel', { note: detail.estimate.customer_visible_notes })}
                                       </span>
                                       <span>—</span>
                                     </div>
@@ -593,12 +592,12 @@ function AdminQuoteDetailInner({ quoteId }) {
               )}
 
               <div className='inline-actions' style={{ marginBottom: 0, marginTop: 18 }}>
-                <Link
+                <LocalizedLink
                   href={`/admin/quotes/${quoteId}/estimate`}
                   className='button button-primary'
                 >
                   {estimateActionLabel}
-                </Link>
+                </LocalizedLink>
               </div>
             </div>
 
@@ -616,14 +615,14 @@ function AdminQuoteDetailInner({ quoteId }) {
               )
               return (
                 <div className='policy-card'>
-                  <div className='kicker'>Deposit</div>
-                  <h3>Inspection deposit</h3>
+                  <div className='kicker'>{t('adminQuoteDetail.depositKicker')}</div>
+                  <h3>{t('adminQuoteDetail.depositTitle')}</h3>
                   <p>
-                    Required: <strong>${Number(paymentData.repairOrder.inspection_deposit_required).toFixed(2)}</strong>
+                    {t('adminQuoteDetail.depositRequired')} <strong>${Number(paymentData.repairOrder.inspection_deposit_required).toFixed(2)}</strong>
                   </p>
                   {depositAlreadyPaid ? (
                     <div className='notice notice-success' style={{ marginTop: 18 }}>
-                      Deposit has been marked as paid.
+                      {t('adminQuoteDetail.depositPaidNotice')}
                     </div>
                   ) : (
                     <>
@@ -636,7 +635,7 @@ function AdminQuoteDetailInner({ quoteId }) {
                           onClick={handleMarkDepositPaid}
                           disabled={markingDepositPaid}
                         >
-                          {markingDepositPaid ? 'Saving…' : 'Mark deposit paid'}
+                          {markingDepositPaid ? t('adminQuoteDetail.savingEllipsis') : t('adminQuoteDetail.markDepositPaid')}
                         </button>
                       </div>
                     </>
@@ -646,75 +645,72 @@ function AdminQuoteDetailInner({ quoteId }) {
             })() : null}
 
             <div className='policy-card'>
-              <div className='kicker'>Customer review link</div>
-              <h3>Review page</h3>
+              <div className='kicker'>{t('adminQuoteDetail.customerReviewKicker')}</div>
+              <h3>{t('adminQuoteDetail.customerReviewTitle')}</h3>
               <div className='notice' style={{ marginTop: 18 }}>
                 {reviewPath}
               </div>
               <div className='inline-actions'>
-                <Link href={reviewPath} className='button button-secondary'>
-                  Open Review Page
-                </Link>
+                <LocalizedLink href={reviewPath} className='button button-secondary'>
+                  {t('adminQuoteDetail.openReviewPage')}
+                </LocalizedLink>
               </div>
             </div>
 
             <div className='policy-card'>
-              <div className='kicker'>Mail-in instructions</div>
-              <h3>Post-approval page</h3>
+              <div className='kicker'>{t('adminQuoteDetail.mailInKicker')}</div>
+              <h3>{t('adminQuoteDetail.mailInTitle')}</h3>
               <div className='notice' style={{ marginTop: 18 }}>
-                {mailInPath || 'This link becomes active after the estimate is approved.'}
+                {mailInPath || t('adminQuoteDetail.mailInPlaceholder')}
               </div>
               {mailInPath ? (
                 <div className='inline-actions'>
-                  <Link href={mailInPath} className='button button-secondary'>
-                    Open Mail-In Page
-                  </Link>
+                  <LocalizedLink href={mailInPath} className='button button-secondary'>
+                    {t('adminQuoteDetail.openMailInPage')}
+                  </LocalizedLink>
                 </div>
               ) : null}
             </div>
 
             <div className='policy-card'>
-              <div className='kicker'>Repair order</div>
-              <h3>Operations workflow</h3>
-              <p>
-                Once the device is approved and mailed in, use the repair order page to update
-                intake, inspection, repair progress, and return shipment tracking.
-              </p>
+              <div className='kicker'>{t('adminQuoteDetail.repairOrderKicker')}</div>
+              <h3>{t('adminQuoteDetail.operationsTitle')}</h3>
+              <p>{t('adminQuoteDetail.operationsIntro')}</p>
               <div className='inline-actions'>
-                <Link
+                <LocalizedLink
                   href={`/admin/quotes/${quoteId}/order`}
                   className='button button-secondary'
                 >
-                  Manage Repair Order
-                </Link>
-                <Link
+                  {t('adminQuoteDetail.manageRepairOrder')}
+                </LocalizedLink>
+                <LocalizedLink
                   href={paymentsPath}
                   className='button button-secondary'
                 >
-                  Manage Payments
-                </Link>
+                  {t('adminQuoteDetail.managePayments')}
+                </LocalizedLink>
               </div>
             </div>
 
             <div className='policy-card'>
-              <div className='kicker'>Pricing rule</div>
-              <h3>Matched catalog rule</h3>
+              <div className='kicker'>{t('adminQuoteDetail.pricingRuleKicker')}</div>
+              <h3>{t('adminQuoteDetail.pricingRuleTitle')}</h3>
               {record.pricingRule ? (
                 <div className='preview-meta'>
-                  <div className='preview-meta-row'><span>Mode</span><span>{record.pricingRule.price_mode}</span></div>
-                  <div className='preview-meta-row'><span>Part grade</span><span>{record.pricingRule.part_grade || '—'}</span></div>
-                  <div className='preview-meta-row'><span>Deposit</span><span>{record.pricingRule.deposit_amount != null ? `$${Number(record.pricingRule.deposit_amount).toFixed(2)}` : '—'}</span></div>
-                  <div className='preview-meta-row'><span>Shipping</span><span>{record.pricingRule.return_shipping_fee != null ? `$${Number(record.pricingRule.return_shipping_fee).toFixed(2)}` : '—'}</span></div>
+                  <div className='preview-meta-row'><span>{t('adminQuoteDetail.pricingRuleModeLabel')}</span><span>{record.pricingRule.price_mode}</span></div>
+                  <div className='preview-meta-row'><span>{t('adminQuoteDetail.pricingRulePartGradeLabel')}</span><span>{record.pricingRule.part_grade || '—'}</span></div>
+                  <div className='preview-meta-row'><span>{t('adminQuoteDetail.pricingRuleDepositLabel')}</span><span>{record.pricingRule.deposit_amount != null ? `$${Number(record.pricingRule.deposit_amount).toFixed(2)}` : '—'}</span></div>
+                  <div className='preview-meta-row'><span>{t('adminQuoteDetail.pricingRuleShippingLabel')}</span><span>{record.pricingRule.return_shipping_fee != null ? `$${Number(record.pricingRule.return_shipping_fee).toFixed(2)}` : '—'}</span></div>
                 </div>
               ) : (
-                <p>No pricing rule is linked to this quote request yet.</p>
+                <p>{t('adminQuoteDetail.pricingRuleEmpty')}</p>
               )}
             </div>
 
             <div className='policy-card'>
-              <div className='kicker'>Photos</div>
-              <h3>Uploaded images</h3>
-              {!record.photos.length ? <p>No photos uploaded.</p> : null}
+              <div className='kicker'>{t('adminQuoteDetail.photosKicker')}</div>
+              <h3>{t('adminQuoteDetail.photosTitle')}</h3>
+              {!record.photos.length ? <p>{t('adminQuoteDetail.photosEmpty')}</p> : null}
               <div className='grid-2'>
                 {record.photos.map((photo) => (
                   <div key={photo.id} className='feature-card'>
@@ -727,7 +723,7 @@ function AdminQuoteDetailInner({ quoteId }) {
                       />
                     ) : (
                       <div className='notice' style={{ marginTop: 14 }}>
-                        Could not generate preview. Path: {photo.storage_path}
+                        {t('adminQuoteDetail.photoPreviewError', { path: photo.storage_path })}
                       </div>
                     )}
                   </div>
