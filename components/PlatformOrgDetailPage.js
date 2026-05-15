@@ -1,7 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 import { statusPill } from '../lib/statusPills'
 
 function fmtDate(iso) {
@@ -10,6 +11,7 @@ function fmtDate(iso) {
 }
 
 export default function PlatformOrgDetailPage({ orgId }) {
+  const t = useT()
   const [data,        setData]        = useState(null)
   const [loading,     setLoading]     = useState(true)
   const [error,       setError]       = useState('')
@@ -21,14 +23,14 @@ export default function PlatformOrgDetailPage({ orgId }) {
     const res  = await fetch(`/platform/api/orgs/${orgId}`)
     const json = await res.json()
     if (json.ok) setData(json)
-    else setError(json.error || 'Failed to load organization.')
+    else setError(json.error || t('platformAdmin.loadOrgError'))
   }
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      loadData().catch(() => setError('Failed to load organization.')).finally(() => setLoading(false))
+    const handle = setTimeout(() => {
+      loadData().catch(() => setError(t('platformAdmin.loadOrgError'))).finally(() => setLoading(false))
     }, 0)
-    return () => clearTimeout(t)
+    return () => clearTimeout(handle)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId])
 
@@ -41,33 +43,33 @@ export default function PlatformOrgDetailPage({ orgId }) {
         body: JSON.stringify({ action, ...extra }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Action failed.')
-      setActionMsg(`Done — org status is now "${json.status}".`)
+      if (!res.ok) throw new Error(json.error || t('platformAdmin.actionFailed'))
+      setActionMsg(t('platformAdmin.actionDone', { status: json.status }))
       await loadData()
     } catch (err) {
-      setActionError(err.message || 'Action failed.')
+      setActionError(err.message || t('platformAdmin.actionFailed'))
     } finally {
       setActing(false)
     }
   }
 
-  if (loading) return <div className='notice' style={{ margin: 32 }}>Loading…</div>
+  if (loading) return <div className='notice' style={{ margin: 32 }}>{t('platformAdmin.loading')}</div>
   if (error)   return <div className='notice notice-warn' style={{ margin: 32 }}>{error}</div>
 
   const { org, subscription, members, usage, recentQuotes, trialDaysLeft } = data
   const isSuspendable = !['suspended', 'cancelled'].includes(org.status)
 
   const billingRows = [
-    { label: 'Status',      value: <span className={statusPill(org.status).cls}>{statusPill(org.status).label}</span> },
-    { label: 'Plan',        value: subscription?.plan_key || org.plan_key || 'trial' },
-    { label: 'Trial ends',  value: org.trial_ends_at
-        ? `${fmtDate(org.trial_ends_at)}${trialDaysLeft !== null ? ` (${trialDaysLeft > 0 ? `${trialDaysLeft}d remaining` : 'Expired'})` : ''}`
+    { label: t('platformAdmin.labelStatusValue'), value: <span className={statusPill(org.status).cls}>{statusPill(org.status).label}</span> },
+    { label: t('platformAdmin.labelPlanValue'),   value: subscription?.plan_key || org.plan_key || t('platformAdmin.planTrial') },
+    { label: t('platformAdmin.labelTrialEnds'),   value: org.trial_ends_at
+        ? `${fmtDate(org.trial_ends_at)}${trialDaysLeft !== null ? ` (${trialDaysLeft > 0 ? t('platformAdmin.labelTrialRemaining', { days: trialDaysLeft }) : t('platformAdmin.trialExpired')})` : ''}`
         : '—' },
-    { label: 'Renewal',     value: fmtDate(subscription?.current_period_end) },
-    { label: 'Stripe ID',   value: org.stripe_customer_id
+    { label: t('platformAdmin.labelRenewal'),    value: fmtDate(subscription?.current_period_end) },
+    { label: t('platformAdmin.labelStripeId'),   value: org.stripe_customer_id
         ? <span className='id-mono' style={{ fontSize: '0.78rem' }}>{org.stripe_customer_id}</span>
         : '—' },
-    { label: 'Joined',      value: fmtDate(org.created_at) },
+    { label: t('platformAdmin.labelJoined'),     value: fmtDate(org.created_at) },
   ]
 
   const activeMembers = members.filter((m) => m.status === 'active')
@@ -78,9 +80,9 @@ export default function PlatformOrgDetailPage({ orgId }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <Link href='/platform/orgs' style={{ fontSize: '0.82rem', color: 'var(--muted)', textDecoration: 'none' }}>
-            ← All organizations
-          </Link>
+          <LocalizedLink href='/platform/orgs' style={{ fontSize: '0.82rem', color: 'var(--muted)', textDecoration: 'none' }}>
+            {t('platformAdmin.backToOrgs')}
+          </LocalizedLink>
           <h1 style={{ margin: '6px 0 4px', letterSpacing: '-0.02em' }}>{org.name}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span className='id-mono' style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>{org.slug}</span>
@@ -95,9 +97,9 @@ export default function PlatformOrgDetailPage({ orgId }) {
               className='button button-secondary'
               style={{ fontSize: '0.82rem', color: '#b91c1c', borderColor: '#fca5a5' }}
               disabled={acting}
-              onClick={() => { if (window.confirm(`Suspend "${org.name}"? This will block all admin access.`)) doAction('suspend') }}
+              onClick={() => { if (window.confirm(t('platformAdmin.suspendConfirm', { name: org.name }))) doAction('suspend') }}
             >
-              Suspend
+              {t('platformAdmin.actionSuspend')}
             </button>
           ) : (
             <button
@@ -106,7 +108,7 @@ export default function PlatformOrgDetailPage({ orgId }) {
               disabled={acting}
               onClick={() => doAction('reactivate')}
             >
-              Reactivate
+              {t('platformAdmin.actionReactivate')}
             </button>
           )}
           <button
@@ -115,7 +117,7 @@ export default function PlatformOrgDetailPage({ orgId }) {
             disabled={acting}
             onClick={() => doAction('extend_trial', { days: 7 })}
           >
-            +7d Trial
+            {t('platformAdmin.extendTrial7d')}
           </button>
         </div>
       </div>
@@ -126,10 +128,10 @@ export default function PlatformOrgDetailPage({ orgId }) {
       {/* Usage stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
         {[
-          { label: 'Quotes',    value: usage.quotes },
-          { label: 'Orders',    value: usage.orders },
-          { label: 'Customers', value: usage.customers },
-          { label: 'Members',   value: activeMembers.length },
+          { label: t('platformAdmin.labelQuotes'),    value: usage.quotes },
+          { label: t('platformAdmin.labelOrders'),    value: usage.orders },
+          { label: t('platformAdmin.labelCustomers'), value: usage.customers },
+          { label: t('platformAdmin.tableMembers'),   value: activeMembers.length },
         ].map(({ label, value }) => (
           <div key={label} className='policy-card' style={{ padding: '14px 18px' }}>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{value}</div>
@@ -140,8 +142,8 @@ export default function PlatformOrgDetailPage({ orgId }) {
 
       {/* Billing */}
       <div className='policy-card'>
-        <div className='kicker'>Billing</div>
-        <h3 style={{ margin: '2px 0 14px' }}>Subscription</h3>
+        <div className='kicker'>{t('platformAdmin.labelBilling')}</div>
+        <h3 style={{ margin: '2px 0 14px' }}>{t('platformAdmin.labelSubscription')}</h3>
         <div className='preview-meta'>
           {billingRows.map(({ label, value }) => (
             <div key={label} className='preview-meta-row'>
@@ -154,19 +156,19 @@ export default function PlatformOrgDetailPage({ orgId }) {
 
       {/* Members */}
       <div className='policy-card'>
-        <div className='kicker'>Team</div>
-        <h3 style={{ margin: '2px 0 14px' }}>Members ({members.length})</h3>
+        <div className='kicker'>{t('platformAdmin.labelTeam')}</div>
+        <h3 style={{ margin: '2px 0 14px' }}>{t('platformAdmin.labelMembers', { count: members.length })}</h3>
         <div className='preview-meta'>
           {members.length === 0 ? (
             <div className='preview-meta-row'>
-              <span style={{ color: 'var(--muted)' }}>No members.</span>
+              <span style={{ color: 'var(--muted)' }}>{t('platformAdmin.noMembers')}</span>
               <span>—</span>
             </div>
           ) : members.map((m) => (
             <div key={m.id} className='preview-meta-row'>
               <span>
                 <span style={{ fontWeight: m.status === 'active' ? 600 : 400 }}>
-                  {m.profile?.full_name || m.profile?.email || 'Unknown'}
+                  {m.profile?.full_name || m.profile?.email || t('platformAdmin.memberUnknown')}
                 </span>
                 {m.profile?.email && m.profile.full_name && (
                   <span style={{ color: 'var(--muted)', fontSize: '0.8rem', marginLeft: 8 }}>
@@ -188,8 +190,8 @@ export default function PlatformOrgDetailPage({ orgId }) {
       {/* Recent quotes */}
       {recentQuotes.length > 0 && (
         <div className='policy-card'>
-          <div className='kicker'>Activity</div>
-          <h3 style={{ margin: '2px 0 14px' }}>Recent quotes</h3>
+          <div className='kicker'>{t('platformAdmin.labelActivity')}</div>
+          <h3 style={{ margin: '2px 0 14px' }}>{t('platformAdmin.labelRecentQuotes')}</h3>
           <div className='preview-meta'>
             {recentQuotes.map((q) => (
               <div key={q.id} className='preview-meta-row'>

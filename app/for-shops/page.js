@@ -1,139 +1,15 @@
-import Link from 'next/link'
+import LocalizedLink from '../../lib/i18n/LocalizedLink'
+import { getT } from '../../lib/i18n/server'
 
 const PRICE = 29
 
-const pains = [
-  {
-    icon: '💬',
-    headline: 'Customers DM you for a quote. You reply two days later.',
-    body: 'They already went somewhere else. Your repair skills are great. Your intake process is costing you jobs.',
-  },
-  {
-    icon: '📱',
-    headline: '"Hey, where\'s my phone?" — answered 11 times this week.',
-    body: "Each reply interrupts a repair in progress. You're spending technician time doing customer service that should be automated.",
-  },
-  {
-    icon: '💸',
-    headline: 'Venmo. Cash. "I\'ll pay you when I pick it up."',
-    body: "You're collecting payment however the customer prefers, with no deposit to hold the job, and no clear record of what was paid and when.",
-  },
-  {
-    icon: '📋',
-    headline: 'Your tracking system is a spreadsheet. Or your memory.',
-    body: "When a job falls through the cracks, you find out because the customer shows up angry — not because your system caught it first.",
-  },
-  {
-    icon: '👻',
-    headline: "You sent an estimate. They ghosted. Three weeks later they're furious.",
-    body: "No follow-up. No reminder. No audit trail. Just a customer who thinks you lost their device and a repair you never started.",
-  },
-  {
-    icon: '📊',
-    headline: 'You have no idea which repairs are actually profitable.',
-    body: "Screen replacements feel busy but margins are thin. Motherboard jobs pay well but take all day. You're guessing instead of managing.",
-  },
-]
-
-const features = [
-  {
-    tag: 'Front door',
-    headline: "A branded shop page that's actually yours",
-    body: 'Your shop gets its own URL — /shop/your-brand — with your colors, your name, and your estimate form. Not a Facebook page. Not a Google Form. A real shop.',
-    kills: 'Kills: "My shop has no professional presence"',
-  },
-  {
-    tag: 'Intake',
-    headline: "Quotes that don't live in your DMs",
-    body: 'Customers submit a repair request with photos right from your page. You review, approve, and send an estimate in one click. The whole thread is logged.',
-    kills: 'Kills: "I\'m quoting via text message"',
-  },
-  {
-    tag: 'Tracking',
-    headline: '"Where\'s my device?" — answered automatically.',
-    body: 'Every customer gets a live tracking link. They check status, read your messages, and approve estimates — without calling or texting you.',
-    kills: 'Kills: "I answer the same question 10 times a day"',
-  },
-  {
-    tag: 'Payments',
-    headline: 'Deposits up front. Final balance automated.',
-    body: 'Collect a deposit before you touch the device. When the repair is done, send the final balance request in one click. Stripe handles the rest.',
-    kills: 'Kills: "I collect payment however the customer wants"',
-  },
-  {
-    tag: 'Operations',
-    headline: "A dashboard that shows you what's actually happening",
-    body: 'Repair queue, technician assignments, priority flags, SLA tracking, parts inventory, and analytics — all in one place. Know which jobs are overdue before your customer does.',
-    kills: 'Kills: "My tracking system is a spreadsheet"',
-  },
-  {
-    tag: 'In-store',
-    headline: 'Appointment booking for walk-ins too',
-    body: "Customers can book a drop-off appointment from your shop page. You see it in your dashboard alongside your mail-in queue. One system for both.",
-    kills: 'Kills: "Walk-in customers have no way to book ahead"',
-  },
-]
-
-const steps = [
-  {
-    n: '01',
-    title: 'Create your shop',
-    body: 'Sign up, name your shop, add your branding. Takes about 5 minutes. No technical setup required.',
-  },
-  {
-    n: '02',
-    title: 'Share your link',
-    body: "Send customers to /shop/your-brand. Put it in your bio, on a receipt, in a text reply. It's your shop's front door.",
-  },
-  {
-    n: '03',
-    title: 'Manage everything from your dashboard',
-    body: 'Quotes, repairs, payments, messages, parts, and analytics — one admin panel, always up to date.',
-  },
-]
-
-const compare = [
-  { feature: 'Mail-in workflow at the center', us: true, shopr: false, desk: false },
-  { feature: 'Branded shop page per tenant', us: true, shopr: false, desk: false },
-  { feature: 'Customer self-serve tracking', us: true, shopr: true, desk: true },
-  { feature: 'Appointment booking', us: true, shopr: true, desk: true },
-  { feature: 'Parts inventory', us: true, shopr: true, desk: true },
-  { feature: 'Analytics dashboard', us: true, shopr: true, desk: true },
-  { feature: 'Tamper-proof customer links', us: true, shopr: false, desk: false },
-  { feature: 'Starting price', us: `$${PRICE}/mo (Founder Beta)`, shopr: '$99/mo', desk: '$49/mo' },
-  { feature: 'Free trial', us: '14 days', shopr: 'No card req.', desk: 'Limited' },
-]
-
-const faqs = [
-  {
-    q: 'Do I need to be a mail-in shop to use this?',
-    a: "No. RepairCenter is built with mail-in workflows at the center, but the platform handles walk-in repairs, drop-offs, and appointment bookings too. Most shops use both.",
-  },
-  {
-    q: 'What happens after the free trial?',
-    a: `If you have not added a payment method, your trial ends and access is paused — you will not be charged. If you have added a card, your subscription continues at the current Founder Beta rate of $${PRICE}/month. You can cancel anytime from the billing page; there is no contract.`,
-  },
-  {
-    q: 'Will the price stay $29/month forever?',
-    a: `The Founder Beta plan is $${PRICE}/month while we are in beta and includes every feature in the product today. When we launch public tiers (Starter / Growth / Pro / Advanced) features will be allocated across tiers and prices will change. Founder Beta accounts may be eligible for grandfathered pricing at our discretion — we will give you reasonable notice before any change.`,
-  },
-  {
-    q: 'Can I bring my existing customers over?',
-    a: "New accounts start fresh — RepairCenter builds your history as jobs come in. Your pricing rules are set up during onboarding. If you need to migrate data from another platform, get in touch and we will help.",
-  },
-  {
-    q: 'Do my customers need to create accounts?',
-    a: "No. Customers can access their repair status via a secure link sent to their email. They can also optionally sign in with a magic link to see all their repairs at your shop in one place.",
-  },
-  {
-    q: 'Do I need Stripe to accept payments?',
-    a: "Only if you want to accept online card payments through the platform. You can set your shop to manual payment mode and collect cash, Zelle, Cash App, or Square yourself — the platform still handles everything else. Your shop is the merchant of record for repair payments either way.",
-  },
-  {
-    q: 'Who is responsible for the actual repair?',
-    a: "Your shop is. RepairCenter is software — we provide the intake form, the tracking page, the payment tools, and the admin dashboard. The repair itself, the pricing, the warranty, the refund policy, and the shipping instructions are all controlled by your shop.",
-  },
-]
+export async function generateMetadata() {
+  const t = await getT()
+  return {
+    title: t('forShops.metaTitle'),
+    description: t('forShops.metaDescription', { price: PRICE }),
+  }
+}
 
 function CheckIcon() {
   return (
@@ -151,36 +27,104 @@ function XIcon() {
   )
 }
 
-export const metadata = {
-  title: 'RepairCenter for Shops — Run Your Repair Business Online',
-  description: `Give your repair shop a professional front door. Branded estimate forms, customer tracking, automated payments, and a full admin dashboard. Built with mail-in workflows at the center; designed for shops that handle both mail-in and in-store repairs. Founder Beta plan at $${PRICE}/month with a 14-day free trial.`,
-}
+export default async function ForShopsPage() {
+  const t = await getT()
 
-export default function ForShopsPage() {
+  const pains = [
+    { icon: '💬', headline: t('forShops.pain1Headline'), body: t('forShops.pain1Body') },
+    { icon: '📱', headline: t('forShops.pain2Headline'), body: t('forShops.pain2Body') },
+    { icon: '💸', headline: t('forShops.pain3Headline'), body: t('forShops.pain3Body') },
+    { icon: '📋', headline: t('forShops.pain4Headline'), body: t('forShops.pain4Body') },
+    { icon: '👻', headline: t('forShops.pain5Headline'), body: t('forShops.pain5Body') },
+    { icon: '📊', headline: t('forShops.pain6Headline'), body: t('forShops.pain6Body') },
+  ]
+
+  const features = [
+    { tag: t('forShops.feat1Tag'), headline: t('forShops.feat1Headline'), body: t('forShops.feat1Body'), kills: t('forShops.feat1Kills') },
+    { tag: t('forShops.feat2Tag'), headline: t('forShops.feat2Headline'), body: t('forShops.feat2Body'), kills: t('forShops.feat2Kills') },
+    { tag: t('forShops.feat3Tag'), headline: t('forShops.feat3Headline'), body: t('forShops.feat3Body'), kills: t('forShops.feat3Kills') },
+    { tag: t('forShops.feat4Tag'), headline: t('forShops.feat4Headline'), body: t('forShops.feat4Body'), kills: t('forShops.feat4Kills') },
+    { tag: t('forShops.feat5Tag'), headline: t('forShops.feat5Headline'), body: t('forShops.feat5Body'), kills: t('forShops.feat5Kills') },
+    { tag: t('forShops.feat6Tag'), headline: t('forShops.feat6Headline'), body: t('forShops.feat6Body'), kills: t('forShops.feat6Kills') },
+  ]
+
+  const steps = [
+    { n: '01', title: t('forShops.step1Title'), body: t('forShops.step1Body') },
+    { n: '02', title: t('forShops.step2Title'), body: t('forShops.step2Body') },
+    { n: '03', title: t('forShops.step3Title'), body: t('forShops.step3Body') },
+  ]
+
+  const compare = [
+    { feature: t('forShops.compareRow1'), us: true, shopr: false, desk: false },
+    { feature: t('forShops.compareRow2'), us: true, shopr: false, desk: false },
+    { feature: t('forShops.compareRow3'), us: true, shopr: true, desk: true },
+    { feature: t('forShops.compareRow4'), us: true, shopr: true, desk: true },
+    { feature: t('forShops.compareRow5'), us: true, shopr: true, desk: true },
+    { feature: t('forShops.compareRow6'), us: true, shopr: true, desk: true },
+    { feature: t('forShops.compareRow7'), us: true, shopr: false, desk: false },
+    { feature: t('forShops.compareRow8'), us: t('forShops.compareUsPrice', { price: PRICE }), shopr: t('forShops.compareShoprPrice'), desk: t('forShops.compareDeskPrice') },
+    { feature: t('forShops.compareRow9'), us: t('forShops.compareUsTrial'), shopr: t('forShops.compareShoprTrial'), desk: t('forShops.compareDeskTrial') },
+  ]
+
+  const faqs = [
+    { q: t('forShops.faq1Q'), a: t('forShops.faq1A') },
+    { q: t('forShops.faq2Q'), a: t('forShops.faq2A', { price: PRICE }) },
+    { q: t('forShops.faq3Q'), a: t('forShops.faq3A', { price: PRICE }) },
+    { q: t('forShops.faq4Q'), a: t('forShops.faq4A') },
+    { q: t('forShops.faq5Q'), a: t('forShops.faq5A') },
+    { q: t('forShops.faq6Q'), a: t('forShops.faq6A') },
+    { q: t('forShops.faq7Q'), a: t('forShops.faq7A') },
+  ]
+
+  const pricingFeatures = [
+    t('forShops.pricingFeature1'),
+    t('forShops.pricingFeature2'),
+    t('forShops.pricingFeature3'),
+    t('forShops.pricingFeature4'),
+    t('forShops.pricingFeature5'),
+    t('forShops.pricingFeature6'),
+    t('forShops.pricingFeature7'),
+    t('forShops.pricingFeature8'),
+    t('forShops.pricingFeature9'),
+    t('forShops.pricingFeature10'),
+  ]
+
+  const diffRows = [
+    { label: t('forShops.diffRow1'), mail: true, walkin: true },
+    { label: t('forShops.diffRow2'), mail: true, walkin: true },
+    { label: t('forShops.diffRow3'), mail: true, walkin: true },
+    { label: t('forShops.diffRow4'), mail: false, walkin: true },
+    { label: t('forShops.diffRow5'), mail: true, walkin: true },
+    { label: t('forShops.diffRow6'), mail: true, walkin: true },
+  ]
+
+  const dashboardPreviewRows = [
+    { label: t('forShops.dashboardPreviewQuotes'), value: '3', color: '#3b82f6' },
+    { label: t('forShops.dashboardPreviewInRepair'), value: '8', color: '#f59e0b' },
+    { label: t('forShops.dashboardPreviewAwaiting'), value: '2', color: '#8b5cf6' },
+    { label: t('forShops.dashboardPreviewReady'), value: '4', color: '#10b981' },
+  ]
+
   return (
     <main>
 
-      {/* ── Hero ─────────────────────────────────────────────── */}
+      {/* Hero */}
       <section className="hero-full">
         <div className="site-shell hero-full-grid">
           <div className="hero-full-copy">
-            <div className="hero-full-eyebrow">Repair shop software</div>
-            <h1>Stop managing repairs from your inbox.</h1>
-            <p>
-              RepairCenter gives your shop a professional front door — branded estimate forms,
-              customer tracking, automated payments, and a full admin dashboard.
-              Built for mail-in. Works in-store too.
-            </p>
+            <div className="hero-full-eyebrow">{t('forShops.heroKicker')}</div>
+            <h1>{t('forShops.heroTitle')}</h1>
+            <p>{t('forShops.heroBody')}</p>
             <div className="hero-actions-row">
-              <Link href="/signup" className="button button-primary">
-                Start your free 14-day trial
-              </Link>
-              <Link href="#how-it-works" className="button button-outline">
-                See how it works
-              </Link>
+              <LocalizedLink href="/signup" className="button button-primary">
+                {t('forShops.heroCtaPrimary')}
+              </LocalizedLink>
+              <LocalizedLink href="#how-it-works" className="button button-outline">
+                {t('forShops.heroCtaSecondary')}
+              </LocalizedLink>
             </div>
             <p style={{ marginTop: 14, fontSize: '0.85rem', color: 'var(--muted)' }}>
-              14-day trial &middot; No credit card required during the trial &middot; Cancel anytime &middot; Founder Beta at ${PRICE}/month after trial
+              {t('forShops.heroFinePrint', { price: PRICE })}
             </p>
           </div>
 
@@ -202,19 +146,14 @@ export default function ForShopsPage() {
                   your-shop.repaircenter.app/admin
                 </span>
               </div>
-              {[
-                { label: 'New quote requests', value: '3', color: '#3b82f6' },
-                { label: 'In repair', value: '8', color: '#f59e0b' },
-                { label: 'Awaiting payment', value: '2', color: '#8b5cf6' },
-                { label: 'Ready to ship', value: '4', color: '#10b981' },
-              ].map(({ label, value, color }) => (
+              {dashboardPreviewRows.map(({ label, value, color }) => (
                 <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
                   <span style={{ fontSize: '0.88rem' }}>{label}</span>
                   <span style={{ fontWeight: 700, color, fontSize: '1.1rem' }}>{value}</span>
                 </div>
               ))}
               <div style={{ marginTop: 14 }}>
-                <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: 6 }}>Revenue this month</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: 6 }}>{t('forShops.dashboardPreviewRevenue')}</div>
                 <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#111' }}>$4,280</div>
               </div>
             </div>
@@ -222,15 +161,13 @@ export default function ForShopsPage() {
         </div>
       </section>
 
-      {/* ── Pain points ──────────────────────────────────────── */}
+      {/* Pain points */}
       <section className="section section-dark-bg">
         <div className="site-shell">
           <div className="section-head">
             <div>
-              <div className="kicker kicker-dark-section">Sound familiar?</div>
-              <h2 className="section-title section-title-light">
-                Running a repair shop should not feel like this.
-              </h2>
+              <div className="kicker kicker-dark-section">{t('forShops.painsKicker')}</div>
+              <h2 className="section-title section-title-light">{t('forShops.painsTitle')}</h2>
             </div>
           </div>
           <div className="grid-3">
@@ -245,15 +182,15 @@ export default function ForShopsPage() {
         </div>
       </section>
 
-      {/* ── Features ─────────────────────────────────────────── */}
+      {/* Features */}
       <section className="section" id="features">
         <div className="site-shell">
           <div className="section-head">
             <div>
-              <div className="kicker">The fix</div>
-              <h2 className="section-title">One platform that handles all of it.</h2>
+              <div className="kicker">{t('forShops.featuresKicker')}</div>
+              <h2 className="section-title">{t('forShops.featuresTitle')}</h2>
               <p className="section-copy muted" style={{ marginTop: 10 }}>
-                Every feature is a direct answer to a real problem. Nothing bloated. Nothing you will not use.
+                {t('forShops.featuresBody')}
               </p>
             </div>
           </div>
@@ -270,42 +207,29 @@ export default function ForShopsPage() {
         </div>
       </section>
 
-      {/* ── Mail-in differentiator ───────────────────────────── */}
+      {/* Mail-in differentiator */}
       <section className="section" style={{ background: '#f0f9ff', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
         <div className="site-shell">
           <div className="grid-2" style={{ alignItems: 'center', gap: 48 }}>
             <div>
-              <div className="kicker">The differentiator</div>
-              <h2 className="section-title" style={{ marginBottom: 16 }}>
-                Built with mail-in workflows at the center.
-              </h2>
+              <div className="kicker">{t('forShops.diffKicker')}</div>
+              <h2 className="section-title" style={{ marginBottom: 16 }}>{t('forShops.diffTitle')}</h2>
               <p className="muted" style={{ fontSize: '1rem', lineHeight: 1.7, marginBottom: 20 }}>
-                Most shop-management platforms were designed around a front counter and a cash
-                drawer. Mail-in tends to be a bolt-on.
+                {t('forShops.diffBody1')}
               </p>
               <p className="muted" style={{ fontSize: '1rem', lineHeight: 1.7, marginBottom: 24 }}>
-                We built mail-in first — the estimate flow, the tracking link, the deposit collection,
-                the shipping confirmation — and then designed in-store on top. The result is a
-                platform that fits how remote repair works without stripping out what walk-in shops
-                need.
+                {t('forShops.diffBody2')}
               </p>
-              <Link href="/signup" className="button button-primary">
-                Start your free trial
-              </Link>
+              <LocalizedLink href="/signup" className="button button-primary">
+                {t('forShops.diffCta')}
+              </LocalizedLink>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 0, paddingRight: 0, marginBottom: 4 }}>
-                <span style={{ width: 80, textAlign: 'center', fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 600 }}>Mail-in</span>
-                <span style={{ width: 80, textAlign: 'center', fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 600 }}>In-store</span>
+                <span style={{ width: 80, textAlign: 'center', fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 600 }}>{t('forShops.diffColMail')}</span>
+                <span style={{ width: 80, textAlign: 'center', fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 600 }}>{t('forShops.diffColInStore')}</span>
               </div>
-              {[
-                { label: 'Estimate form + photo intake', mail: true, walkin: true },
-                { label: 'Customer self-serve tracking page', mail: true, walkin: true },
-                { label: 'Automated deposit collection', mail: true, walkin: true },
-                { label: 'Walk-in appointment booking', mail: false, walkin: true },
-                { label: 'Branded per-shop public URL', mail: true, walkin: true },
-                { label: 'Admin repair queue + SLA flags', mail: true, walkin: true },
-              ].map(({ label, mail, walkin }) => (
+              {diffRows.map(({ label, mail, walkin }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', background: 'white', borderRadius: 10, border: '1px solid var(--border)' }}>
                   <span style={{ flex: 1, fontSize: '0.9rem' }}>{label}</span>
                   <span style={{ width: 80, textAlign: 'center' }}>{mail ? <CheckIcon /> : <XIcon />}</span>
@@ -317,13 +241,13 @@ export default function ForShopsPage() {
         </div>
       </section>
 
-      {/* ── How it works ─────────────────────────────────────── */}
+      {/* How it works */}
       <section className="section" id="how-it-works">
         <div className="site-shell">
           <div className="section-head">
             <div>
-              <div className="kicker">Setup</div>
-              <h2 className="section-title">Your shop is live in 10 minutes.</h2>
+              <div className="kicker">{t('forShops.setupKicker')}</div>
+              <h2 className="section-title">{t('forShops.setupTitle')}</h2>
             </div>
           </div>
           <div className="steps-grid">
@@ -338,16 +262,14 @@ export default function ForShopsPage() {
         </div>
       </section>
 
-      {/* ── Pricing ──────────────────────────────────────────── */}
+      {/* Pricing */}
       <section className="section section-dark-bg" id="pricing">
         <div className="site-shell">
           <div className="section-head">
             <div>
-              <div className="kicker kicker-dark-section">Pricing</div>
-              <h2 className="section-title section-title-light">Founder Beta Plan — everything included during beta.</h2>
-              <p style={{ marginTop: 10, color: '#94a3b8' }}>
-                One transparent price while we are in beta. Public tiers (Starter, Growth, Pro, Advanced) will follow when the product is out of beta. Founder accounts may receive grandfathered terms at our discretion.
-              </p>
+              <div className="kicker kicker-dark-section">{t('forShops.pricingKicker')}</div>
+              <h2 className="section-title section-title-light">{t('forShops.pricingTitle')}</h2>
+              <p style={{ marginTop: 10, color: '#94a3b8' }}>{t('forShops.pricingBody')}</p>
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -360,58 +282,47 @@ export default function ForShopsPage() {
               width: '100%',
               textAlign: 'center',
             }}>
-              <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Founder Beta Plan</div>
+              <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>{t('forShops.pricingPlanLabel')}</div>
               <div style={{ fontSize: 56, fontWeight: 800, color: 'white', lineHeight: 1 }}>
                 ${PRICE}
-                <span style={{ fontSize: '1rem', fontWeight: 500, color: '#94a3b8' }}>/month</span>
+                <span style={{ fontSize: '1rem', fontWeight: 500, color: '#94a3b8' }}>{t('forShops.pricingPerMonth')}</span>
               </div>
               <div style={{ color: '#94a3b8', margin: '12px 0 28px', fontSize: '0.9rem' }}>
-                14-day free trial &middot; No credit card required during trial &middot; Cancel anytime
+                {t('forShops.pricingFinePrint')}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, textAlign: 'left' }}>
-                {[
-                  'Branded shop page + estimate form',
-                  'Customer tracking + messaging',
-                  'Admin repair queue + SLA dashboard',
-                  'Parts inventory management',
-                  'Analytics + staff performance reports',
-                  'Appointment booking',
-                  'Invoice + receipt generation',
-                  'Automated customer notifications',
-                  'Multi-technician support',
-                  'Review collection + follow-up emails',
-                ].map((item) => (
+                {pricingFeatures.map((item) => (
                   <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#e2e8f0', fontSize: '0.9rem' }}>
                     <CheckIcon />
                     {item}
                   </div>
                 ))}
               </div>
-              <Link href="/signup" className="button button-primary" style={{ display: 'block', textAlign: 'center' }}>
-                Start your free 14-day trial
-              </Link>
+              <LocalizedLink href="/signup" className="button button-primary" style={{ display: 'block', textAlign: 'center' }}>
+                {t('forShops.pricingCta')}
+              </LocalizedLink>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Comparison ───────────────────────────────────────── */}
+      {/* Comparison */}
       <section className="section">
         <div className="site-shell">
           <div className="section-head">
             <div>
-              <div className="kicker">How we compare</div>
-              <h2 className="section-title">Built different. Priced fairly.</h2>
+              <div className="kicker">{t('forShops.compareKicker')}</div>
+              <h2 className="section-title">{t('forShops.compareTitle')}</h2>
             </div>
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                  <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 700, width: '40%' }}>Feature</th>
-                  <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 700, color: 'var(--blue)', background: '#f0f9ff' }}>RepairCenter</th>
-                  <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 700, color: 'var(--muted)' }}>RepairShopr</th>
-                  <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 700, color: 'var(--muted)' }}>RepairDesk</th>
+                  <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 700, width: '40%' }}>{t('forShops.compareColFeature')}</th>
+                  <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 700, color: 'var(--blue)', background: '#f0f9ff' }}>{t('forShops.compareColUs')}</th>
+                  <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 700, color: 'var(--muted)' }}>{t('forShops.compareColShopr')}</th>
+                  <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 700, color: 'var(--muted)' }}>{t('forShops.compareColDesk')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -433,20 +344,18 @@ export default function ForShopsPage() {
             </table>
           </div>
           <p className="muted" style={{ marginTop: 12, fontSize: '0.8rem' }}>
-            Comparison based on publicly available pricing and feature descriptions as of May 2026.
-            Sourced from each vendor&apos;s public website at that date. Features and prices change —
-            check each vendor&apos;s site for current information.
+            {t('forShops.compareFootnote')}
           </p>
         </div>
       </section>
 
-      {/* ── FAQ ──────────────────────────────────────────────── */}
+      {/* FAQ */}
       <section className="section">
         <div className="site-shell">
           <div className="section-head">
             <div>
-              <div className="kicker">FAQ</div>
-              <h2 className="section-title">Common questions.</h2>
+              <div className="kicker">{t('forShops.faqKicker')}</div>
+              <h2 className="section-title">{t('forShops.faqTitle')}</h2>
             </div>
           </div>
           <div className="grid-2">
@@ -460,25 +369,22 @@ export default function ForShopsPage() {
         </div>
       </section>
 
-      {/* ── Final CTA ────────────────────────────────────────── */}
+      {/* Final CTA */}
       <section className="section">
         <div className="site-shell">
           <div className="cta-strip">
             <div>
-              <div className="kicker">Ready?</div>
-              <h3 className="card-title">Your shop could be live in 10 minutes.</h3>
-              <p className="muted">
-                No demo call. No sales rep. Sign up, configure your shop, and share your link.
-                Free for 14 days, then Founder Beta at ${PRICE}/month.
-              </p>
+              <div className="kicker">{t('forShops.ctaKicker')}</div>
+              <h3 className="card-title">{t('forShops.ctaTitle')}</h3>
+              <p className="muted">{t('forShops.ctaBody', { price: PRICE })}</p>
             </div>
             <div className="inline-actions">
-              <Link href="/signup" className="button button-primary">
-                Start free trial
-              </Link>
-              <Link href="/contact" className="button button-secondary">
-                Get in touch
-              </Link>
+              <LocalizedLink href="/signup" className="button button-primary">
+                {t('forShops.ctaPrimary')}
+              </LocalizedLink>
+              <LocalizedLink href="/contact" className="button button-secondary">
+                {t('forShops.ctaSecondary')}
+              </LocalizedLink>
             </div>
           </div>
         </div>
