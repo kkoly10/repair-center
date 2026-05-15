@@ -1,7 +1,10 @@
+import LegalDisclaimerBanner from '../../components/LegalDisclaimerBanner'
+
 export default function ReturnsPage() {
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
+        <LegalDisclaimerBanner />
         <div className='policy-card'>
           <div className='kicker'>Returns & refund policy</div>
           <h1>Returns and refund policy</h1>

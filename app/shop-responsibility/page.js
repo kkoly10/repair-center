@@ -1,3 +1,5 @@
+import LegalDisclaimerBanner from '../../components/LegalDisclaimerBanner'
+
 export const metadata = {
   title: 'Shop Responsibility & Repair Disclaimer — RepairCenter',
   description:
@@ -8,6 +10,7 @@ export default function ShopResponsibilityPage() {
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
+        <LegalDisclaimerBanner />
         <div className='policy-card'>
           <div className='kicker'>Shop responsibility</div>
           <h1>Shop Responsibility &amp; Repair Disclaimer</h1>

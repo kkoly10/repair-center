@@ -1,4 +1,5 @@
 import { LEGAL } from '../../lib/legalConfig'
+import LegalDisclaimerBanner from '../../components/LegalDisclaimerBanner'
 
 export const metadata = {
   title: 'Platform Terms — RepairCenter',
@@ -10,6 +11,7 @@ export default function PlatformTermsPage() {
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
+        <LegalDisclaimerBanner />
         <div className='policy-card'>
           <div className='kicker'>Platform terms</div>
           <h1>Platform Terms of Service</h1>

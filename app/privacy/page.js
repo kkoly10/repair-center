@@ -1,4 +1,5 @@
 import { LEGAL } from '../../lib/legalConfig'
+import LegalDisclaimerBanner from '../../components/LegalDisclaimerBanner'
 
 export const metadata = {
   title: 'Privacy Policy — RepairCenter',
@@ -10,6 +11,7 @@ export default function PrivacyPage() {
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
+        <LegalDisclaimerBanner />
         <div className='policy-card'>
           <div className='kicker'>Privacy policy</div>
           <h1>Privacy Policy</h1>
