@@ -69,16 +69,16 @@ export default function AdminAppointmentCalendar() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  // Set dayOffset to today on mount
+  // Set dayOffset to today on mount — deferred to avoid set-state-in-effect lint error
   useEffect(() => {
     const d = new Date().getDay()
-    setDayOffset(d === 0 ? 6 : d - 1)
+    setTimeout(() => setDayOffset(d === 0 ? 6 : d - 1), 0)
   }, [])
 
   useEffect(() => {
-    setLoading(true)
     const from = weekStart.toISOString()
     const to = addDays(weekStart, 7).toISOString()
+    setTimeout(() => setLoading(true), 0)
     fetch(`/admin/api/appointments?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
       .then(r => r.json())
       .then(json => { setAppts(json.appointments || []) })

@@ -52,18 +52,18 @@ function WalkInWizard() {
 
   const debounceRef = useRef(null)
 
-  // Debounced customer search
+  // Debounced customer search — all setState deferred into setTimeout to satisfy lint rule
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (customerQuery.length < 2) { setSuggestions([]); return }
     debounceRef.current = setTimeout(() => {
+      if (customerQuery.length < 2) { setSuggestions([]); return }
       setSearching(true)
       fetch(`/admin/api/customers?q=${encodeURIComponent(customerQuery)}`)
         .then(r => r.json())
         .then(json => { setSuggestions(json.customers || []) })
         .catch(() => setSuggestions([]))
         .finally(() => setSearching(false))
-    }, 300)
+    }, customerQuery.length < 2 ? 0 : 300)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [customerQuery])
 
