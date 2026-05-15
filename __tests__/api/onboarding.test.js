@@ -41,17 +41,6 @@ function makeDb({
 
   const orgData = { onboarding_dismissed_at: null, ...org }
 
-  const updateChain = {
-    select: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockResolvedValue({ error: updateError }),
-    update: jest.fn().mockReturnThis(),
-    maybeSingle: jest.fn().mockResolvedValue({ data: orgData, error: null }),
-    single: jest.fn().mockResolvedValue({ data: orgData, error: null }),
-  }
-  updateChain.update = jest.fn().mockReturnValue({
-    eq: jest.fn().mockResolvedValue({ error: updateError }),
-  })
-
   return {
     from: jest.fn().mockImplementation((table) => {
       if (table === 'pricing_rules') return countChain(pricingCount)

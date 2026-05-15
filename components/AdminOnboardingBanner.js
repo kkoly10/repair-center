@@ -34,8 +34,6 @@ export default function AdminOnboardingBanner() {
         }
       })
       .catch(() => {})
-
-    return () => { if (celebrateTimerRef.current) clearTimeout(celebrateTimerRef.current) }
   }, [])
 
   // Trigger celebration timer when all steps complete — runs in effect, not during render
@@ -44,6 +42,7 @@ export default function AdminOnboardingBanner() {
       fetch('/admin/api/onboarding/dismiss', { method: 'POST' }).catch(() => {})
       celebrateTimerRef.current = setTimeout(() => setCelebrated(true), 4000)
     }
+    return () => { if (celebrateTimerRef.current) clearTimeout(celebrateTimerRef.current) }
   }, [allComplete, celebrated])
 
   if (!status || dismissed || celebrated) return null
