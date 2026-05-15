@@ -707,7 +707,8 @@
     "longSetupOr": "o",
     "longSetupTech": "tech",
     "longSetupAfter": ".",
-    "forgotPassword": "¿Olvidó su contraseña?"
+    "forgotPassword": "¿Olvidó su contraseña?",
+    "rateLimited": "Demasiados intentos de inicio de sesión. Espere unos minutos e inténtelo de nuevo."
   },
   "adminForgotPassword": {
     "kicker": "Acceso a la cuenta",
@@ -2575,5 +2576,36 @@
     "calToday": "Hoy",
     "calNext": "Siguiente →",
     "calendarEmpty": "No hay citas en la ventana visible."
+  },
+  "cookieBanner": {
+    "title": "Utilizamos cookies",
+    "body": "Utilizamos cookies para mantener su sesión iniciada y permitir los pagos. Puede personalizar qué cookies opcionales instalamos.",
+    "acceptAll": "Aceptar todas",
+    "essentialOnly": "Solo esenciales",
+    "customize": "Personalizar",
+    "savePreferences": "Guardar preferencias",
+    "essentialLabel": "Esenciales",
+    "essentialDesc": "Necesarias para iniciar sesión, los pagos y las funciones básicas del sitio. Siempre activas.",
+    "functionalLabel": "Funcionales",
+    "functionalDesc": "Recuerdan su idioma y sus preferencias de visualización.",
+    "analyticsLabel": "Analítica",
+    "analyticsDesc": "Seguimiento anónimo de errores mediante Sentry para que podamos corregir fallos más rápidamente.",
+    "privacyLink": "Leer nuestra política de privacidad",
+    "changeChoiceLink": "Preferencias de cookies"
+  },
+  "refund": {
+    "button": "Emitir reembolso",
+    "modalTitle": "Emitir un reembolso",
+    "selectPayment": "¿Qué pago?",
+    "amountLabel": "Importe (USD)",
+    "amountHint": "Por defecto, el importe total del pago.",
+    "reasonLabel": "Motivo (interno)",
+    "submit": "Emitir reembolso",
+    "submitting": "Reembolsando…",
+    "cancel": "Cancelar",
+    "success": "Reembolso de {amount} USD emitido.",
+    "error": "No se pudo emitir el reembolso. Inténtelo de nuevo.",
+    "noPayments": "No hay pagos reembolsables en este pedido.",
+    "paidLabel": "Pagado el {date}"
   }
 }

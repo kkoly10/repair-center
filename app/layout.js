@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import { headers } from 'next/headers'
 import SiteHeader from '../components/SiteHeader'
 import SiteFooter from '../components/SiteFooter'
+import CookieBanner from '../components/CookieBanner'
 import { TranslationProvider } from '../lib/i18n/TranslationProvider'
 import { getServerMessages } from '../lib/i18n/server'
 import { getTranslator } from '../lib/i18n/messages'
@@ -42,6 +43,7 @@ export default async function RootLayout({ children }) {
           <SiteHeader />
           {children}
           <SiteFooter />
+          <CookieBanner />
         </TranslationProvider>
       </body>
     </html>

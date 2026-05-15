@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getSupabaseBrowser } from '../lib/supabase/browser'
 import LocalizedLink from '../lib/i18n/LocalizedLink'
 import { useT } from '../lib/i18n/TranslationProvider'
 
@@ -24,18 +23,27 @@ export default function AdminLoginForm() {
     setError('')
 
     try {
-      const supabase = getSupabaseBrowser()
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch('/api/auth/admin-sign-in', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       })
 
-      if (signInError) throw signInError
+      if (res.status === 429) {
+        setError(t('adminLogin.rateLimited'))
+        return
+      }
+
+      if (!res.ok) {
+        // Generic message; never leak whether the email exists
+        setError(t('adminLogin.errorGeneric'))
+        return
+      }
 
       router.replace(nextPath)
       router.refresh()
-    } catch (submitError) {
-      setError(submitError.message || t('adminLogin.errorGeneric'))
+    } catch {
+      setError(t('adminLogin.errorGeneric'))
     } finally {
       setLoading(false)
     }

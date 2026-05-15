@@ -91,6 +91,14 @@ function AdminRepairOrderInner({ quoteId }) {
   const [requestBalanceError, setRequestBalanceError] = useState('')
   const [requestBalanceSuccess, setRequestBalanceSuccess] = useState('')
 
+  const [refundOpen, setRefundOpen] = useState(false)
+  const [refundPaymentId, setRefundPaymentId] = useState('')
+  const [refundAmount, setRefundAmount] = useState('')
+  const [refundReason, setRefundReason] = useState('')
+  const [refunding, setRefunding] = useState(false)
+  const [refundError, setRefundError] = useState('')
+  const [refundSuccess, setRefundSuccess] = useState('')
+
   useEffect(() => {
     let ignore = false
 
@@ -205,6 +213,79 @@ function AdminRepairOrderInner({ quoteId }) {
       setDepositMarkError(err.message || t('adminRepairOrder.depositMarkFailed'))
     } finally {
       setDepositMarking(false)
+    }
+  }
+
+  const refundablePayments = useMemo(() => {
+    const rows = paymentData?.payments || []
+    return rows.filter(
+      (p) =>
+        p.status === 'paid' &&
+        p.payment_kind !== 'refund' &&
+        p.provider === 'stripe' &&
+        !!p.provider_payment_intent_id &&
+        Number(p.amount) > 0
+    )
+  }, [paymentData])
+
+  const openRefundModal = () => {
+    const first = refundablePayments[0]
+    setRefundPaymentId(first?.id || '')
+    setRefundAmount(first ? Number(first.amount).toFixed(2) : '')
+    setRefundReason('')
+    setRefundError('')
+    setRefundSuccess('')
+    setRefundOpen(true)
+  }
+
+  const closeRefundModal = () => {
+    if (refunding) return
+    setRefundOpen(false)
+  }
+
+  const handleRefundPaymentChange = (id) => {
+    setRefundPaymentId(id)
+    const row = refundablePayments.find((p) => p.id === id)
+    if (row) setRefundAmount(Number(row.amount).toFixed(2))
+  }
+
+  const handleSubmitRefund = async (event) => {
+    event.preventDefault()
+    if (refunding) return
+    setRefunding(true)
+    setRefundError('')
+    setRefundSuccess('')
+    try {
+      const parsedDollars = Number(refundAmount)
+      if (!Number.isFinite(parsedDollars) || parsedDollars <= 0) {
+        setRefundError(t('refund.error'))
+        setRefunding(false)
+        return
+      }
+      const amountCents = Math.round(parsedDollars * 100)
+      const res = await fetch(`/admin/api/quotes/${quoteId}/refund`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentId: refundPaymentId,
+          amountCents,
+          reason: refundReason,
+        }),
+      })
+      const data = await res.json().catch(() => null)
+      if (res.ok && data?.ok) {
+        setRefundSuccess(t('refund.success', { amount: parsedDollars.toFixed(2) }))
+        const payRes = await fetch(`/admin/api/quotes/${quoteId}/payment-summary`, { cache: 'no-store' })
+        const payResult = await payRes.json().catch(() => null)
+        if (payRes.ok && payResult) setPaymentData(payResult)
+        setRefundOpen(false)
+      } else {
+        setRefundError((data && data.error) || t('refund.error'))
+      }
+    } catch (err) {
+      setRefundError(err.message || t('refund.error'))
+    } finally {
+      setRefunding(false)
     }
   }
 
@@ -418,6 +499,15 @@ function AdminRepairOrderInner({ quoteId }) {
             >
               {sendingReceipt ? t('adminRepairOrder.sendingEllipsis') : t('adminRepairOrder.sendReceipt')}
             </button>
+            <button
+              type='button'
+              className='button button-compact'
+              style={{ background: '#b45309', color: '#fff', border: 'none' }}
+              onClick={openRefundModal}
+              disabled={refunding}
+            >
+              {t('refund.button')}
+            </button>
             {showIntakeConfirm && (
               <button
                 className='button button-compact'
@@ -429,7 +519,7 @@ function AdminRepairOrderInner({ quoteId }) {
               </button>
             )}
           </div>
-          {(depositMarkSuccess || depositMarkError || requestBalanceSuccess || requestBalanceError || intakeConfirmSent || intakeConfirmError) && (
+          {(depositMarkSuccess || depositMarkError || requestBalanceSuccess || requestBalanceError || intakeConfirmSent || intakeConfirmError || refundSuccess) && (
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
               {depositMarkSuccess && (
                 <div className='notice' style={{ color: '#16a34a' }}>{t('adminRepairOrder.depositMarkedPaid')}</div>
@@ -441,6 +531,9 @@ function AdminRepairOrderInner({ quoteId }) {
               {requestBalanceError && <div className='notice'>{requestBalanceError}</div>}
               {intakeConfirmSent && <div className='notice' style={{ color: '#0f766e' }}>{t('adminRepairOrder.intakeConfirmSent')}</div>}
               {intakeConfirmError && <div className='notice'>{intakeConfirmError}</div>}
+              {refundSuccess && (
+                <div className='notice' style={{ color: '#16a34a' }}>{refundSuccess}</div>
+              )}
             </div>
           )}
 
@@ -686,6 +779,115 @@ function AdminRepairOrderInner({ quoteId }) {
           </div>
         </div>
       </div>
+
+      {refundOpen && (
+        <div
+          role='dialog'
+          aria-modal='true'
+          onClick={closeRefundModal}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              background: '#fff',
+              borderRadius: 12,
+              maxWidth: 480,
+              width: '100%',
+              padding: 24,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>{t('refund.modalTitle')}</h3>
+            {refundablePayments.length === 0 ? (
+              <>
+                <p className='muted'>{t('refund.noPayments')}</p>
+                <div className='inline-actions' style={{ marginTop: 16 }}>
+                  <button type='button' className='button button-secondary' onClick={closeRefundModal}>
+                    {t('refund.cancel')}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <form onSubmit={handleSubmitRefund} className='page-stack'>
+                <div className='field'>
+                  <label htmlFor='refund-payment-id'>{t('refund.selectPayment')}</label>
+                  <select
+                    id='refund-payment-id'
+                    value={refundPaymentId}
+                    onChange={(event) => handleRefundPaymentChange(event.target.value)}
+                  >
+                    {refundablePayments.map((p) => {
+                      const kindLabel = p.payment_kind === 'inspection_deposit'
+                        ? t('adminRepairOrder.inspectionDepositLabel')
+                        : p.payment_kind
+                      const dateLabel = p.paid_at
+                        ? t('refund.paidLabel', { date: new Date(p.paid_at).toLocaleDateString() })
+                        : ''
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {kindLabel} · ${Number(p.amount).toFixed(2)} {dateLabel}
+                        </option>
+                      )
+                    })}
+                  </select>
+                </div>
+                <div className='field'>
+                  <label htmlFor='refund-amount'>{t('refund.amountLabel')}</label>
+                  <input
+                    id='refund-amount'
+                    type='number'
+                    step='0.01'
+                    min='0.01'
+                    value={refundAmount}
+                    onChange={(event) => setRefundAmount(event.target.value)}
+                  />
+                  <p className='muted' style={{ marginTop: 4, fontSize: 12 }}>
+                    {t('refund.amountHint')}
+                  </p>
+                </div>
+                <div className='field'>
+                  <label htmlFor='refund-reason'>{t('refund.reasonLabel')}</label>
+                  <input
+                    id='refund-reason'
+                    type='text'
+                    maxLength={200}
+                    value={refundReason}
+                    onChange={(event) => setRefundReason(event.target.value)}
+                  />
+                </div>
+                {refundError && <div className='notice'>{refundError}</div>}
+                <div className='inline-actions'>
+                  <button
+                    type='submit'
+                    className='button button-primary'
+                    disabled={refunding || !refundPaymentId}
+                  >
+                    {refunding ? t('refund.submitting') : t('refund.submit')}
+                  </button>
+                  <button
+                    type='button'
+                    className='button button-secondary'
+                    onClick={closeRefundModal}
+                    disabled={refunding}
+                  >
+                    {t('refund.cancel')}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   )
 }

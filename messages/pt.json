@@ -707,7 +707,8 @@
     "longSetupOr": "ou",
     "longSetupTech": "tech",
     "longSetupAfter": ".",
-    "forgotPassword": "Esqueceu a palavra-passe?"
+    "forgotPassword": "Esqueceu a palavra-passe?",
+    "rateLimited": "Demasiadas tentativas de início de sessão. Aguarde alguns minutos e tente novamente."
   },
   "adminForgotPassword": {
     "kicker": "Acesso à conta",
@@ -2575,5 +2576,36 @@
     "calToday": "Hoje",
     "calNext": "Seguinte →",
     "calendarEmpty": "Sem marcações na janela visível."
+  },
+  "cookieBanner": {
+    "title": "Utilizamos cookies",
+    "body": "Utilizamos cookies para manter a sua sessão iniciada e permitir pagamentos. Pode personalizar quais cookies opcionais instalamos.",
+    "acceptAll": "Aceitar todos",
+    "essentialOnly": "Apenas essenciais",
+    "customize": "Personalizar",
+    "savePreferences": "Guardar preferências",
+    "essentialLabel": "Essenciais",
+    "essentialDesc": "Necessários para iniciar sessão, pagamentos e funcionalidades básicas do site. Sempre ativos.",
+    "functionalLabel": "Funcionais",
+    "functionalDesc": "Memorizam o seu idioma e preferências de visualização.",
+    "analyticsLabel": "Análise",
+    "analyticsDesc": "Acompanhamento anónimo de erros através do Sentry para que possamos corrigir falhas mais rapidamente.",
+    "privacyLink": "Ler a nossa política de privacidade",
+    "changeChoiceLink": "Preferências de cookies"
+  },
+  "refund": {
+    "button": "Emitir reembolso",
+    "modalTitle": "Emitir um reembolso",
+    "selectPayment": "Qual pagamento?",
+    "amountLabel": "Montante (USD)",
+    "amountHint": "Por predefinição, o valor total do pagamento.",
+    "reasonLabel": "Motivo (interno)",
+    "submit": "Emitir reembolso",
+    "submitting": "A reembolsar…",
+    "cancel": "Cancelar",
+    "success": "Reembolso de {amount} USD emitido.",
+    "error": "Não foi possível emitir o reembolso. Tente novamente.",
+    "noPayments": "Não há pagamentos reembolsáveis nesta encomenda.",
+    "paidLabel": "Pago em {date}"
   }
 }
