@@ -894,6 +894,48 @@ All data comes from existing tables: `organizations`, `organization_subscription
 
 ---
 
+## Sprint 36 — Stripe Connect Onboarding & Platform Fee ✅ COMPLETE
+
+### Migration applied to production
+- `20260515_022_stripe_connect_capabilities.sql` — adds `stripe_connect_charges_enabled` (bool, default false) and `stripe_connect_payouts_enabled` (bool, default false) to `organization_payment_settings`; synced from Stripe via webhook + status endpoint
+
+### Architecture: Destination Charges
+Platform creates PaymentIntent on its own account with `transfer_data: { destination: connectedAccountId }` and `application_fee_amount`. Stripe auto-transfers `(amount − fee)` to the shop. Same platform publishable key, same webhook endpoint, same client components — no client-side changes.
+
+**Platform fee: 0.75%** (`STRIPE_CONNECT_PLATFORM_FEE_PERCENT`, default `0.0075`); minimum 1 cent per transaction.
+
+### What was done
+- **`lib/payments/getConnectParams.js`** (new) — shared helper; reads `payment_mode`, `stripe_connect_account_id`, `stripe_connect_charges_enabled` from org settings; returns `{ destination, feePercent }` when stripe_connect is active and charges enabled, else `null`
+- **`POST /admin/api/billing/connect/onboard`** — creates Express account if none exists (persists ID via upsert); calls `stripe.accountLinks.create`; returns `{ url }` for redirect to Stripe-hosted onboarding
+- **`GET /admin/api/billing/connect/status`** — retrieves `stripe.accounts.retrieve`; upserts `charges_enabled`, `payouts_enabled`, `onboarding_complete` back to DB; returns `{ connected, chargesEnabled, payoutsEnabled, accountId }`
+- **`POST /api/billing/connect/webhook`** — verified via `STRIPE_CONNECT_WEBHOOK_SECRET`; handles `account.updated`; upserts capabilities by `metadata.organization_id`
+- **`app/api/payments/intent/route.js`** (modified) — calls `getConnectParams`; adds `transfer_data` + `application_fee_amount` to PaymentIntent when Connect is active
+- **`app/api/payments/final-intent/route.js`** (modified) — same pattern as intent route
+- **`app/api/estimate-review/[quoteId]/route.js`** (modified, minor) — expanded payment settings select to include Connect columns
+- **`app/admin/api/settings/route.js`** (modified) — GET and POST include `stripe_connect_charges_enabled` + `stripe_connect_payouts_enabled`
+- **`components/AdminBillingPage.js`** (modified) — "Accept Payments" section: fetches Connect status in parallel with billing; renders three states (not connected / setup incomplete / connected with capability dots); Refresh Status button; 0.75% fee notice
+- **`components/AdminSettingsPage.js`** (modified) — added `stripe_connect` option to payment mode dropdown; fetches Connect status on mount; shows amber/green inline hint based on connection state
+- **`app/admin/billing/connect/return/page.js`** (new) — shown after Stripe onboarding completes; links back to Billing
+- **`app/admin/billing/connect/refresh/page.js`** (new) — shown when account link expires; links back to Billing
+- **`__tests__/api/stripe-connect.test.js`** (new) — 13 tests: onboard 401/creates-account/reuses-account/url-shape; status 401/no-account/retrieves+upserts/response-shape; webhook bad-sig/account.updated; getConnectParams active/manual/charges-disabled
+- **`.env.example`** — documents `STRIPE_CONNECT_WEBHOOK_SECRET` + `STRIPE_CONNECT_PLATFORM_FEE_PERCENT`
+
+### New environment variables
+| Variable | Required | Default | Purpose |
+|----------|----------|---------|---------|
+| `STRIPE_CONNECT_WEBHOOK_SECRET` | Yes (when using Connect) | — | Verify `account.updated` webhook at `/api/billing/connect/webhook` |
+| `STRIPE_CONNECT_PLATFORM_FEE_PERCENT` | No | `0.0075` | Platform application fee rate (0.75%) |
+
+### Stripe Dashboard setup required
+1. Enable Stripe Connect in dashboard settings
+2. Create Connect webhook endpoint: `https://your-domain.com/api/billing/connect/webhook` → listen for `account.updated`
+3. Copy webhook signing secret → `STRIPE_CONNECT_WEBHOOK_SECRET`
+
+### Test suite after Sprint 36
+216 tests across 21 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)
@@ -905,3 +947,5 @@ All data comes from existing tables: `organizations`, `organization_subscription
 - HMAC token secret for email links: `EMAIL_LINK_SECRET` (optional but recommended; rotate to invalidate old links)
 - Default shop slug for legacy single-tenant routes: `NEXT_PUBLIC_DEFAULT_ORG_SLUG` / `DEFAULT_ORG_SLUG` (used by `EstimateForm` to fetch org-scoped pricing on the generic `/estimate` route)
 - Platform admin emails: `PLATFORM_ADMIN_EMAILS` (comma-separated; gates `/platform/*`)
+- Stripe Connect webhook secret: `STRIPE_CONNECT_WEBHOOK_SECRET` — verify `account.updated` at `/api/billing/connect/webhook`
+- Stripe Connect platform fee rate: `STRIPE_CONNECT_PLATFORM_FEE_PERCENT` (default `0.0075` = 0.75%)

@@ -216,7 +216,7 @@ export async function POST(request, context) {
             .maybeSingle(),
           supabase
             .from('organization_payment_settings')
-            .select('payment_mode, manual_payment_instructions')
+            .select('payment_mode, manual_payment_instructions, stripe_connect_account_id, stripe_connect_charges_enabled')
             .eq('organization_id', quoteRequest.organization_id)
             .maybeSingle(),
         ])

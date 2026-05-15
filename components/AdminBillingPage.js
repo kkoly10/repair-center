@@ -27,6 +27,15 @@ function StatusBadge({ status }) {
   )
 }
 
+function CapabilityDot({ enabled, label }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.85rem', color: 'var(--muted)' }}>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: enabled ? 'var(--success)' : 'var(--danger)', display: 'inline-block' }} />
+      {label}
+    </span>
+  )
+}
+
 export default function AdminBillingPage() {
   const [billing, setBilling] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -34,15 +43,23 @@ export default function AdminBillingPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError] = useState('')
 
+  const [connect, setConnect] = useState(null)
+  const [connectLoading, setConnectLoading] = useState(true)
+  const [connectActionLoading, setConnectActionLoading] = useState(false)
+  const [connectActionError, setConnectActionError] = useState('')
+
   useEffect(() => {
-    fetch('/admin/api/billing')
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.ok) setBilling(json.billing)
-        else setError(json.error || 'Failed to load billing.')
-      })
-      .catch(() => setError('Failed to load billing.'))
-      .finally(() => setLoading(false))
+    Promise.all([
+      fetch('/admin/api/billing').then((r) => r.json()),
+      fetch('/admin/api/billing/connect/status').then((r) => r.json()),
+    ]).then(([billingJson, connectJson]) => {
+      if (billingJson.ok) setBilling(billingJson.billing)
+      else setError(billingJson.error || 'Failed to load billing.')
+      if (!connectJson.error) setConnect(connectJson)
+    }).catch(() => setError('Failed to load billing.')).finally(() => {
+      setLoading(false)
+      setConnectLoading(false)
+    })
   }, [])
 
   async function handleCheckout() {
@@ -78,6 +95,38 @@ export default function AdminBillingPage() {
       setActionError('Unable to open billing portal.')
     } finally {
       setActionLoading(false)
+    }
+  }
+
+  async function handleConnectOnboard() {
+    setConnectActionLoading(true)
+    setConnectActionError('')
+    try {
+      const res = await fetch('/admin/api/billing/connect/onboard', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      const json = await res.json()
+      if (json.url) {
+        window.location.href = json.url
+      } else {
+        setConnectActionError(json.error || 'Unable to start Stripe onboarding.')
+      }
+    } catch {
+      setConnectActionError('Unable to start Stripe onboarding.')
+    } finally {
+      setConnectActionLoading(false)
+    }
+  }
+
+  async function handleConnectRefresh() {
+    setConnectActionLoading(true)
+    setConnectActionError('')
+    try {
+      const res = await fetch('/admin/api/billing/connect/status')
+      const json = await res.json()
+      if (!json.error) setConnect(json)
+    } catch {
+      setConnectActionError('Unable to refresh status.')
+    } finally {
+      setConnectActionLoading(false)
     }
   }
 
@@ -168,6 +217,69 @@ export default function AdminBillingPage() {
             </p>
           )}
         </div>
+      </div>
+
+      {/* Accept Payments — Stripe Connect */}
+      <div className='policy-card' style={{ marginBottom: 24 }}>
+        <h2 style={{ margin: '0 0 8px', fontSize: '1.1rem' }}>Accept Card Payments</h2>
+        <p style={{ color: 'var(--muted)', fontSize: '0.9rem', marginBottom: 16 }}>
+          Connect your own Stripe account to accept card payments directly. RepairCenter earns a 0.75% platform fee on each transaction.
+        </p>
+
+        {connectLoading && <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Loading…</p>}
+
+        {!connectLoading && connect && !connect.connected && (
+          <div>
+            <p style={{ fontSize: '0.9rem', marginBottom: 12 }}>
+              No Stripe account connected. Click below to link your Stripe account via Stripe&apos;s secure onboarding.
+            </p>
+            {connectActionError && <p className='notice-error' style={{ marginBottom: 12 }}>{connectActionError}</p>}
+            <button className='button button-primary' onClick={handleConnectOnboard} disabled={connectActionLoading}>
+              {connectActionLoading ? 'Redirecting…' : 'Connect Stripe Account'}
+            </button>
+          </div>
+        )}
+
+        {!connectLoading && connect && connect.connected && !connect.chargesEnabled && (
+          <div>
+            <p className='notice-warn' style={{ marginBottom: 12 }}>
+              Your Stripe account setup is in progress. Finish the onboarding to enable card payments.
+            </p>
+            {connectActionError && <p className='notice-error' style={{ marginBottom: 12 }}>{connectActionError}</p>}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button className='button button-primary' onClick={handleConnectOnboard} disabled={connectActionLoading}>
+                {connectActionLoading ? 'Redirecting…' : 'Resume Setup'}
+              </button>
+              <button className='button button-secondary' onClick={handleConnectRefresh} disabled={connectActionLoading}>
+                Refresh Status
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!connectLoading && connect && connect.connected && connect.chargesEnabled && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--success)', color: '#fff', borderRadius: 9999, padding: '3px 12px', fontSize: '0.8rem', fontWeight: 600 }}>
+                ✓ Connected
+              </span>
+              <span style={{ color: 'var(--muted)', fontSize: '0.85rem', fontFamily: 'monospace' }}>
+                {connect.accountId?.slice(0, 8)}…{connect.accountId?.slice(-4)}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
+              <CapabilityDot enabled={connect.chargesEnabled} label='Charges' />
+              <CapabilityDot enabled={connect.payoutsEnabled} label='Payouts' />
+            </div>
+            <div className='notice-info' style={{ marginBottom: 12, fontSize: '0.85rem' }}>
+              RepairCenter earns 0.75% on payments processed through your connected account.
+            </div>
+            {connectActionError && <p className='notice-error' style={{ marginBottom: 12 }}>{connectActionError}</p>}
+            <button className='button button-secondary' onClick={handleConnectRefresh} disabled={connectActionLoading}>
+              {connectActionLoading ? 'Refreshing…' : 'Refresh Status'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* FAQ / info */}

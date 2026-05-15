@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
+import { getConnectParams } from '../../../../lib/payments/getConnectParams'
 
 export const runtime = 'nodejs'
 
@@ -103,8 +104,12 @@ export async function POST(request) {
     }
 
     const stripe = getStripe()
+
+    const connectParams = await getConnectParams(supabase, quoteRequest.organization_id)
+    const amountCents = Math.round(finalBalanceDue * 100)
+
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(finalBalanceDue * 100),
+      amount: amountCents,
       currency: 'usd',
       receipt_email: email,
       description: `Repair balance – ${[quoteRequest.brand_name, quoteRequest.model_name]
@@ -118,6 +123,10 @@ export async function POST(request) {
         paymentKind: 'final_balance',
         finalBalanceAmount: String(finalBalanceDue),
       },
+      ...(connectParams && {
+        transfer_data: { destination: connectParams.destination },
+        application_fee_amount: Math.max(1, Math.round(amountCents * connectParams.feePercent)),
+      }),
     })
 
     return NextResponse.json({
