@@ -59,17 +59,25 @@ function AdminSettingsPageInner() {
   const [savingPayment, setSavingPayment] = useState(false)
   const [savedPayment, setSavedPayment] = useState(false)
   const [errorPayment, setErrorPayment] = useState('')
+  const [connectStatus, setConnectStatus] = useState(null)
 
   useEffect(() => {
     let cancelled = false
 
     async function fetchSettings() {
       try {
-        const response = await fetch('/admin/api/settings')
+        const [response, connectRes] = await Promise.all([
+          fetch('/admin/api/settings'),
+          fetch('/admin/api/billing/connect/status').catch(() => null),
+        ])
         if (!response.ok) throw new Error('Failed to load settings.')
         const json = await response.json()
         if (!cancelled) {
           setData(json)
+
+          if (connectRes) {
+            connectRes.json().then((c) => { if (!c.error) setConnectStatus(c) }).catch(() => {})
+          }
 
           const org = json.org || {}
           setOrgSlug(org.slug || '')
@@ -570,10 +578,26 @@ function AdminSettingsPageInner() {
               >
                 <option value='manual'>Manual (cash, CashApp, Zelle, Square link, etc.)</option>
                 <option value='platform_stripe'>Platform Stripe (card via our Stripe account)</option>
+                <option value='stripe_connect'>Stripe Connect (your own Stripe account)</option>
               </select>
               <p style={{ fontSize: '0.84rem', color: 'var(--muted)', marginTop: 6 }}>
                 Manual mode: repair orders are created immediately on estimate approval; no Stripe redirect. Use the fields below to tell customers how to pay.
               </p>
+              {paymentMode === 'stripe_connect' && connectStatus && !connectStatus.connected && (
+                <p className='notice-warn' style={{ marginTop: 8, fontSize: '0.85rem' }}>
+                  Connect your Stripe account first on the <a href='/admin/billing'>Billing page</a>.
+                </p>
+              )}
+              {paymentMode === 'stripe_connect' && connectStatus?.connected && !connectStatus.chargesEnabled && (
+                <p className='notice-warn' style={{ marginTop: 8, fontSize: '0.85rem' }}>
+                  Stripe account setup is incomplete. <a href='/admin/billing'>Finish setup on the Billing page.</a>
+                </p>
+              )}
+              {paymentMode === 'stripe_connect' && connectStatus?.connected && connectStatus.chargesEnabled && (
+                <p style={{ marginTop: 8, fontSize: '0.85rem', color: 'var(--success)' }}>
+                  ✓ Your Stripe account is connected and ready to accept payments.
+                </p>
+              )}
             </div>
 
             <div>

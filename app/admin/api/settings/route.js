@@ -33,7 +33,7 @@ export async function GET() {
         .maybeSingle(),
       supabase
         .from('organization_payment_settings')
-        .select('payment_mode, manual_payment_instructions, cashapp_tag, zelle_contact, square_payment_url, stripe_connect_account_id, stripe_connect_onboarding_complete')
+        .select('payment_mode, manual_payment_instructions, cashapp_tag, zelle_contact, square_payment_url, stripe_connect_account_id, stripe_connect_onboarding_complete, stripe_connect_charges_enabled, stripe_connect_payouts_enabled')
         .eq('organization_id', orgId)
         .maybeSingle(),
     ])
@@ -148,6 +148,8 @@ export async function POST(request) {
             ...(payment.square_payment_url !== undefined && { square_payment_url: payment.square_payment_url }),
             ...(payment.stripe_connect_account_id !== undefined && { stripe_connect_account_id: payment.stripe_connect_account_id }),
             ...(payment.stripe_connect_onboarding_complete !== undefined && { stripe_connect_onboarding_complete: payment.stripe_connect_onboarding_complete }),
+            ...(payment.stripe_connect_charges_enabled !== undefined && { stripe_connect_charges_enabled: payment.stripe_connect_charges_enabled }),
+            ...(payment.stripe_connect_payouts_enabled !== undefined && { stripe_connect_payouts_enabled: payment.stripe_connect_payouts_enabled }),
           }, { onConflict: 'organization_id' })
       )
     }
