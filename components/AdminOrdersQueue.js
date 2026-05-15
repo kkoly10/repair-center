@@ -298,11 +298,15 @@ function AdminOrdersQueueInner() {
         ) : loading ? (
           <div className='policy-card center-card'>Loading {activeViewLabel.toLowerCase()} orders…</div>
         ) : !orders.length ? (
-          <div className='policy-card center-card'>
-            No {activeViewLabel.toLowerCase()} orders{searchTerm ? ` matching "${searchTerm}"` : ''}.
-          </div>
+          !searchTerm && activeView === 'active'
+            ? <FirstOrderGuide />
+            : (
+              <div className='policy-card center-card'>
+                No {activeViewLabel.toLowerCase()} orders{searchTerm ? ` matching "${searchTerm}"` : ''}.
+              </div>
+            )
         ) : (
-          <div className='policy-card' style={{ padding: 0, overflowX: 'auto' }}>
+          <div className='policy-card data-table-scroll-wrap' style={{ padding: 0 }}>
             <table className='data-table'>
               <thead>
                 <tr>
@@ -323,7 +327,7 @@ function AdminOrdersQueueInner() {
                   return (
                     <tr key={order.id} style={{ opacity: isSaving ? 0.6 : 1 }}>
                       {/* Order number + deposit badge */}
-                      <td style={{ whiteSpace: 'nowrap' }}>
+                      <td data-label="Order" style={{ whiteSpace: 'nowrap' }}>
                         <div className='id-mono' style={{ fontWeight: 600, fontSize: 13 }}>{order.order_number}</div>
                         {order.quote_id ? (
                           <div className='id-mono' style={{ fontSize: 11, color: 'var(--muted)' }}>{order.quote_id}</div>
@@ -334,7 +338,7 @@ function AdminOrdersQueueInner() {
                       </td>
 
                       {/* Customer */}
-                      <td>
+                      <td data-label="Customer">
                         <div style={{ fontSize: 13 }}>{order.customer_name || '—'}</div>
                         {order.customer_email ? (
                           <div style={{ fontSize: 11, color: 'var(--muted)' }}>{order.customer_email}</div>
@@ -342,7 +346,7 @@ function AdminOrdersQueueInner() {
                       </td>
 
                       {/* Device */}
-                      <td>
+                      <td data-label="Device">
                         <div style={{ fontSize: 13 }}>
                           {[order.brand_name, order.model_name].filter(Boolean).join(' ') || '—'}
                         </div>
@@ -352,7 +356,7 @@ function AdminOrdersQueueInner() {
                       </td>
 
                       {/* Status — inline select */}
-                      <td>
+                      <td data-label="Status">
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                           <span className={statusPill(order.current_status).cls}>
                             {statusPill(order.current_status).label}
@@ -372,7 +376,7 @@ function AdminOrdersQueueInner() {
                       </td>
 
                       {/* Priority — inline select */}
-                      <td>
+                      <td data-label="Priority">
                         <select
                           className='field'
                           value={order.priority || 'normal'}
@@ -392,7 +396,7 @@ function AdminOrdersQueueInner() {
                       </td>
 
                       {/* Technician — inline select */}
-                      <td>
+                      <td data-label="Tech">
                         <select
                           className='field'
                           value={order.assigned_technician_user_id || ''}
@@ -410,7 +414,7 @@ function AdminOrdersQueueInner() {
                       </td>
 
                       {/* Due date — date input */}
-                      <td style={{ whiteSpace: 'nowrap' }}>
+                      <td data-label="Due" style={{ whiteSpace: 'nowrap' }}>
                         <input
                           type='date'
                           className='field'
@@ -427,7 +431,7 @@ function AdminOrdersQueueInner() {
                       </td>
 
                       {/* Actions */}
-                      <td style={{ whiteSpace: 'nowrap' }}>
+                      <td data-label="" style={{ whiteSpace: 'nowrap' }}>
                         {order.quote_id ? (
                           <Link
                             href={`/admin/quotes/${order.quote_id}/order`}
@@ -474,5 +478,48 @@ function AdminOrdersQueueInner() {
         )}
       </div>
     </main>
+  )
+}
+
+function FirstOrderGuide() {
+  return (
+    <div className='policy-card' style={{ padding: '32px 28px', textAlign: 'center', maxWidth: 560, margin: '0 auto' }}>
+      <div style={{ fontSize: '2rem', marginBottom: 12 }}>🔧</div>
+      <h2 style={{ marginTop: 0, marginBottom: 8, letterSpacing: '-0.02em' }}>Your queue is empty</h2>
+      <p style={{ color: 'var(--muted)', marginBottom: 24, lineHeight: 1.6 }}>
+        Orders appear here once a customer&apos;s estimate is approved and converted to a repair order.
+        Get started by creating a quote request from a customer.
+      </p>
+
+      <div style={{
+        background: 'var(--surface-alt, var(--surface))',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--radius-md, 8px)',
+        padding: '12px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        textAlign: 'left',
+        marginBottom: 24,
+        opacity: 0.55,
+        fontSize: '0.85rem',
+      }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--warn, #f59e0b)', flexShrink: 0 }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 600, fontFamily: 'monospace', fontSize: '0.82rem' }}>RCO-001</div>
+          <div style={{ color: 'var(--muted)' }}>Jane Doe — iPhone 14 Screen Replacement</div>
+        </div>
+        <div style={{ whiteSpace: 'nowrap', color: 'var(--muted)' }}>Repairing · 2d left</div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <Link href='/admin/quotes' className='button button-secondary button-compact'>
+          Create a quote request
+        </Link>
+        <Link href='/admin/team' className='button button-ghost button-compact'>
+          Invite a technician
+        </Link>
+      </div>
+    </div>
   )
 }

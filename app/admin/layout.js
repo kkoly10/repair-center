@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import AdminSidebar from '../../components/AdminSidebar'
 import ThemeProvider from '../../components/ThemeProvider'
+import AdminOnboardingBanner from '../../components/AdminOnboardingBanner'
 import { getSessionOrgId } from '../../lib/admin/getSessionOrgId'
 import { getSupabaseAdmin } from '../../lib/supabase/admin'
 
@@ -27,6 +28,7 @@ export default async function AdminLayout({ children }) {
       <div className='admin-layout'>
         <AdminSidebar />
         <div className='admin-main'>
+          <AdminOnboardingBanner />
           <Suspense
             fallback={
               <main className='page-hero'>

@@ -81,6 +81,10 @@ function AdminRepairOrderInner({ quoteId }) {
   const [depositMarkError, setDepositMarkError] = useState('')
   const [depositMarkSuccess, setDepositMarkSuccess] = useState(false)
 
+  const [sendingIntakeConfirm, setSendingIntakeConfirm] = useState(false)
+  const [intakeConfirmSent, setIntakeConfirmSent] = useState(false)
+  const [intakeConfirmError, setIntakeConfirmError] = useState('')
+
   const [requestingBalance, setRequestingBalance] = useState(false)
   const [requestBalanceError, setRequestBalanceError] = useState('')
   const [requestBalanceSuccess, setRequestBalanceSuccess] = useState('')
@@ -154,6 +158,9 @@ function AdminRepairOrderInner({ quoteId }) {
   const showMarkDepositPaid = depositRequired > 0 && !depositPaid
   const finalBalanceDue = Number(paymentData?.summary?.finalBalanceDue || 0)
   const showRequestFinalBalance = record?.order?.id && finalBalanceDue > 0
+  const isWalkIn = record?.quote?.submission_source === 'walk_in'
+  const hasCustomerEmail = !!(record?.quote?.guest_email || record?.customer?.email)
+  const showIntakeConfirm = isWalkIn && hasCustomerEmail && !intakeConfirmSent && record?.order?.id
 
   const handleSendReceipt = async () => {
     if (sendingReceipt) return
@@ -223,6 +230,25 @@ function AdminRepairOrderInner({ quoteId }) {
       setRequestBalanceError(err.message || 'Failed to request final balance.')
     } finally {
       setRequestingBalance(false)
+    }
+  }
+
+  const handleSendIntakeConfirmation = async () => {
+    if (sendingIntakeConfirm) return
+    setSendingIntakeConfirm(true)
+    setIntakeConfirmError('')
+    try {
+      const res = await fetch(`/admin/api/orders/${record?.order?.id}/notify-intake`, { method: 'POST' })
+      const data = await res.json()
+      if (data.ok) {
+        setIntakeConfirmSent(true)
+      } else {
+        setIntakeConfirmError(data.error || 'Failed to send confirmation.')
+      }
+    } catch (err) {
+      setIntakeConfirmError(err.message || 'Failed to send confirmation.')
+    } finally {
+      setSendingIntakeConfirm(false)
     }
   }
 
@@ -389,8 +415,18 @@ function AdminRepairOrderInner({ quoteId }) {
             >
               {sendingReceipt ? 'Sending…' : 'Send Receipt'}
             </button>
+            {showIntakeConfirm && (
+              <button
+                className='button button-compact'
+                style={{ background: '#0f766e', color: '#fff', border: 'none' }}
+                onClick={handleSendIntakeConfirmation}
+                disabled={sendingIntakeConfirm}
+              >
+                {sendingIntakeConfirm ? 'Sending…' : 'Send Intake Confirmation'}
+              </button>
+            )}
           </div>
-          {(depositMarkSuccess || depositMarkError || requestBalanceSuccess || requestBalanceError) && (
+          {(depositMarkSuccess || depositMarkError || requestBalanceSuccess || requestBalanceError || intakeConfirmSent || intakeConfirmError) && (
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
               {depositMarkSuccess && (
                 <div className='notice' style={{ color: '#16a34a' }}>Deposit marked as paid.</div>
@@ -400,6 +436,8 @@ function AdminRepairOrderInner({ quoteId }) {
                 <div className='notice' style={{ color: '#16a34a' }}>{requestBalanceSuccess}</div>
               )}
               {requestBalanceError && <div className='notice'>{requestBalanceError}</div>}
+              {intakeConfirmSent && <div className='notice' style={{ color: '#0f766e' }}>Intake confirmation sent to customer.</div>}
+              {intakeConfirmError && <div className='notice'>{intakeConfirmError}</div>}
             </div>
           )}
 

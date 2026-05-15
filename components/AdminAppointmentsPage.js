@@ -1,7 +1,9 @@
 'use client'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState, useEffect, useMemo } from 'react'
 import { statusPill } from '../lib/statusPills'
+import AdminAppointmentCalendar from './AdminAppointmentCalendar'
 
 function StatusBadge({ status }) {
   const { cls, label } = statusPill(status)
@@ -14,10 +16,12 @@ function fmtDatetime(iso) {
 }
 
 function AppointmentRow({ appt, onPatch }) {
+  const router = useRouter()
   const [patching, setPatching] = useState(false)
   const [patchError, setPatchError] = useState('')
   const [cancelPending, setCancelPending] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
+  const [converting, setConverting] = useState(false)
 
   async function patch(update) {
     setPatching(true)
@@ -35,6 +39,26 @@ function AppointmentRow({ appt, onPatch }) {
       setPatchError('Network error. Please try again.')
     } finally {
       setPatching(false)
+    }
+  }
+
+  async function convertToOrder() {
+    if (!window.confirm('Convert this appointment to a walk-in repair order?')) return
+    setConverting(true)
+    setPatchError('')
+    try {
+      const res = await fetch(`/admin/api/appointments/${appt.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'convert' }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setPatchError(json.error || 'Conversion failed.'); return }
+      router.push(`/admin/quotes/${json.quoteId}/order`)
+    } catch {
+      setPatchError('Network error. Please try again.')
+    } finally {
+      setConverting(false)
     }
   }
 
@@ -127,7 +151,12 @@ function AppointmentRow({ appt, onPatch }) {
               </>
             )}
             {appt.status === 'confirmed' && !appt.quote_request_id && (
-              <Link href='/admin/quotes' style={{ fontSize: 12, color: '#6366f1' }}>→ Quotes</Link>
+              <button
+                className='button button-small'
+                style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
+                disabled={patching || converting}
+                onClick={convertToOrder}
+              >{converting ? 'Converting…' : 'Convert →'}</button>
             )}
             {appt.quote_request_id && (
               <Link href={`/admin/quotes/${appt.quote_request_id}`} style={{ fontSize: 12, color: '#6366f1' }}>View quote →</Link>
@@ -148,6 +177,7 @@ function AdminAppointmentsInner() {
   const [loadError, setLoadError] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [truncated, setTruncated] = useState(false)
+  const [view, setView] = useState('list')
 
   useEffect(() => {
     fetch('/admin/api/appointments')
@@ -182,6 +212,30 @@ function AdminAppointmentsInner() {
           <h1>Appointments</h1>
           <p>Manage drop-off appointment requests from customers.</p>
         </div>
+
+        {/* View toggle */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {['list', 'calendar'].map((v) => (
+            <button
+              key={v}
+              type='button'
+              onClick={() => setView(v)}
+              style={{
+                padding: '5px 14px', borderRadius: 99, fontSize: 13, cursor: 'pointer',
+                border: '1px solid var(--line)',
+                background: view === v ? 'var(--text)' : 'var(--surface)',
+                color: view === v ? '#fff' : 'var(--muted)',
+                fontWeight: view === v ? 600 : 400,
+                textTransform: 'capitalize',
+              }}
+            >{v}</button>
+          ))}
+        </div>
+
+        {view === 'calendar' ? (
+          <AdminAppointmentCalendar />
+        ) : (
+          <>
 
         {truncated && (
           <div className='notice notice-warn'>
@@ -249,6 +303,9 @@ function AdminAppointmentsInner() {
               </table>
             </div>
           </div>
+        )}
+
+          </>
         )}
       </div>
     </main>

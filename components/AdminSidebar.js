@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import AdminSignOutButton from './AdminSignOutButton'
+import FeedbackButton from './FeedbackButton'
 
 const NAV_SECTIONS = [
   {
@@ -17,9 +18,10 @@ const NAV_SECTIONS = [
   {
     label: 'Operations',
     items: [
-      { href: '/admin/orders',  label: 'Orders',  icon: '🔧' },
-      { href: '/admin/parts',   label: 'Parts',   icon: '⚙️' },
-      { href: '/admin/catalog', label: 'Catalog', icon: '📋' },
+      { href: '/admin/orders',  label: 'Orders',   icon: '🔧' },
+      { href: '/admin/walkin',  label: 'Walk-in',  icon: '🏪' },
+      { href: '/admin/parts',   label: 'Parts',    icon: '⚙️' },
+      { href: '/admin/catalog', label: 'Catalog',  icon: '📋' },
     ],
   },
   {
@@ -49,6 +51,7 @@ export default function AdminSidebar() {
   const router   = useRouter()
 
   const [billing,          setBilling]          = useState(null)
+  const [orgId,            setOrgId]            = useState(null)
   const [unreviewedCount,  setUnreviewedCount]  = useState(0)
   const [pendingAppts,     setPendingAppts]      = useState(0)
   const [mobileOpen,       setMobileOpen]        = useState(false)
@@ -63,7 +66,7 @@ export default function AdminSidebar() {
   useEffect(() => {
     fetch('/admin/api/billing')
       .then((r) => r.json())
-      .then((json) => { if (json.ok) setBilling(json.billing) })
+      .then((json) => { if (json.ok) { setBilling(json.billing); setOrgId(json.orgId || null) } })
       .catch(() => {})
     fetch('/admin/api/quotes/unreviewed-count')
       .then((r) => r.json())
@@ -253,8 +256,9 @@ export default function AdminSidebar() {
           ))}
         </nav>
 
-        {/* Sign out */}
-        <div style={{ padding: '8px 12px 20px', borderTop: '1px solid var(--line-dark)' }}>
+        {/* Bottom actions */}
+        <div style={{ padding: '8px 12px 20px', borderTop: '1px solid var(--line-dark)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <FeedbackButton orgId={orgId} />
           <AdminSignOutButton />
         </div>
       </aside>
