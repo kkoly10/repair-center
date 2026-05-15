@@ -231,7 +231,7 @@ export default function AdminBillingPage() {
         {!connectLoading && connect && !connect.connected && (
           <div>
             <p style={{ fontSize: '0.9rem', marginBottom: 12 }}>
-              No Stripe account connected. Click below to link your Stripe account via Stripe's secure onboarding.
+              No Stripe account connected. Click below to link your Stripe account via Stripe&apos;s secure onboarding.
             </p>
             {connectActionError && <p className='notice-error' style={{ marginBottom: 12 }}>{connectActionError}</p>}
             <button className='button button-primary' onClick={handleConnectOnboard} disabled={connectActionLoading}>
