@@ -964,6 +964,37 @@ Platform creates PaymentIntent on its own account with `transfer_data: { destina
 
 ---
 
+## Sprint 38 — Mobile Admin, Appointment Calendar & Walk-in POS Intake ✅ COMPLETE
+
+### No migration needed
+`quote_requests.submission_source` already exists; `quote_id` and `order_number` are DB-auto-generated.
+
+### What was done
+
+**Phase 1 — Mobile-Responsive Admin**
+- **`app/globals.css`** — added `overscroll-behavior: contain` to `.admin-sidebar`; increased touch target from `height: 36px` to `min-height: 44px` in 640px open state; added `.data-table-scroll-wrap` (horizontal scroll + sticky first column at ≤768px) and `.data-table-stack` (card-stack at ≤640px with `td::before { content: attr(data-label) }`)
+- **`components/AdminOrdersQueue.js`** — changed table wrapper to `.data-table-scroll-wrap`; added `data-label` attrs to all 8 `<td>` columns (Order, Customer, Device, Status, Priority, Tech, Due, empty for actions)
+- **`components/AdminCustomersPage.js`** — changed table wrapper to `.data-table-stack`; added `data-label` attrs to all 6 `<td>` columns (Name, Email, Orders, Completed, Last order, empty for actions)
+
+**Phase 2 — Appointment Calendar**
+- **`components/AdminAppointmentCalendar.js`** (new) — `'use client'` week-view grid; CSS named grid lines (`[time-0800] 32px [time-0830] 32px ...`) for zero-library positioning; `buildGridRows()`, `toGridLine()`, `dayColIndex()` helpers; appointment blocks span 2 rows (1 hour = 2 × 30-min slots); mobile single-day mode via `useEffect` resize listener; prev/next/today navigation (week and day modes); selected appointment detail panel below grid
+- **`components/AdminAppointmentsPage.js`** (modified) — added `view` state and List/Calendar toggle; renders `<AdminAppointmentCalendar />` in calendar mode
+
+**Phase 3 — Walk-in POS Intake**
+- **`app/admin/api/customers/route.js`** (modified) — added `?q=` search param; when `q.length >= 2`, queries `customers` with ILIKE filter on first_name/last_name/email/phone, limits to 10 results, skips orders join for fast typeahead; safe guard `request?.url ?? 'http://localhost/...'`
+- **`app/admin/api/walkin/route.js`** (new) — uses `getSessionContext()` for both `orgId` and `userId`; customer upsert (phone→email→insert new); optional catalog lookups for `modelKey`/`repairKey`; inserts `quote_request` (`submission_source: 'walk_in'`, `status: 'approved'`); inserts `repair_order` (`current_status: 'received'`, `intake_received_at: now()`); no email notifications; returns `{ ok, quoteId, orderId, orderNumber }`
+- **`components/AdminWalkInPage.js`** (new) — 3-step wizard: Step 1 customer search (debounced 300ms) or new customer form; Step 2 device category tiles + free-text brand/model/repair description; Step 3 optional agreed price, technician dropdown, internal notes, order summary + submit; success redirects to `/admin/quotes/[quoteId]/order`
+- **`app/admin/walkin/page.js`** (new) — thin wrapper
+- **`components/AdminSidebar.js`** (modified) — added `{ href: '/admin/walkin', label: 'Walk-in', icon: '🏪' }` to Operations section between Orders and Parts
+
+**Phase 4 — Tests**
+- **`__tests__/api/walkin.test.js`** (new) — 8 tests: 401 guard, 400 missing firstName, 400 missing phone+email, existing customer found by phone (no insert), new customer inserted, quote_request shape (submission_source/status/org), repair_order shape (current_status/intake_received_at), success response shape
+
+### Test suite after Sprint 38
+241 tests across 23 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)

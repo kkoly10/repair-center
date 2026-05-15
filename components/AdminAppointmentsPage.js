@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { useState, useEffect, useMemo } from 'react'
 import { statusPill } from '../lib/statusPills'
+import AdminAppointmentCalendar from './AdminAppointmentCalendar'
 
 function StatusBadge({ status }) {
   const { cls, label } = statusPill(status)
@@ -148,6 +149,7 @@ function AdminAppointmentsInner() {
   const [loadError, setLoadError] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [truncated, setTruncated] = useState(false)
+  const [view, setView] = useState('list')
 
   useEffect(() => {
     fetch('/admin/api/appointments')
@@ -182,6 +184,30 @@ function AdminAppointmentsInner() {
           <h1>Appointments</h1>
           <p>Manage drop-off appointment requests from customers.</p>
         </div>
+
+        {/* View toggle */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {['list', 'calendar'].map((v) => (
+            <button
+              key={v}
+              type='button'
+              onClick={() => setView(v)}
+              style={{
+                padding: '5px 14px', borderRadius: 99, fontSize: 13, cursor: 'pointer',
+                border: '1px solid var(--line)',
+                background: view === v ? 'var(--text)' : 'var(--surface)',
+                color: view === v ? '#fff' : 'var(--muted)',
+                fontWeight: view === v ? 600 : 400,
+                textTransform: 'capitalize',
+              }}
+            >{v}</button>
+          ))}
+        </div>
+
+        {view === 'calendar' ? (
+          <AdminAppointmentCalendar />
+        ) : (
+          <>
 
         {truncated && (
           <div className='notice notice-warn'>
@@ -249,6 +275,9 @@ function AdminAppointmentsInner() {
               </table>
             </div>
           </div>
+        )}
+
+          </>
         )}
       </div>
     </main>

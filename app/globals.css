@@ -1685,6 +1685,7 @@ main {
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--line-dark);
+  overscroll-behavior: contain;
 }
 
 .admin-main {
@@ -1823,7 +1824,7 @@ main {
     /* restore full-sidebar styles inside open state */
   }
   .admin-sidebar.open .sidebar-section-label { display: block; }
-  .admin-sidebar.open .sidebar-nav-link { padding: 0 16px; justify-content: flex-start; height: 36px; gap: 10px; }
+  .admin-sidebar.open .sidebar-nav-link { padding: 0 16px; justify-content: flex-start; min-height: 44px; gap: 10px; }
   .admin-sidebar.open .sidebar-nav-link.active { padding-left: 13px; }
   .admin-sidebar.open .sidebar-label { display: block; }
   .admin-sidebar.open .sidebar-badge { display: inline-block; }
@@ -1834,3 +1835,43 @@ main {
   .sidebar-hamburger { display: flex; }
 }
 .shop-secondary a:hover { color: var(--text); }
+
+/* ── Responsive admin tables ─────────────────────────────────────── */
+
+/* Orders queue: horizontal scroll container with sticky first column */
+.data-table-scroll-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 768px) {
+  .data-table-scroll-wrap .data-table th:first-child,
+  .data-table-scroll-wrap .data-table td:first-child {
+    position: sticky; left: 0; background: var(--surface); z-index: 1;
+  }
+}
+
+/* Customers / appointments: card-stack below 640px */
+@media (max-width: 640px) {
+  .data-table-stack thead { display: none; }
+  .data-table-stack tr {
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    margin-bottom: 10px;
+    padding: 12px 14px;
+    background: var(--surface);
+  }
+  .data-table-stack td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 0.85rem;
+    border: none;
+  }
+  .data-table-stack td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.78rem;
+    flex-shrink: 0;
+    margin-right: 12px;
+  }
+}

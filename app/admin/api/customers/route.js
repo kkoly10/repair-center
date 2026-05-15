@@ -9,7 +9,7 @@ const TERMINAL_STATUSES = new Set([
   'returned_unrepaired', 'beyond_economical_repair', 'no_fault_found',
 ])
 
-export async function GET() {
+export async function GET(request) {
   let orgId
   try {
     orgId = await getSessionOrgId()
@@ -18,6 +18,39 @@ export async function GET() {
   }
 
   const supabase = getSupabaseAdmin()
+  const url = new URL(request?.url ?? 'http://localhost/admin/api/customers')
+  const q = url.searchParams.get('q')?.trim() || ''
+
+  // Typeahead path: skip orders join, return lightweight results fast
+  if (q.length >= 2) {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, email, phone, created_at')
+        .eq('organization_id', orgId)
+        .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`)
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+      if (error) throw error
+
+      const customers = (data || []).map((c) => ({
+        id: c.id,
+        name: [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unknown',
+        first_name: c.first_name,
+        last_name: c.last_name,
+        email: c.email,
+        phone: c.phone,
+      }))
+
+      return NextResponse.json({ ok: true, customers })
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Unable to search customers.' },
+        { status: 500 }
+      )
+    }
+  }
 
   try {
     const [customersResult, ordersResult] = await Promise.all([

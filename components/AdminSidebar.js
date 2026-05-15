@@ -17,9 +17,10 @@ const NAV_SECTIONS = [
   {
     label: 'Operations',
     items: [
-      { href: '/admin/orders',  label: 'Orders',  icon: '🔧' },
-      { href: '/admin/parts',   label: 'Parts',   icon: '⚙️' },
-      { href: '/admin/catalog', label: 'Catalog', icon: '📋' },
+      { href: '/admin/orders',  label: 'Orders',   icon: '🔧' },
+      { href: '/admin/walkin',  label: 'Walk-in',  icon: '🏪' },
+      { href: '/admin/parts',   label: 'Parts',    icon: '⚙️' },
+      { href: '/admin/catalog', label: 'Catalog',  icon: '📋' },
     ],
   },
   {
