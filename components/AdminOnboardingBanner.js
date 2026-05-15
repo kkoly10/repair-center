@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
 import { useEffect, useRef, useState } from 'react'
 
 const STEPS = [
@@ -145,7 +145,7 @@ export default function AdminOnboardingBanner() {
               </span>
               {done || !href
                 ? <span style={{ color: done ? 'var(--text)' : 'var(--muted)' }}>{label}</span>
-                : <Link href={href} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{label}</Link>
+                : <LocalizedLink href={href} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{label}</LocalizedLink>
               }
             </div>
           )
