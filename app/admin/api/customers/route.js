@@ -24,11 +24,12 @@ export async function GET(request) {
   // Typeahead path: skip orders join, return lightweight results fast
   if (q.length >= 2) {
     try {
+      const safe = q.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')
       const { data, error } = await supabase
         .from('customers')
         .select('id, first_name, last_name, email, phone, created_at')
         .eq('organization_id', orgId)
-        .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`)
+        .or(`first_name.ilike.%${safe}%,last_name.ilike.%${safe}%,email.ilike.%${safe}%,phone.ilike.%${safe}%`)
         .order('created_at', { ascending: false })
         .limit(10)
 

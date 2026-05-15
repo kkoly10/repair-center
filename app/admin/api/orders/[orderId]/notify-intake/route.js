@@ -57,13 +57,15 @@ export async function POST(request, context) {
     return NextResponse.json({ error: 'No email address on file for this customer.' }, { status: 400 })
   }
 
-  // Check if we already sent a 'received' / intake notification for this order
+  // Check if we already sent the walk-in intake notification.
+  // historyId is null for manually-triggered intake confirms, so sendRepairStatusNotification
+  // uses dedupe_key='repair-status:null'. Checking that key avoids blocking if the order
+  // later has other status-change notifications (which use dedupe_key='repair-status:<uuid>').
   const { data: existingNotif } = await supabase
     .from('notifications')
     .select('id')
     .eq('repair_order_id', orderId)
-    .eq('event_key', 'repair-status')
-    .limit(1)
+    .eq('dedupe_key', 'repair-status:null')
     .maybeSingle()
 
   if (existingNotif) {

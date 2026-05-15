@@ -127,6 +127,10 @@ export async function POST(request) {
     if (qrErr) throw qrErr
 
     // ── 4. Insert repair_order (DB generates order_number) ─────────────────────
+    const agreedPriceNum = agreedPrice ? parseFloat(agreedPrice) : null
+    const priceNote = agreedPriceNum && !isNaN(agreedPriceNum) ? `Agreed price: $${agreedPriceNum.toFixed(2)}` : null
+    const notesStr = [priceNote, internalNotes?.trim()].filter(Boolean).join('\n') || null
+
     const { data: order, error: orderErr } = await supabase
       .from('repair_orders')
       .insert({
@@ -138,7 +142,7 @@ export async function POST(request) {
         current_status: 'received',
         intake_received_at: now,
         assigned_technician_user_id: technicianId || null,
-        notes: internalNotes?.trim() || null,
+        notes: notesStr,
       })
       .select('id, order_number')
       .single()
