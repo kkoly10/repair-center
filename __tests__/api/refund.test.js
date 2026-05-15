@@ -157,12 +157,14 @@ describe('POST /admin/api/quotes/[quoteId]/refund', () => {
     expect(body.amountCents).toBe(5000)
 
     // Stripe called with right args (no reverse_transfer for non-Connect)
+    // Second arg is the idempotency key option.
     expect(refundsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         payment_intent: PAYMENT_INTENT_ID,
         amount: 5000,
         reason: 'requested_by_customer',
-      })
+      }),
+      expect.objectContaining({ idempotencyKey: expect.stringMatching(/^refund_/) })
     )
     expect(refundsCreate.mock.calls[0][0].reverse_transfer).toBeUndefined()
 
@@ -208,7 +210,8 @@ describe('POST /admin/api/quotes/[quoteId]/refund', () => {
         payment_intent: PAYMENT_INTENT_ID,
         amount: 5000,
         reverse_transfer: true,
-      })
+      }),
+      expect.objectContaining({ idempotencyKey: expect.stringMatching(/^refund_/) })
     )
   })
 
@@ -274,7 +277,57 @@ describe('POST /admin/api/quotes/[quoteId]/refund', () => {
     )
     expect(res.status).toBe(200)
     expect(refundsCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 2000 })
+      expect.objectContaining({ amount: 2000 }),
+      expect.objectContaining({ idempotencyKey: expect.stringMatching(/^refund_/) })
     )
+  })
+
+  test('reports alreadyRefundedCents directly from Stripe pi.amount_refunded', async () => {
+    const supabase = buildSupabase()
+    getSupabaseAdmin.mockReturnValue(supabase)
+    // pi.amount=5000, amount_refunded=3000 ⇒ remaining=2000; request 3000 → reject
+    mockStripeOk({ piAmount: 5000, piAmountRefunded: 3000 })
+
+    const res = await refundPOST(
+      makeRequest({ paymentId: PAYMENT_ID, amountCents: 3000 }),
+      makeContext()
+    )
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    // Stripe-authoritative count, not derived from DB
+    expect(body.alreadyRefundedCents).toBe(3000)
+  })
+
+  test('503 when STRIPE_SECRET_KEY is not set — does not leak the env var name', async () => {
+    const supabase = buildSupabase()
+    getSupabaseAdmin.mockReturnValue(supabase)
+    delete process.env.STRIPE_SECRET_KEY
+
+    const res = await refundPOST(
+      makeRequest({ paymentId: PAYMENT_ID, amountCents: 1000 }),
+      makeContext()
+    )
+    expect(res.status).toBe(503)
+    const body = await res.json()
+    expect(body.error).toBe('Payment provider is not configured.')
+    expect(JSON.stringify(body)).not.toContain('STRIPE_SECRET_KEY')
+  })
+
+  test('500 catch path does not leak underlying error message', async () => {
+    // Force the quote lookup to throw — exercise the outer catch path
+    const supabase = createSupabaseMock({
+      quote_requests: { data: null, error: { message: 'INTERNAL: connection pool exhausted at db-pool.js:42' } },
+    })
+    getSupabaseAdmin.mockReturnValue(supabase)
+    mockStripeOk()
+
+    const res = await refundPOST(
+      makeRequest({ paymentId: PAYMENT_ID, amountCents: 1000 }),
+      makeContext()
+    )
+    expect(res.status).toBe(500)
+    const body = await res.json()
+    expect(body.error).toBe('Unable to issue refund.')
+    expect(JSON.stringify(body)).not.toContain('db-pool.js')
   })
 })

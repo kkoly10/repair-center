@@ -120,16 +120,29 @@ export async function POST(request, context) {
     // Authoritative remaining-refundable from Stripe. Validates against
     // prior refunds on this PaymentIntent (whether they were issued through
     // this app or directly in the Stripe dashboard) before we attempt a
-    // refund Stripe would reject.
-    const stripe = getStripe()
+    // refund Stripe would reject. Generic-error wrapping below masks the
+    // STRIPE_SECRET_KEY-not-configured message from the response body.
+    let stripe
+    try {
+      stripe = getStripe()
+    } catch {
+      return NextResponse.json(
+        { error: 'Payment provider is not configured.' },
+        { status: 503 }
+      )
+    }
+
     let remainingCents = paymentAmountCents
+    let stripeAlreadyRefundedCents = null
     try {
       const pi = await stripe.paymentIntents.retrieve(payment.provider_payment_intent_id)
       // pi.amount is the original charge in the smallest currency unit; the
       // running sum of refunds is in pi.amount_refunded. Fall back to the DB
       // payment amount only if Stripe's response is unexpectedly empty.
       if (pi && typeof pi.amount === 'number') {
-        remainingCents = Math.max(0, pi.amount - (pi.amount_refunded || 0))
+        const refunded = pi.amount_refunded || 0
+        remainingCents = Math.max(0, pi.amount - refunded)
+        stripeAlreadyRefundedCents = refunded
       }
     } catch (piError) {
       // Don't fail the whole refund if Stripe can't fetch the PI — log and
@@ -144,7 +157,12 @@ export async function POST(request, context) {
     }
 
     if (amountCents > remainingCents) {
-      const alreadyRefundedCents = paymentAmountCents - remainingCents
+      // Prefer Stripe's authoritative count when available; otherwise derive
+      // from the local payment amount so the response is still informative.
+      const alreadyRefundedCents =
+        stripeAlreadyRefundedCents !== null
+          ? stripeAlreadyRefundedCents
+          : Math.max(0, paymentAmountCents - remainingCents)
       return NextResponse.json(
         {
           error: 'Refund amount exceeds the remaining refundable amount on this payment.',
@@ -166,14 +184,24 @@ export async function POST(request, context) {
     if (settingsError) throw settingsError
     const isConnect = !!paymentSettings?.stripe_connect_account_id
 
+    // Idempotency key: the same (payment, amount) within a 1-minute window
+    // resolves to the same Stripe refund object instead of issuing a second
+    // one. Catches double-click / network-retry footguns. Outside the window,
+    // a deliberate second refund of the same amount is still allowed.
+    const idempotencyBucket = Math.floor(Date.now() / 60000)
+    const idempotencyKey = `refund_${paymentId}_${amountCents}_${idempotencyBucket}`
+
     let refund
     try {
-      refund = await stripe.refunds.create({
-        payment_intent: payment.provider_payment_intent_id,
-        amount: amountCents,
-        reason: 'requested_by_customer',
-        ...(isConnect && { reverse_transfer: true }),
-      })
+      refund = await stripe.refunds.create(
+        {
+          payment_intent: payment.provider_payment_intent_id,
+          amount: amountCents,
+          reason: 'requested_by_customer',
+          ...(isConnect && { reverse_transfer: true }),
+        },
+        { idempotencyKey }
+      )
     } catch (stripeError) {
       reportError(stripeError, {
         area: 'admin-refund',
@@ -235,8 +263,10 @@ export async function POST(request, context) {
     return NextResponse.json({ ok: true, refundId: refund.id, amountCents })
   } catch (error) {
     reportError(error, { area: 'admin-refund', quoteId, paymentId })
+    // Generic message — never leak the underlying error string to the client.
+    // The full error is captured in Sentry/console via reportError above.
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unable to issue refund.' },
+      { error: 'Unable to issue refund.' },
       { status: 500 }
     )
   }
