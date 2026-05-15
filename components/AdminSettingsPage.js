@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function AdminSettingsPage() {
   return (
@@ -12,6 +13,7 @@ export default function AdminSettingsPage() {
 }
 
 function AdminSettingsPageInner() {
+  const t = useT()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -70,7 +72,7 @@ function AdminSettingsPageInner() {
           fetch('/admin/api/settings'),
           fetch('/admin/api/billing/connect/status').catch(() => null),
         ])
-        if (!response.ok) throw new Error('Failed to load settings.')
+        if (!response.ok) throw new Error(t('adminSettings.loadFailed'))
         const json = await response.json()
         if (!cancelled) {
           setData(json)
@@ -122,7 +124,7 @@ function AdminSettingsPageInner() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err.message || 'Unable to load settings.')
+          setError(err.message || t('adminSettings.loadFailed'))
           setLoading(false)
         }
       }
@@ -152,12 +154,12 @@ function AdminSettingsPageInner() {
       })
       if (!res.ok) {
         const json = await res.json().catch(() => ({}))
-        throw new Error(json.error || 'Failed to save business info.')
+        throw new Error(json.error || t('adminSettings.saveBusinessFailed'))
       }
       setSavedOrg(true)
       setTimeout(() => setSavedOrg(false), 3000)
     } catch (err) {
-      setErrorOrg(err.message || 'Failed to save business info.')
+      setErrorOrg(err.message || t('adminSettings.saveBusinessFailed'))
     } finally {
       setSavingOrg(false)
     }
