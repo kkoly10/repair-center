@@ -1,8 +1,14 @@
 import * as Sentry from '@sentry/nextjs'
+import { isAnalyticsConsented } from './lib/sentryBrowser'
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN
 
-if (dsn) {
+// GDPR gate: only initialize the browser Sentry SDK when the visitor has
+// opted in to "analytics" cookies. See `lib/sentryBrowser.js` for the
+// reasoning — we deliberately don't try to init mid-session; the cookie
+// banner reloads the page after consent so this module runs again with
+// the new cookie state.
+if (dsn && isAnalyticsConsented()) {
   Sentry.init({
     dsn,
     environment: process.env.NEXT_PUBLIC_SENTRY_ENV || process.env.NODE_ENV || 'development',

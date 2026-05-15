@@ -707,7 +707,8 @@
     "longSetupOr": "or",
     "longSetupTech": "tech",
     "longSetupAfter": ".",
-    "forgotPassword": "Forgot password?"
+    "forgotPassword": "Forgot password?",
+    "rateLimited": "Too many sign-in attempts. Please wait a few minutes and try again."
   },
   "adminForgotPassword": {
     "kicker": "Account access",
@@ -2575,5 +2576,36 @@
     "calToday": "Today",
     "calNext": "Next →",
     "calendarEmpty": "No appointments in the visible window."
+  },
+  "cookieBanner": {
+    "title": "We use cookies",
+    "body": "We use cookies to keep you signed in and to enable payments. You can customize which optional cookies we set.",
+    "acceptAll": "Accept all",
+    "essentialOnly": "Essential only",
+    "customize": "Customize",
+    "savePreferences": "Save preferences",
+    "essentialLabel": "Essential",
+    "essentialDesc": "Required for sign-in, payments, and basic site features. Always on.",
+    "functionalLabel": "Functional",
+    "functionalDesc": "Remember your language and display preferences.",
+    "analyticsLabel": "Analytics",
+    "analyticsDesc": "Anonymous error tracking via Sentry so we can fix bugs faster.",
+    "privacyLink": "Read our privacy policy",
+    "changeChoiceLink": "Cookie preferences"
+  },
+  "refund": {
+    "button": "Issue Refund",
+    "modalTitle": "Issue a refund",
+    "selectPayment": "Which payment?",
+    "amountLabel": "Amount (USD)",
+    "amountHint": "Default is the full payment amount.",
+    "reasonLabel": "Reason (internal)",
+    "submit": "Issue refund",
+    "submitting": "Refunding…",
+    "cancel": "Cancel",
+    "success": "Refund of ${amount} issued.",
+    "error": "Couldn't issue the refund. Please try again.",
+    "noPayments": "No refundable payments on this order.",
+    "paidLabel": "Paid {date}"
   }
 }

@@ -707,7 +707,8 @@
     "longSetupOr": "ou",
     "longSetupTech": "tech",
     "longSetupAfter": ".",
-    "forgotPassword": "Mot de passe oublié ?"
+    "forgotPassword": "Mot de passe oublié ?",
+    "rateLimited": "Trop de tentatives de connexion. Veuillez patienter quelques minutes et réessayer."
   },
   "adminForgotPassword": {
     "kicker": "Accès au compte",
@@ -2575,5 +2576,36 @@
     "calToday": "Aujourd'hui",
     "calNext": "Suivant →",
     "calendarEmpty": "Aucun rendez-vous dans la fenêtre visible."
+  },
+  "cookieBanner": {
+    "title": "Nous utilisons des cookies",
+    "body": "Nous utilisons des cookies pour maintenir votre session et permettre les paiements. Vous pouvez personnaliser les cookies facultatifs que nous déposons.",
+    "acceptAll": "Tout accepter",
+    "essentialOnly": "Essentiels uniquement",
+    "customize": "Personnaliser",
+    "savePreferences": "Enregistrer mes préférences",
+    "essentialLabel": "Essentiels",
+    "essentialDesc": "Nécessaires à la connexion, aux paiements et aux fonctionnalités de base du site. Toujours activés.",
+    "functionalLabel": "Fonctionnels",
+    "functionalDesc": "Mémorisent votre langue et vos préférences d'affichage.",
+    "analyticsLabel": "Analytique",
+    "analyticsDesc": "Suivi anonyme des erreurs via Sentry afin que nous puissions corriger les bugs plus rapidement.",
+    "privacyLink": "Lire notre politique de confidentialité",
+    "changeChoiceLink": "Préférences de cookies"
+  },
+  "refund": {
+    "button": "Émettre un remboursement",
+    "modalTitle": "Émettre un remboursement",
+    "selectPayment": "Quel paiement ?",
+    "amountLabel": "Montant (USD)",
+    "amountHint": "Par défaut, le montant total du paiement.",
+    "reasonLabel": "Motif (interne)",
+    "submit": "Émettre le remboursement",
+    "submitting": "Remboursement en cours…",
+    "cancel": "Annuler",
+    "success": "Remboursement de {amount} $ émis.",
+    "error": "Impossible d'émettre le remboursement. Veuillez réessayer.",
+    "noPayments": "Aucun paiement remboursable pour cette commande.",
+    "paidLabel": "Payé le {date}"
   }
 }

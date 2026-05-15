@@ -1,9 +1,11 @@
 jest.mock('../../lib/admin/getSessionOrgId')
 jest.mock('../../lib/supabase/admin')
+jest.mock('../../lib/observability')
 jest.mock('stripe')
 
 const { getSessionOrgId } = require('../../lib/admin/getSessionOrgId')
 const { getSupabaseAdmin } = require('../../lib/supabase/admin')
+const { reportError } = require('../../lib/observability')
 const Stripe = require('stripe')
 
 // ── Supabase mock factory ──────────────────────────────────────────────────────
@@ -238,6 +240,150 @@ describe('POST /api/billing/connect/webhook', () => {
 
     expect(json).toEqual({ received: true })
     expect(db._chain.upsert).toHaveBeenCalled()
+  })
+
+  it('handles account.application.deauthorized: clears connect fields and downgrades stripe_connect mode', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x'
+    process.env.STRIPE_CONNECT_WEBHOOK_SECRET = 'whsec_test'
+
+    // Two distinct chains: one for the SELECT lookup, one for the UPDATE
+    const lookupChain = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { organization_id: 'org-9', payment_mode: 'stripe_connect' },
+        error: null,
+      }),
+    }
+    const updateBuilder = {
+      eq: jest.fn().mockResolvedValue({ error: null }),
+    }
+    const updateChain = {
+      update: jest.fn().mockReturnValue(updateBuilder),
+    }
+    // First .from() call → lookup; second .from() call → update
+    let fromCallCount = 0
+    const db = {
+      from: jest.fn().mockImplementation(() => {
+        fromCallCount += 1
+        return fromCallCount === 1 ? lookupChain : updateChain
+      }),
+    }
+    getSupabaseAdmin.mockReturnValue(db)
+
+    const event = {
+      type: 'account.application.deauthorized',
+      account: 'acct_revoked',
+    }
+    Stripe.mockImplementation(() => ({
+      webhooks: { constructEvent: jest.fn().mockReturnValue(event) },
+    }))
+
+    const req = {
+      text: jest.fn().mockResolvedValue('payload'),
+      headers: { get: jest.fn().mockReturnValue('sig') },
+    }
+    const res = await POST(req)
+    const json = await res.json()
+
+    expect(json).toEqual({ received: true })
+
+    // Lookup queried by stripe_connect_account_id
+    expect(lookupChain.eq).toHaveBeenCalledWith('stripe_connect_account_id', 'acct_revoked')
+
+    // Update cleared the four connect columns AND downgraded payment_mode
+    expect(updateChain.update).toHaveBeenCalledWith({
+      stripe_connect_account_id: null,
+      stripe_connect_charges_enabled: false,
+      stripe_connect_payouts_enabled: false,
+      stripe_connect_onboarding_complete: false,
+      payment_mode: 'manual',
+    })
+    expect(updateBuilder.eq).toHaveBeenCalledWith('organization_id', 'org-9')
+
+    // Logged to reportError as an operational signal
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('Stripe Connect deauthorized for org org-9') }),
+      expect.objectContaining({
+        area: 'billing-connect-webhook',
+        eventKey: 'account.application.deauthorized',
+        accountId: 'acct_revoked',
+        organizationId: 'org-9',
+      })
+    )
+  })
+
+  it('account.application.deauthorized: does not downgrade payment_mode when org was not on stripe_connect', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x'
+    process.env.STRIPE_CONNECT_WEBHOOK_SECRET = 'whsec_test'
+
+    const lookupChain = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { organization_id: 'org-9', payment_mode: 'manual' },
+        error: null,
+      }),
+    }
+    const updateBuilder = { eq: jest.fn().mockResolvedValue({ error: null }) }
+    const updateChain = { update: jest.fn().mockReturnValue(updateBuilder) }
+    let fromCallCount = 0
+    const db = {
+      from: jest.fn().mockImplementation(() => {
+        fromCallCount += 1
+        return fromCallCount === 1 ? lookupChain : updateChain
+      }),
+    }
+    getSupabaseAdmin.mockReturnValue(db)
+
+    const event = { type: 'account.application.deauthorized', account: 'acct_revoked' }
+    Stripe.mockImplementation(() => ({
+      webhooks: { constructEvent: jest.fn().mockReturnValue(event) },
+    }))
+
+    const req = {
+      text: jest.fn().mockResolvedValue('payload'),
+      headers: { get: jest.fn().mockReturnValue('sig') },
+    }
+    await POST(req)
+
+    const updateArg = updateChain.update.mock.calls[0][0]
+    expect(updateArg).not.toHaveProperty('payment_mode')
+    expect(updateArg.stripe_connect_account_id).toBeNull()
+  })
+
+  it('account.application.deauthorized: skips update + logs when no org maps to the account', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x'
+    process.env.STRIPE_CONNECT_WEBHOOK_SECRET = 'whsec_test'
+
+    const lookupChain = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+    }
+    const updateChain = { update: jest.fn() }
+    let fromCallCount = 0
+    const db = {
+      from: jest.fn().mockImplementation(() => {
+        fromCallCount += 1
+        return fromCallCount === 1 ? lookupChain : updateChain
+      }),
+    }
+    getSupabaseAdmin.mockReturnValue(db)
+
+    const event = { type: 'account.application.deauthorized', account: 'acct_orphan' }
+    Stripe.mockImplementation(() => ({
+      webhooks: { constructEvent: jest.fn().mockReturnValue(event) },
+    }))
+
+    const req = {
+      text: jest.fn().mockResolvedValue('payload'),
+      headers: { get: jest.fn().mockReturnValue('sig') },
+    }
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+    expect(updateChain.update).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalled()
   })
 })
 
