@@ -67,7 +67,7 @@ export default function AdminOnboardingBanner() {
   if (allComplete) {
     return (
       <div style={{ borderBottom: '1px solid var(--line)', background: 'var(--surface)', padding: '12px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--success)', fontWeight: 600 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--green)', fontWeight: 600 }}>
           <span>✓</span>
           <span>You&apos;re all set! Your shop is ready to take its first repair.</span>
         </div>

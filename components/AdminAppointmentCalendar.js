@@ -63,7 +63,7 @@ export default function AdminAppointmentCalendar() {
 
   // Detect mobile width — deferred to avoid SSR/hydration mismatch
   useEffect(() => {
-    function check() { setSingleDay(window.innerWidth < 640) }
+    function check() { setTimeout(() => setSingleDay(window.innerWidth < 640), 0) }
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)

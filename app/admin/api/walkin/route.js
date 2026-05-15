@@ -139,7 +139,6 @@ export async function POST(request) {
         intake_received_at: now,
         assigned_technician_user_id: technicianId || null,
         notes: internalNotes?.trim() || null,
-        ...(agreedPrice ? { inspection_deposit_required: Math.round(parseFloat(agreedPrice) * 100) } : {}),
       })
       .select('id, order_number')
       .single()
