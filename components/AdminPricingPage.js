@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function AdminPricingPage() {
   return (
@@ -11,8 +12,8 @@ export default function AdminPricingPage() {
   )
 }
 
-function formatPrice(rule) {
-  if (rule.price_mode === 'manual') return 'Manual review'
+function formatPrice(rule, t) {
+  if (rule.price_mode === 'manual') return t('adminPricing.manualReview')
   if (rule.price_mode === 'fixed' && rule.public_price_fixed != null) {
     return `$${Number(rule.public_price_fixed).toFixed(2)}`
   }
@@ -20,9 +21,9 @@ function formatPrice(rule) {
     const min = rule.public_price_min != null ? `$${Number(rule.public_price_min).toFixed(2)}` : null
     const max = rule.public_price_max != null ? `$${Number(rule.public_price_max).toFixed(2)}` : null
     if (min && max) return `${min} – ${max}`
-    if (min) return `From ${min}`
-    if (max) return `Up to ${max}`
-    return 'Range (unset)'
+    if (min) return t('adminPricing.priceFrom', { price: min })
+    if (max) return t('adminPricing.priceUpTo', { price: max })
+    return t('adminPricing.rangeUnset')
   }
   return '—'
 }
@@ -30,6 +31,7 @@ function formatPrice(rule) {
 const EMPTY_ADD = { modelId: '', repairTypeId: '', priceMode: 'manual', publicPriceFixed: '', publicPriceMin: '', publicPriceMax: '', depositAmount: '', warrantyDays: '' }
 
 function AdminPricingPageInner() {
+  const t = useT()
   const [rules, setRules] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -70,9 +72,9 @@ function AdminPricingPageInner() {
         .then((r) => r.json())
         .then((json) => {
           if (json.ok) setCatalog(json)
-          else setAddError(json.error || 'Failed to load catalog. Please try again.')
+          else setAddError(json.error || t('adminPricing.errorLoadCatalog'))
         })
-        .catch(() => setAddError('Failed to load catalog. Please try again.'))
+        .catch(() => setAddError(t('adminPricing.errorLoadCatalog')))
         .finally(() => setCatalogLoading(false))
     }
   }
@@ -86,7 +88,7 @@ function AdminPricingPageInner() {
   async function submitAdd(e) {
     e.preventDefault()
     if (!addDraft.modelId || !addDraft.repairTypeId) {
-      setAddError('Please select a device model and repair type.')
+      setAddError(t('adminPricing.errorSelectModelAndType'))
       return
     }
     setAddSaving(true)
@@ -108,7 +110,7 @@ function AdminPricingPageInner() {
         }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Failed to create rule.')
+      if (!res.ok) throw new Error(json.error || t('adminPricing.errorCreate'))
       setRules((prev) => [...prev, json.rule])
       setCatalog((prev) => prev ? { ...prev, existingKeys: [...(prev.existingKeys || []), `${addDraft.modelId}:${addDraft.repairTypeId}`] } : prev)
       closeAddForm()
@@ -120,20 +122,20 @@ function AdminPricingPageInner() {
   }
 
   async function handleDelete(ruleId) {
-    if (!window.confirm('Delete this pricing rule? This cannot be undone.')) return
+    if (!window.confirm(t('adminPricing.confirmDelete'))) return
     setDeletingId(ruleId)
     setDeleteError('')
     try {
       const res = await fetch(`/admin/api/pricing/${ruleId}`, { method: 'DELETE' })
       if (!res.ok) {
         const json = await res.json()
-        setDeleteError(json.error || 'Failed to delete rule.')
+        setDeleteError(json.error || t('adminPricing.errorDelete'))
         return
       }
       setRules((prev) => prev.filter((r) => r.id !== ruleId))
       if (editingId === ruleId) { setEditingId(null); setEditDraft({}) }
     } catch {
-      setDeleteError('Network error. Please try again.')
+      setDeleteError(t('adminPricing.errorNetwork'))
     } finally {
       setDeletingId(null)
     }
@@ -168,14 +170,14 @@ function AdminPricingPageInner() {
     const models = catalog?.models || []
     const map = {}
     for (const m of models) {
-      const cat = m.category || 'Other'
-      const brand = m.repair_catalog_brands?.brand_name || 'Unknown'
+      const cat = m.category || t('adminPricing.categoryOther')
+      const brand = m.repair_catalog_brands?.brand_name || t('adminPricing.unknownBrand')
       const key = `${cat} — ${brand}`
       if (!map[key]) map[key] = []
       map[key].push(m)
     }
     return map
-  }, [catalog])
+  }, [catalog, t])
 
   const addRepairTypeId = addDraft.repairTypeId
   const addModelId = addDraft.modelId
@@ -212,12 +214,12 @@ function AdminPricingPageInner() {
         body: JSON.stringify(editDraft),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Failed to save.')
+      if (!res.ok) throw new Error(json.error || t('adminPricing.errorSave'))
       setRules((prev) => prev.map((r) => (r.id === ruleId ? { ...r, ...json.rule } : r)))
       setEditingId(null)
       setEditDraft({})
     } catch (err) {
-      setSaveError(err.message || 'Failed to save.')
+      setSaveError(err.message || t('adminPricing.errorSave'))
     } finally {
       setSaving(false)
     }
@@ -225,7 +227,7 @@ function AdminPricingPageInner() {
 
   if (loading) return (
     <main className='page-hero'>
-      <div className='site-shell'><div className='policy-card'>Loading pricing rules…</div></div>
+      <div className='site-shell'><div className='policy-card'>{t('adminPricing.loadingRules')}</div></div>
     </main>
   )
 
@@ -243,16 +245,13 @@ function AdminPricingPageInner() {
         <div className='info-card'>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div>
-              <div className='kicker'>Admin — Pricing</div>
-              <h1>Pricing Rules</h1>
-              <p>
-                Edit the public price shown to customers for each device and repair type. Set
-                to <strong>Manual review</strong> to hide pricing and always require a custom quote.
-              </p>
+              <div className='kicker'>{t('adminPricing.kicker')}</div>
+              <h1>{t('adminPricing.title')}</h1>
+              <p>{t('adminPricing.intro')}</p>
             </div>
             <div>
               <button type='button' className='button button-primary' onClick={openAddForm} style={{ marginTop: 4 }}>
-                + Add Rule
+                {t('adminPricing.addRuleButton')}
               </button>
             </div>
           </div>
@@ -264,29 +263,28 @@ function AdminPricingPageInner() {
 
         {rules.length > 0 && !hasActiveRules && (
           <div className='notice notice-warn'>
-            No pricing rules are currently active. Customers will see every repair as requiring
-            manual review. Activate at least one rule or set prices to make them visible.
+            {t('adminPricing.noActiveRulesWarning')}
           </div>
         )}
 
         {/* Add Rule form */}
         {showAddForm && (
           <div className='policy-card'>
-            <h3 style={{ margin: '0 0 16px', fontSize: '1.05rem' }}>Add Pricing Rule</h3>
+            <h3 style={{ margin: '0 0 16px', fontSize: '1.05rem' }}>{t('adminPricing.addRuleTitle')}</h3>
             {catalogLoading ? (
-              <p style={{ color: 'var(--muted)' }}>Loading catalog…</p>
+              <p style={{ color: 'var(--muted)' }}>{t('adminPricing.loadingCatalog')}</p>
             ) : (
               <form onSubmit={submitAdd}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14, marginBottom: 16 }}>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Device model</label>
+                    <label style={labelStyle}>{t('adminPricing.deviceModelLabel')}</label>
                     <select
                       value={addDraft.modelId}
                       onChange={(e) => setAddDraft((d) => ({ ...d, modelId: e.target.value }))}
                       style={inputStyle}
                       required
                     >
-                      <option value=''>Select a model…</option>
+                      <option value=''>{t('adminPricing.selectModel')}</option>
                       {Object.entries(modelGroups).sort(([a], [b]) => a.localeCompare(b)).map(([groupLabel, models]) => (
                         <optgroup key={groupLabel} label={groupLabel}>
                           {models.map((m) => (
@@ -298,41 +296,41 @@ function AdminPricingPageInner() {
                   </div>
 
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Repair type</label>
+                    <label style={labelStyle}>{t('adminPricing.repairTypeLabel')}</label>
                     <select
                       value={addDraft.repairTypeId}
                       onChange={(e) => setAddDraft((d) => ({ ...d, repairTypeId: e.target.value }))}
                       style={inputStyle}
                       required
                     >
-                      <option value=''>Select a repair type…</option>
+                      <option value=''>{t('adminPricing.selectRepairType')}</option>
                       {catalogRepairTypes.map((rt) => (
                         <option key={rt.id} value={rt.id}>{rt.repair_name}</option>
                       ))}
                     </select>
                     {isDuplicate && (
                       <p style={{ margin: '6px 0 0', color: 'var(--warn, #d97706)', fontSize: '0.85rem' }}>
-                        A rule for this combination already exists. Edit it in the list below.
+                        {t('adminPricing.duplicateWarning')}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label style={labelStyle}>Price mode</label>
+                    <label style={labelStyle}>{t('adminPricing.priceModeLabel')}</label>
                     <select
                       value={addDraft.priceMode}
                       onChange={(e) => setAddDraft((d) => ({ ...d, priceMode: e.target.value }))}
                       style={inputStyle}
                     >
-                      <option value='fixed'>Fixed</option>
-                      <option value='range'>Range</option>
-                      <option value='manual'>Manual review</option>
+                      <option value='fixed'>{t('adminPricing.priceModeFixed')}</option>
+                      <option value='range'>{t('adminPricing.priceModeRange')}</option>
+                      <option value='manual'>{t('adminPricing.priceModeManual')}</option>
                     </select>
                   </div>
 
                   {addDraft.priceMode === 'fixed' && (
                     <div>
-                      <label style={labelStyle}>Fixed price ($)</label>
+                      <label style={labelStyle}>{t('adminPricing.fixedPriceLabel')}</label>
                       <input type='number' min='0' step='0.01' value={addDraft.publicPriceFixed}
                         onChange={(e) => setAddDraft((d) => ({ ...d, publicPriceFixed: e.target.value }))}
                         style={inputStyle} placeholder='0.00' />
@@ -342,13 +340,13 @@ function AdminPricingPageInner() {
                   {addDraft.priceMode === 'range' && (
                     <>
                       <div>
-                        <label style={labelStyle}>Min price ($)</label>
+                        <label style={labelStyle}>{t('adminPricing.minPriceLabel')}</label>
                         <input type='number' min='0' step='0.01' value={addDraft.publicPriceMin}
                           onChange={(e) => setAddDraft((d) => ({ ...d, publicPriceMin: e.target.value }))}
                           style={inputStyle} placeholder='0.00' />
                       </div>
                       <div>
-                        <label style={labelStyle}>Max price ($)</label>
+                        <label style={labelStyle}>{t('adminPricing.maxPriceLabel')}</label>
                         <input type='number' min='0' step='0.01' value={addDraft.publicPriceMax}
                           onChange={(e) => setAddDraft((d) => ({ ...d, publicPriceMax: e.target.value }))}
                           style={inputStyle} placeholder='0.00' />
@@ -357,14 +355,14 @@ function AdminPricingPageInner() {
                   )}
 
                   <div>
-                    <label style={labelStyle}>Deposit ($)</label>
+                    <label style={labelStyle}>{t('adminPricing.depositLabel')}</label>
                     <input type='number' min='0' step='0.01' value={addDraft.depositAmount}
                       onChange={(e) => setAddDraft((d) => ({ ...d, depositAmount: e.target.value }))}
                       style={inputStyle} placeholder='0.00' />
                   </div>
 
                   <div>
-                    <label style={labelStyle}>Warranty (days)</label>
+                    <label style={labelStyle}>{t('adminPricing.warrantyLabel')}</label>
                     <input type='number' min='0' step='1' value={addDraft.warrantyDays}
                       onChange={(e) => setAddDraft((d) => ({ ...d, warrantyDays: e.target.value }))}
                       style={inputStyle} placeholder='90' />
@@ -375,9 +373,9 @@ function AdminPricingPageInner() {
 
                 <div className='inline-actions'>
                   <button type='submit' className='button button-primary' disabled={addSaving || !!isDuplicate}>
-                    {addSaving ? 'Adding…' : 'Add Rule'}
+                    {addSaving ? t('adminPricing.adding') : t('adminPricing.addRuleSubmit')}
                   </button>
-                  <button type='button' className='button button-secondary' onClick={closeAddForm}>Cancel</button>
+                  <button type='button' className='button button-secondary' onClick={closeAddForm}>{t('adminPricing.cancel')}</button>
                 </div>
               </form>
             )}
@@ -387,45 +385,45 @@ function AdminPricingPageInner() {
         <div className='policy-card'>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div className='field' style={{ flex: '0 0 140px', marginBottom: 0 }}>
-              <label style={labelStyle}>Category</label>
+              <label style={labelStyle}>{t('adminPricing.categoryLabel')}</label>
               <select
                 value={filterCategory}
                 onChange={(e) => { setFilterCategory(e.target.value); setFilterBrand('') }}
                 style={inputStyle}
               >
-                <option value=''>All categories</option>
+                <option value=''>{t('adminPricing.allCategories')}</option>
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div className='field' style={{ flex: '0 0 160px', marginBottom: 0 }}>
-              <label style={labelStyle}>Brand</label>
+              <label style={labelStyle}>{t('adminPricing.brandLabel')}</label>
               <select
                 value={filterBrand}
                 onChange={(e) => setFilterBrand(e.target.value)}
                 style={inputStyle}
               >
-                <option value=''>All brands</option>
+                <option value=''>{t('adminPricing.allBrands')}</option>
                 {brands.map((b) => <option key={b} value={b}>{b}</option>)}
               </select>
             </div>
             <div className='field' style={{ flex: '1 1 200px', marginBottom: 0 }}>
-              <label style={labelStyle}>Search model or repair</label>
+              <label style={labelStyle}>{t('adminPricing.searchLabel')}</label>
               <input
                 type='text'
                 value={filterText}
                 onChange={(e) => setFilterText(e.target.value)}
                 style={inputStyle}
-                placeholder='e.g. iPhone 13, screen'
+                placeholder={t('adminPricing.searchPlaceholder')}
               />
             </div>
           </div>
           <p style={{ fontSize: '0.84rem', color: 'var(--muted)', marginTop: 10 }}>
-            Showing {filtered.length} of {rules.length} rules
+            {t('adminPricing.showingCount', { count: filtered.length, total: rules.length })}
           </p>
         </div>
 
         {!filtered.length ? (
-          <div className='policy-card'>No pricing rules match this filter.</div>
+          <div className='policy-card'>{t('adminPricing.noMatching')}</div>
         ) : (
           <div className='page-stack'>
             {filtered.map((rule) => {
@@ -444,11 +442,11 @@ function AdminPricingPageInner() {
                       <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.9rem' }}>{repairType.repair_name || '—'}</p>
                     </div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      {!rule.active && <span className='mini-chip' style={{ background: 'var(--border)' }}>Inactive</span>}
+                      {!rule.active && <span className='mini-chip' style={{ background: 'var(--border)' }}>{t('adminPricing.inactive')}</span>}
                       {!isEditing && (
                         <>
                           <button type='button' className='button button-secondary button-compact' onClick={() => startEdit(rule)}>
-                            Edit
+                            {t('adminPricing.edit')}
                           </button>
                           <button
                             type='button'
@@ -457,7 +455,7 @@ function AdminPricingPageInner() {
                             disabled={isDeleting}
                             onClick={() => handleDelete(rule.id)}
                           >
-                            {isDeleting ? '…' : 'Delete'}
+                            {isDeleting ? '…' : t('adminPricing.delete')}
                           </button>
                         </>
                       )}
@@ -467,41 +465,41 @@ function AdminPricingPageInner() {
                   {!isEditing ? (
                     <div className='preview-meta' style={{ marginTop: 14 }}>
                       <div className='preview-meta-row'>
-                        <span>Price</span>
-                        <span>{formatPrice(rule)}</span>
+                        <span>{t('adminPricing.priceRow')}</span>
+                        <span>{formatPrice(rule, t)}</span>
                       </div>
                       <div className='preview-meta-row'>
-                        <span>Deposit</span>
-                        <span>{rule.deposit_amount != null && Number(rule.deposit_amount) > 0 ? `$${Number(rule.deposit_amount).toFixed(2)}` : 'None'}</span>
+                        <span>{t('adminPricing.depositRow')}</span>
+                        <span>{rule.deposit_amount != null && Number(rule.deposit_amount) > 0 ? `$${Number(rule.deposit_amount).toFixed(2)}` : t('adminPricing.none')}</span>
                       </div>
                       <div className='preview-meta-row'>
-                        <span>Return shipping</span>
-                        <span>{rule.return_shipping_fee != null && Number(rule.return_shipping_fee) > 0 ? `$${Number(rule.return_shipping_fee).toFixed(2)}` : 'None'}</span>
+                        <span>{t('adminPricing.returnShippingRow')}</span>
+                        <span>{rule.return_shipping_fee != null && Number(rule.return_shipping_fee) > 0 ? `$${Number(rule.return_shipping_fee).toFixed(2)}` : t('adminPricing.none')}</span>
                       </div>
                       <div className='preview-meta-row'>
-                        <span>Warranty</span>
-                        <span>{rule.warranty_days != null ? `${rule.warranty_days} days` : '—'}</span>
+                        <span>{t('adminPricing.warrantyRow')}</span>
+                        <span>{rule.warranty_days != null ? t('adminPricing.daysValue', { days: rule.warranty_days }) : '—'}</span>
                       </div>
                     </div>
                   ) : (
                     <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
                         <div>
-                          <label style={labelStyle}>Price mode</label>
+                          <label style={labelStyle}>{t('adminPricing.priceModeLabel')}</label>
                           <select
                             value={editDraft.price_mode}
                             onChange={(e) => setEditDraft((d) => ({ ...d, price_mode: e.target.value }))}
                             style={inputStyle}
                           >
-                            <option value='fixed'>Fixed</option>
-                            <option value='range'>Range</option>
-                            <option value='manual'>Manual review</option>
+                            <option value='fixed'>{t('adminPricing.priceModeFixed')}</option>
+                            <option value='range'>{t('adminPricing.priceModeRange')}</option>
+                            <option value='manual'>{t('adminPricing.priceModeManual')}</option>
                           </select>
                         </div>
 
                         {editDraft.price_mode === 'fixed' && (
                           <div>
-                            <label style={labelStyle}>Fixed price ($)</label>
+                            <label style={labelStyle}>{t('adminPricing.fixedPriceLabel')}</label>
                             <input type='number' min='0' step='0.01' value={editDraft.public_price_fixed}
                               onChange={(e) => setEditDraft((d) => ({ ...d, public_price_fixed: e.target.value }))}
                               style={inputStyle} placeholder='0.00' />
@@ -511,13 +509,13 @@ function AdminPricingPageInner() {
                         {editDraft.price_mode === 'range' && (
                           <>
                             <div>
-                              <label style={labelStyle}>Min price ($)</label>
+                              <label style={labelStyle}>{t('adminPricing.minPriceLabel')}</label>
                               <input type='number' min='0' step='0.01' value={editDraft.public_price_min}
                                 onChange={(e) => setEditDraft((d) => ({ ...d, public_price_min: e.target.value }))}
                                 style={inputStyle} placeholder='0.00' />
                             </div>
                             <div>
-                              <label style={labelStyle}>Max price ($)</label>
+                              <label style={labelStyle}>{t('adminPricing.maxPriceLabel')}</label>
                               <input type='number' min='0' step='0.01' value={editDraft.public_price_max}
                                 onChange={(e) => setEditDraft((d) => ({ ...d, public_price_max: e.target.value }))}
                                 style={inputStyle} placeholder='0.00' />
@@ -526,21 +524,21 @@ function AdminPricingPageInner() {
                         )}
 
                         <div>
-                          <label style={labelStyle}>Deposit ($)</label>
+                          <label style={labelStyle}>{t('adminPricing.depositLabel')}</label>
                           <input type='number' min='0' step='0.01' value={editDraft.deposit_amount}
                             onChange={(e) => setEditDraft((d) => ({ ...d, deposit_amount: e.target.value }))}
                             style={inputStyle} placeholder='0.00' />
                         </div>
 
                         <div>
-                          <label style={labelStyle}>Return shipping ($)</label>
+                          <label style={labelStyle}>{t('adminPricing.returnShippingLabel')}</label>
                           <input type='number' min='0' step='0.01' value={editDraft.return_shipping_fee}
                             onChange={(e) => setEditDraft((d) => ({ ...d, return_shipping_fee: e.target.value }))}
                             style={inputStyle} placeholder='0.00' />
                         </div>
 
                         <div>
-                          <label style={labelStyle}>Warranty (days)</label>
+                          <label style={labelStyle}>{t('adminPricing.warrantyLabel')}</label>
                           <input type='number' min='0' step='1' value={editDraft.warranty_days}
                             onChange={(e) => setEditDraft((d) => ({ ...d, warranty_days: e.target.value }))}
                             style={inputStyle} placeholder='90' />
@@ -552,7 +550,7 @@ function AdminPricingPageInner() {
                           onChange={(e) => setEditDraft((d) => ({ ...d, active: e.target.checked }))}
                           style={{ width: 18, height: 18, cursor: 'pointer' }} />
                         <label htmlFor={`active-${rule.id}`} style={{ fontWeight: 600, cursor: 'pointer' }}>
-                          Rule is active (shown to customers)
+                          {t('adminPricing.ruleIsActive')}
                         </label>
                       </div>
 
@@ -560,10 +558,10 @@ function AdminPricingPageInner() {
 
                       <div className='inline-actions'>
                         <button type='button' className='button button-primary' disabled={saving} onClick={() => saveEdit(rule.id)}>
-                          {saving ? 'Saving…' : 'Save'}
+                          {saving ? t('adminPricing.saving') : t('adminPricing.save')}
                         </button>
                         <button type='button' className='button button-secondary' disabled={saving} onClick={cancelEdit}>
-                          Cancel
+                          {t('adminPricing.cancel')}
                         </button>
                       </div>
                     </div>

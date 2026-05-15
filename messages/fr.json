@@ -1016,6 +1016,7 @@
     "reviewSubject": "Comment s'est passée votre réparation ?",
     "reviewHeading": "Évaluez votre réparation",
     "reviewCta": "Laisser un avis",
+    "trialEndedSubject": "Votre essai est terminé",
     "trialWarningSubject": "Votre essai se termine dans {days} jours",
     "trialWarningHeading": "Votre essai gratuit se termine bientôt",
     "trialWarningCta": "Passer à la version payante",

@@ -1016,6 +1016,7 @@
     "reviewSubject": "Como correu a sua reparação?",
     "reviewHeading": "Avalie a sua reparação",
     "reviewCta": "Deixar uma avaliação",
+    "trialEndedSubject": "O seu período de teste terminou",
     "trialWarningSubject": "O seu período de teste termina em {days} dias",
     "trialWarningHeading": "O seu teste gratuito está a terminar em breve",
     "trialWarningCta": "Atualizar agora",

@@ -1,8 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT, useLocale } from '../lib/i18n/TranslationProvider'
 
 export default function AdminAnalyticsDashboard() {
   return (
@@ -12,19 +13,21 @@ export default function AdminAnalyticsDashboard() {
   )
 }
 
-const RANGE_OPTIONS = [
-  { value: '7d', label: '7 days' },
-  { value: '30d', label: '30 days' },
-  { value: '90d', label: '90 days' },
-  { value: '12m', label: '12 months' },
-  { value: 'all', label: 'All time' },
-]
-
 function AdminAnalyticsDashboardInner() {
+  const t = useT()
+  const locale = useLocale()
   const [range, setRange] = useState('30d')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const RANGE_OPTIONS = [
+    { value: '7d', label: t('adminAnalytics.range7d') },
+    { value: '30d', label: t('adminAnalytics.range30d') },
+    { value: '90d', label: t('adminAnalytics.range90d') },
+    { value: '12m', label: t('adminAnalytics.range12m') },
+    { value: 'all', label: t('adminAnalytics.rangeAll') },
+  ]
 
   useEffect(() => {
     let cancelled = false
@@ -34,11 +37,11 @@ function AdminAnalyticsDashboardInner() {
       setError('')
       try {
         const response = await fetch(`/admin/api/analytics?range=${range}`)
-        if (!response.ok) throw new Error('Failed to load analytics data.')
+        if (!response.ok) throw new Error(t('adminAnalytics.errorLoad'))
         const json = await response.json()
         if (!cancelled) setData(json)
       } catch (err) {
-        if (!cancelled) setError(err.message || 'Unable to load analytics.')
+        if (!cancelled) setError(err.message || t('adminAnalytics.errorLoad'))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -46,7 +49,7 @@ function AdminAnalyticsDashboardInner() {
 
     load()
     return () => { cancelled = true }
-  }, [range])
+  }, [range, t])
 
   const rangeSelector = (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -68,11 +71,11 @@ function AdminAnalyticsDashboardInner() {
       <main className='page-hero'>
         <div className='site-shell page-stack'>
           <div className='info-card'>
-            <div className='kicker'>Admin workspace</div>
-            <h1>Analytics Dashboard</h1>
+            <div className='kicker'>{t('adminAnalytics.kicker')}</div>
+            <h1>{t('adminAnalytics.title')}</h1>
             {rangeSelector}
           </div>
-          <div className='policy-card'>Loading analytics...</div>
+          <div className='policy-card'>{t('adminAnalytics.loading')}</div>
         </div>
       </main>
     )
@@ -83,8 +86,8 @@ function AdminAnalyticsDashboardInner() {
       <main className='page-hero'>
         <div className='site-shell page-stack'>
           <div className='info-card'>
-            <div className='kicker'>Admin workspace</div>
-            <h1>Analytics Dashboard</h1>
+            <div className='kicker'>{t('adminAnalytics.kicker')}</div>
+            <h1>{t('adminAnalytics.title')}</h1>
             {rangeSelector}
           </div>
           <div className='notice'>{error}</div>
@@ -115,10 +118,10 @@ function AdminAnalyticsDashboardInner() {
   // prevConversionRate omitted — prev period approved count not available in response
 
   const funnelSteps = [
-    { label: 'Submitted', count: funnel.totalQuotes },
-    { label: 'Estimate Sent', count: funnel.estimatesSent },
-    { label: 'Approved', count: funnel.approved },
-    { label: 'Declined', count: funnel.declined },
+    { key: 'submitted', label: t('adminAnalytics.funnelSubmitted'), count: funnel.totalQuotes },
+    { key: 'estimateSent', label: t('adminAnalytics.funnelEstimateSent'), count: funnel.estimatesSent },
+    { key: 'approved', label: t('adminAnalytics.funnelApproved'), count: funnel.approved },
+    { key: 'declined', label: t('adminAnalytics.funnelDeclined'), count: funnel.declined },
   ]
   const maxFunnel = Math.max(...funnelSteps.map((s) => s.count), 1)
   const maxDeviceCount = devicePopularity.length > 0 ? devicePopularity[0].count : 1
@@ -127,31 +130,33 @@ function AdminAnalyticsDashboardInner() {
   const maxRevenueByType = revenueByType.length > 0 ? revenueByType[0].amount : 1
   const maxRevenueByTech = revenueByTech.length > 0 ? revenueByTech[0].amount : 1
 
+  const rangeLabel = RANGE_OPTIONS.find(o => o.value === range)?.label
+
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
 
         {/* Header */}
         <div className='info-card'>
-          <div className='kicker'>Admin workspace</div>
-          <h1>Analytics Dashboard</h1>
-          <p className='muted'>Revenue, conversions, repairs, and device trends.</p>
+          <div className='kicker'>{t('adminAnalytics.kicker')}</div>
+          <h1>{t('adminAnalytics.title')}</h1>
+          <p className='muted'>{t('adminAnalytics.subtitle')}</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
             {rangeSelector}
-            <Link href='/admin/quotes' className='button button-secondary button-compact'>
-              Back to Quotes
-            </Link>
+            <LocalizedLink href='/admin/quotes' className='button button-secondary button-compact'>
+              {t('adminAnalytics.backToQuotes')}
+            </LocalizedLink>
           </div>
         </div>
 
         {/* A) KPI Cards */}
         <div className='grid-4'>
           <div className='feature-card'>
-            <div className='kicker'>Revenue ({RANGE_OPTIONS.find(o => o.value === range)?.label})</div>
+            <div className='kicker'>{t('adminAnalytics.kpiRevenue', { range: rangeLabel })}</div>
             <h3>{fmt(revenue.total)}</h3>
             {revenue.prev > 0 && (
               <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
-                vs prev period{' '}
+                {t('adminAnalytics.vsPrevPeriod')}{' '}
                 <span style={{ color: trendColor, fontWeight: 600 }}>
                   {trendSign}{revenueTrend}%
                 </span>
@@ -159,11 +164,11 @@ function AdminAnalyticsDashboardInner() {
             )}
           </div>
           <div className='feature-card'>
-            <div className='kicker'>Total Quotes</div>
+            <div className='kicker'>{t('adminAnalytics.kpiTotalQuotes')}</div>
             <h3>{funnel.totalQuotes}</h3>
             {funnel.prevTotalQuotes > 0 && (
               <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
-                vs prev period{' '}
+                {t('adminAnalytics.vsPrevPeriod')}{' '}
                 <span style={{ color: quoteTrendColor, fontWeight: 600 }}>
                   {quoteTrendSign}{quoteTrend}%
                 </span>
@@ -171,34 +176,34 @@ function AdminAnalyticsDashboardInner() {
             )}
             {!funnel.prevTotalQuotes && (
               <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
-                {funnel.approved} approved
+                {t('adminAnalytics.nApproved', { count: funnel.approved })}
               </p>
             )}
           </div>
           <div className='feature-card'>
-            <div className='kicker'>Conversion Rate</div>
+            <div className='kicker'>{t('adminAnalytics.kpiConversionRate')}</div>
             <h3>{conversionRate}%</h3>
             <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
-              {funnel.approved} approved
+              {t('adminAnalytics.nApproved', { count: funnel.approved })}
             </p>
           </div>
           <div className='feature-card'>
-            <div className='kicker'>Repeat Customer Rate</div>
+            <div className='kicker'>{t('adminAnalytics.kpiRepeatRate')}</div>
             <h3>{customers.repeatRate}%</h3>
             <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
-              {customers.repeatCustomers} of {customers.total} customers
+              {t('adminAnalytics.repeatOfTotal', { repeat: customers.repeatCustomers, total: customers.total })}
             </p>
           </div>
         </div>
 
         {/* B) Revenue Breakdown (deposits vs balances + collection rates) */}
         <div className='info-card'>
-          <div className='kicker'>Revenue Breakdown</div>
-          <h3 style={{ marginBottom: 16 }}>Deposits vs Final Balances</h3>
+          <div className='kicker'>{t('adminAnalytics.revenueBreakdownKicker')}</div>
+          <h3 style={{ marginBottom: 16 }}>{t('adminAnalytics.revenueBreakdownTitle')}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[
-              { label: 'Inspection Deposits', amount: revenue.deposits, color: '#2d6bff' },
-              { label: 'Final Balances', amount: revenue.balances, color: '#16a34a' },
+              { label: t('adminAnalytics.depositsLabel'), amount: revenue.deposits, color: '#2d6bff' },
+              { label: t('adminAnalytics.balancesLabel'), amount: revenue.balances, color: '#16a34a' },
             ].map(({ label, amount, color }) => {
               const maxAmt = Math.max(revenue.deposits, revenue.balances, 1)
               return (
@@ -228,13 +233,13 @@ function AdminAnalyticsDashboardInner() {
         {/* C) Revenue by Repair Type */}
         {revenueByType.length > 0 && (
           <div className='info-card'>
-            <div className='kicker'>Revenue by Repair Type</div>
-            <h3 style={{ marginBottom: 16 }}>Top repair categories by revenue</h3>
+            <div className='kicker'>{t('adminAnalytics.revenueByTypeKicker')}</div>
+            <h3 style={{ marginBottom: 16 }}>{t('adminAnalytics.revenueByTypeTitle')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {revenueByType.map((item) => (
                 <div key={item.repairType}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{fmtKey(item.repairType)}</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{fmtKey(item.repairType, t)}</span>
                     <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{fmt(item.amount)}</span>
                   </div>
                   <div style={{ background: 'var(--border)', borderRadius: 5, height: 18, overflow: 'hidden' }}>
@@ -255,8 +260,8 @@ function AdminAnalyticsDashboardInner() {
         {/* D) Revenue by Technician */}
         {revenueByTech.length > 0 && (
           <div className='info-card'>
-            <div className='kicker'>Revenue by Technician</div>
-            <h3 style={{ marginBottom: 16 }}>Completed repair revenue per tech</h3>
+            <div className='kicker'>{t('adminAnalytics.revenueByTechKicker')}</div>
+            <h3 style={{ marginBottom: 16 }}>{t('adminAnalytics.revenueByTechTitle')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {revenueByTech.map((item) => (
                 <div key={item.tech}>
@@ -281,18 +286,18 @@ function AdminAnalyticsDashboardInner() {
 
         {/* E) Conversion Funnel */}
         <div className='info-card'>
-          <div className='kicker'>Conversion Funnel</div>
-          <h3 style={{ marginBottom: 16 }}>Quote Request Pipeline</h3>
+          <div className='kicker'>{t('adminAnalytics.funnelKicker')}</div>
+          <h3 style={{ marginBottom: 16 }}>{t('adminAnalytics.funnelTitle')}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {funnelSteps.map((step) => {
               const pct = maxFunnel > 0 ? (step.count / maxFunnel) * 100 : 0
-              const color = step.label === 'Declined' ? '#ef4444'
-                : step.label === 'Approved' ? '#16a34a'
-                : step.label === 'Estimate Sent' ? '#f59e0b'
+              const color = step.key === 'declined' ? '#ef4444'
+                : step.key === 'approved' ? '#16a34a'
+                : step.key === 'estimateSent' ? '#f59e0b'
                 : '#2d6bff'
 
               return (
-                <div key={step.label}>
+                <div key={step.key}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{step.label}</span>
                     <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
@@ -322,16 +327,16 @@ function AdminAnalyticsDashboardInner() {
 
         {/* F) Repair Type Demand (quote volume) */}
         <div className='info-card'>
-          <div className='kicker'>Repair Type Demand</div>
-          <h3 style={{ marginBottom: 16 }}>Quote volume by repair type</h3>
+          <div className='kicker'>{t('adminAnalytics.repairDemandKicker')}</div>
+          <h3 style={{ marginBottom: 16 }}>{t('adminAnalytics.repairDemandTitle')}</h3>
           {repairTypeDemand.length === 0 ? (
-            <p className='muted'>No repair type data yet.</p>
+            <p className='muted'>{t('adminAnalytics.noRepairData')}</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {repairTypeDemand.map((item) => (
                 <div key={item.repairType}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{fmtKey(item.repairType)}</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{fmtKey(item.repairType, t)}</span>
                     <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
                       {item.count}
                       <span className='muted' style={{ marginLeft: 6, fontWeight: 400, fontSize: '0.82rem' }}>
@@ -356,10 +361,10 @@ function AdminAnalyticsDashboardInner() {
 
         {/* G) Device Popularity */}
         <div className='info-card'>
-          <div className='kicker'>Device Popularity</div>
-          <h3 style={{ marginBottom: 16 }}>Top 10 requested devices</h3>
+          <div className='kicker'>{t('adminAnalytics.devicePopularityKicker')}</div>
+          <h3 style={{ marginBottom: 16 }}>{t('adminAnalytics.devicePopularityTitle')}</h3>
           {devicePopularity.length === 0 ? (
-            <p className='muted'>No device data yet.</p>
+            <p className='muted'>{t('adminAnalytics.noDeviceData')}</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {devicePopularity.map((item, index) => (
@@ -389,23 +394,25 @@ function AdminAnalyticsDashboardInner() {
         {/* H) Repair Metrics */}
         <div className='grid-4'>
           <div className='feature-card'>
-            <div className='kicker'>Active Repairs</div>
+            <div className='kicker'>{t('adminAnalytics.activeRepairs')}</div>
             <h3>{repairs.activeRepairs}</h3>
-            <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>{repairs.totalOrders} total orders</p>
+            <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>
+              {t('adminAnalytics.totalOrders', { count: repairs.totalOrders })}
+            </p>
           </div>
           <div className='feature-card'>
-            <div className='kicker'>Avg Turnaround</div>
-            <h3>{repairs.avgTurnaroundDays !== null ? `${repairs.avgTurnaroundDays}d` : 'N/A'}</h3>
-            <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>Intake to shipped</p>
+            <div className='kicker'>{t('adminAnalytics.avgTurnaround')}</div>
+            <h3>{repairs.avgTurnaroundDays !== null ? t('adminAnalytics.nDays', { days: repairs.avgTurnaroundDays }) : t('adminAnalytics.notAvailable')}</h3>
+            <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>{t('adminAnalytics.intakeToShipped')}</p>
           </div>
           {Object.entries(repairs.statusCounts)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 2)
             .map(([status, count]) => (
               <div key={status} className='feature-card'>
-                <div className='kicker'>{fmtKey(status)}</div>
+                <div className='kicker'>{fmtKey(status, t)}</div>
                 <h3>{count}</h3>
-                <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>repair orders</p>
+                <p className='muted' style={{ fontSize: '0.85rem', marginTop: 4 }}>{t('adminAnalytics.repairOrdersLabel')}</p>
               </div>
             ))}
         </div>
@@ -414,18 +421,25 @@ function AdminAnalyticsDashboardInner() {
         <div className='list-card'>
           <div className='section-head'>
             <div>
-              <div className='kicker'>Recent Activity</div>
-              <h3>Latest Quote Requests</h3>
+              <div className='kicker'>{t('adminAnalytics.recentActivityKicker')}</div>
+              <h3>{t('adminAnalytics.recentQuotesTitle')}</h3>
             </div>
           </div>
           {recentQuotes.length === 0 ? (
-            <p className='muted' style={{ padding: '12px 0' }}>No recent quotes.</p>
+            <p className='muted' style={{ padding: '12px 0' }}>{t('adminAnalytics.noRecentQuotes')}</p>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    {['Quote ID', 'Customer', 'Device', 'Repair', 'Status', 'Date'].map((h) => (
+                    {[
+                      t('adminAnalytics.tableQuoteId'),
+                      t('adminAnalytics.tableCustomer'),
+                      t('adminAnalytics.tableDevice'),
+                      t('adminAnalytics.tableRepair'),
+                      t('adminAnalytics.tableStatus'),
+                      t('adminAnalytics.tableDate'),
+                    ].map((h) => (
                       <th key={h} style={thStyle}>{h}</th>
                     ))}
                   </tr>
@@ -434,15 +448,15 @@ function AdminAnalyticsDashboardInner() {
                   {recentQuotes.map((q) => (
                     <tr key={q.quote_id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={tdStyle}>
-                        <Link href={`/admin/quotes/${q.quote_id}`} style={{ color: '#2d6bff', fontWeight: 600 }}>
+                        <LocalizedLink href={`/admin/quotes/${q.quote_id}`} style={{ color: '#2d6bff', fontWeight: 600 }}>
                           {q.quote_id}
-                        </Link>
+                        </LocalizedLink>
                       </td>
                       <td style={tdStyle}>{q.customer}</td>
                       <td style={tdStyle}>{q.device}</td>
-                      <td style={tdStyle}>{fmtKey(q.repair)}</td>
-                      <td style={tdStyle}>{fmtKey(q.status)}</td>
-                      <td style={tdStyle}>{new Date(q.created_at).toLocaleDateString()}</td>
+                      <td style={tdStyle}>{fmtKey(q.repair, t)}</td>
+                      <td style={tdStyle}>{fmtKey(q.status, t)}</td>
+                      <td style={tdStyle}>{new Date(q.created_at).toLocaleDateString(locale)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -474,8 +488,13 @@ function fmt(amount) {
   return '$' + Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function fmtKey(key) {
-  if (!key || key === 'N/A') return key || 'Unknown'
-  if (key === 'unknown') return 'Unknown'
+function fmtKey(key, t) {
+  if (!key || key === 'N/A') return key || (t ? t('adminAnalytics.unknown') : 'Unknown')
+  if (key === 'unknown') return t ? t('adminAnalytics.unknown') : 'Unknown'
+  // Try status translation first
+  if (t) {
+    const statusTranslation = t(`status.${key}`)
+    if (statusTranslation && statusTranslation !== `status.${key}`) return statusTranslation
+  }
   return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }

@@ -1,9 +1,10 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 import AdminSignOutButton from './AdminSignOutButton'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function AdminStaffPerformancePage() {
   return (
@@ -14,6 +15,7 @@ export default function AdminStaffPerformancePage() {
 }
 
 function AdminStaffPerformanceInner() {
+  const t = useT()
   const [stats, setStats] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -25,7 +27,7 @@ function AdminStaffPerformanceInner() {
       .then((data) => {
         if (!cancelled) {
           if (data.ok) setStats(data.stats || [])
-          else setError(data.error || 'Failed to load.')
+          else setError(data.error || t('adminStaff.errorLoad'))
           setLoading(false)
         }
       })
@@ -33,7 +35,7 @@ function AdminStaffPerformanceInner() {
         if (!cancelled) { setError(err.message); setLoading(false) }
       })
     return () => { cancelled = true }
-  }, [])
+  }, [t])
 
   const totalActive = stats.reduce((s, m) => s + m.active_assigned, 0)
   const totalCompleted = stats.reduce((s, m) => s + m.completed_last_30d, 0)
@@ -42,15 +44,15 @@ function AdminStaffPerformanceInner() {
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='info-card'>
-          <div className='kicker'>Admin workspace</div>
+          <div className='kicker'>{t('adminStaff.kicker')}</div>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <h1>Staff performance</h1>
-              <p>Technician workload, repair throughput, and average turnaround for the last 30 days.</p>
+              <h1>{t('adminStaff.title')}</h1>
+              <p>{t('adminStaff.subtitle')}</p>
             </div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <Link href='/admin/orders' className='button button-secondary'>Repair queue</Link>
-              <Link href='/admin/team' className='button button-secondary'>Team</Link>
+              <LocalizedLink href='/admin/orders' className='button button-secondary'>{t('adminStaff.repairQueue')}</LocalizedLink>
+              <LocalizedLink href='/admin/team' className='button button-secondary'>{t('adminStaff.team')}</LocalizedLink>
               <AdminSignOutButton />
             </div>
           </div>
@@ -59,40 +61,40 @@ function AdminStaffPerformanceInner() {
         {!loading && !error && stats.length > 0 ? (
           <div className='grid-3' style={{ gap: 12 }}>
             <div className='feature-card'>
-              <div className='kicker'>Active</div>
+              <div className='kicker'>{t('adminStaff.activeKicker')}</div>
               <div style={{ fontSize: 28, fontWeight: 700 }}>{totalActive}</div>
-              <p style={{ margin: 0 }}>Orders in progress</p>
+              <p style={{ margin: 0 }}>{t('adminStaff.ordersInProgress')}</p>
             </div>
             <div className='feature-card'>
-              <div className='kicker'>Last 30 days</div>
+              <div className='kicker'>{t('adminStaff.last30dKicker')}</div>
               <div style={{ fontSize: 28, fontWeight: 700 }}>{totalCompleted}</div>
-              <p style={{ margin: 0 }}>Orders completed</p>
+              <p style={{ margin: 0 }}>{t('adminStaff.ordersCompleted')}</p>
             </div>
             <div className='feature-card'>
-              <div className='kicker'>Team size</div>
+              <div className='kicker'>{t('adminStaff.teamSizeKicker')}</div>
               <div style={{ fontSize: 28, fontWeight: 700 }}>{stats.length}</div>
-              <p style={{ margin: 0 }}>Active staff members</p>
+              <p style={{ margin: 0 }}>{t('adminStaff.activeStaffMembers')}</p>
             </div>
           </div>
         ) : null}
 
         {loading ? (
-          <div className='policy-card center-card'>Loading staff performance…</div>
+          <div className='policy-card center-card'>{t('adminStaff.loading')}</div>
         ) : error ? (
           <div className='notice notice-error'>{error}</div>
         ) : !stats.length ? (
-          <div className='policy-card center-card'>No active staff members found.</div>
+          <div className='policy-card center-card'>{t('adminStaff.noStaff')}</div>
         ) : (
           <div className='policy-card' style={{ padding: 0, overflowX: 'auto' }}>
             <table className='data-table'>
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Active orders</th>
-                  <th>Total assigned</th>
-                  <th>Completed (30d)</th>
-                  <th>Avg turnaround</th>
+                  <th>{t('adminStaff.colName')}</th>
+                  <th>{t('adminStaff.colRole')}</th>
+                  <th>{t('adminStaff.colActiveOrders')}</th>
+                  <th>{t('adminStaff.colTotalAssigned')}</th>
+                  <th>{t('adminStaff.colCompleted30d')}</th>
+                  <th>{t('adminStaff.colAvgTurnaround')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -110,17 +112,17 @@ function AdminStaffPerformanceInner() {
                     <td>{member.completed_last_30d}</td>
                     <td>
                       {member.avg_turnaround_days !== null
-                        ? `${member.avg_turnaround_days}d`
+                        ? t('adminStaff.daysValue', { days: member.avg_turnaround_days })
                         : '—'}
                     </td>
                     <td>
-                      <Link
+                      <LocalizedLink
                         href={`/admin/orders?tech=${member.user_id}&status=active`}
                         className='button button-secondary'
                         style={{ fontSize: 12, padding: '4px 10px' }}
                       >
-                        View queue
-                      </Link>
+                        {t('adminStaff.viewQueue')}
+                      </LocalizedLink>
                     </td>
                   </tr>
                 ))}

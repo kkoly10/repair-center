@@ -1026,6 +1026,7 @@
     "reviewSubject": "How was your repair?",
     "reviewHeading": "Rate your repair",
     "reviewCta": "Leave a review",
+    "trialEndedSubject": "Your trial has ended",
     "trialWarningSubject": "Your trial ends in {days} days",
     "trialWarningHeading": "Your free trial is ending soon",
     "trialWarningCta": "Upgrade now",

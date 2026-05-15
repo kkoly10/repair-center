@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
-import Link from 'next/link'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function AdminPartsPage() {
   return (
@@ -15,6 +16,7 @@ export default function AdminPartsPage() {
 const EMPTY_FORM = { name: '', sku: '', description: '', cost_price: '', quantity_on_hand: '0', low_stock_threshold: '0' }
 
 function AdminPartsPageInner() {
+  const t = useT()
   const [parts, setParts] = useState([])
   const [lowStockCount, setLowStockCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -39,14 +41,14 @@ function AdminPartsPageInner() {
       setError('')
       try {
         const res = await fetch('/admin/api/parts')
-        if (!res.ok) throw new Error('Failed to load parts.')
+        if (!res.ok) throw new Error(t('adminParts.errorLoad'))
         const json = await res.json()
         if (!cancelled) {
           setParts(json.parts || [])
           setLowStockCount(json.lowStockCount || 0)
         }
       } catch (err) {
-        if (!cancelled) setError(err.message || 'Unable to load parts.')
+        if (!cancelled) setError(err.message || t('adminParts.errorLoadUnable'))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -54,7 +56,7 @@ function AdminPartsPageInner() {
 
     load()
     return () => { cancelled = true }
-  }, [])
+  }, [t])
 
   const filtered = parts.filter((p) => {
     if (!showInactive && !p.active) return false
@@ -88,7 +90,7 @@ function AdminPartsPageInner() {
         }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Failed to create part.')
+      if (!res.ok) throw new Error(json.error || t('adminParts.errorCreate'))
 
       // Reload parts
       const reloadRes = await fetch('/admin/api/parts')
@@ -100,7 +102,7 @@ function AdminPartsPageInner() {
       setAddForm(EMPTY_FORM)
       setShowAddForm(false)
     } catch (err) {
-      setAddError(err.message || 'Failed to create part.')
+      setAddError(err.message || t('adminParts.errorCreate'))
     } finally {
       setAddSaving(false)
     }
@@ -138,7 +140,7 @@ function AdminPartsPageInner() {
         }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Failed to update part.')
+      if (!res.ok) throw new Error(json.error || t('adminParts.errorUpdate'))
 
       const newIsLowStock = Number(editForm.low_stock_threshold || 0) > 0 && Number(editForm.quantity_on_hand || 0) <= Number(editForm.low_stock_threshold || 0)
       const oldPart = parts.find((p) => p.id === partId)
@@ -161,7 +163,7 @@ function AdminPartsPageInner() {
       }
       setEditingId(null)
     } catch (err) {
-      setEditError(err.message || 'Failed to update part.')
+      setEditError(err.message || t('adminParts.errorUpdate'))
     } finally {
       setEditSaving(false)
     }
@@ -180,7 +182,7 @@ function AdminPartsPageInner() {
     return (
       <main className='page-hero'>
         <div className='site-shell page-stack'>
-          <div className='policy-card'>Loading parts catalog...</div>
+          <div className='policy-card'>{t('adminParts.loading')}</div>
         </div>
       </main>
     )

@@ -1,22 +1,25 @@
 'use client'
 
-import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AdminAuthGate from './AdminAuthGate'
 import AdminSignOutButton from './AdminSignOutButton'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 import { statusPill } from '../lib/statusPills'
 
 const PAGE_SIZE = 25
 
-const VIEW_TABS = [
-  { value: 'active', label: 'Active' },
-  { value: 'waiting_parts', label: 'Waiting Parts' },
-  { value: 'awaiting_balance_payment', label: 'Awaiting Payment' },
-  { value: 'overdue', label: 'Overdue' },
-  { value: 'completed', label: 'Completed' },
-  { value: '', label: 'All' },
-]
+function buildViewTabs(t) {
+  return [
+    { value: 'active', label: t('adminOrders.tabActive') },
+    { value: 'waiting_parts', label: t('adminOrders.tabWaitingParts') },
+    { value: 'awaiting_balance_payment', label: t('adminOrders.tabAwaitingPayment') },
+    { value: 'overdue', label: t('adminOrders.tabOverdue') },
+    { value: 'completed', label: t('adminOrders.tabCompleted') },
+    { value: '', label: t('adminOrders.tabAll') },
+  ]
+}
 
 const ALLOWED_STATUSES = [
   'awaiting_mail_in',
@@ -55,14 +58,18 @@ function priorityClass(priority) {
   return null
 }
 
-function formatDue(dueAt) {
+function formatDue(dueAt, t) {
   if (!dueAt) return null
   const d = new Date(dueAt)
   const now = new Date()
   const diff = d - now
   const overdue = diff < 0
   const days = Math.abs(Math.round(diff / 86400000))
-  const label = days === 0 ? 'Today' : overdue ? `${days}d overdue` : `${days}d`
+  const label = days === 0
+    ? t('adminOrders.dueToday')
+    : overdue
+      ? t('adminOrders.dueOverdueDays', { days: String(days) })
+      : t('adminOrders.dueInDays', { days: String(days) })
   return { label, overdue }
 }
 
@@ -75,10 +82,12 @@ export default function AdminOrdersQueue() {
 }
 
 function AdminOrdersQueueInner() {
+  const t = useT()
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeView = searchParams.get('status') || 'active'
   const activeTech = searchParams.get('tech') || ''
+  const VIEW_TABS = useMemo(() => buildViewTabs(t), [t])
 
   const [orders, setOrders] = useState([])
   const [totalCount, setTotalCount] = useState(0)
@@ -116,7 +125,7 @@ function AdminOrdersQueueInner() {
 
         const res = await fetch(`/admin/api/orders?${params}`)
         const data = await res.json()
-        if (!res.ok) throw new Error(data.error || 'Failed to load orders.')
+        if (!res.ok) throw new Error(data.error || t('adminOrders.errorLoad'))
         if (!ignore.current) {
           setOrders(data.orders || [])
           setTotalCount(data.totalCount || 0)
@@ -127,7 +136,7 @@ function AdminOrdersQueueInner() {
         if (!ignore.current) setLoading(false)
       }
     },
-    [activeView, activeTech, searchTerm, page]
+    [activeView, activeTech, searchTerm, page, t]
   )
 
   useEffect(() => {
@@ -179,7 +188,7 @@ function AdminOrdersQueueInner() {
         body: JSON.stringify(payload),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Update failed.')
+      if (!res.ok) throw new Error(data.error || t('adminOrders.errorUpdate'))
       setOrders((prev) =>
         prev.map((o) =>
           o.id === orderId ? { ...o, ...data.order, technician_name: o.technician_name } : o
@@ -220,23 +229,23 @@ function AdminOrdersQueueInner() {
   }
 
   const activeViewLabel = useMemo(
-    () => VIEW_TABS.find((t) => t.value === activeView)?.label || 'All',
-    [activeView]
+    () => VIEW_TABS.find((tab) => tab.value === activeView)?.label || t('adminOrders.tabAll'),
+    [activeView, VIEW_TABS, t]
   )
 
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='info-card'>
-          <div className='kicker'>Admin workspace</div>
+          <div className='kicker'>{t('adminOrders.kicker')}</div>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <h1>Repair queue</h1>
-              <p>Manage active repair orders, assign technicians, set priorities, and track due dates.</p>
+              <h1>{t('adminOrders.heading')}</h1>
+              <p>{t('adminOrders.intro')}</p>
             </div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <a href='/admin/api/export/orders' className='button button-secondary' download>Export CSV</a>
-              <Link href='/admin/quotes' className='button button-secondary'>Quote requests</Link>
+              <a href='/admin/api/export/orders' className='button button-secondary' download>{t('adminOrders.exportCsv')}</a>
+              <LocalizedLink href='/admin/quotes' className='button button-secondary'>{t('adminOrders.quoteRequests')}</LocalizedLink>
               <AdminSignOutButton />
             </div>
           </div>
@@ -261,14 +270,14 @@ function AdminOrdersQueueInner() {
             <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8, flex: '1 1 260px' }}>
               <input
                 className='field'
-                placeholder='Search order #, quote ID, customer…'
+                placeholder={t('adminOrders.searchPlaceholder')}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 style={{ flex: 1 }}
               />
-              <button type='submit' className='button button-secondary' style={{ flexShrink: 0 }}>Search</button>
+              <button type='submit' className='button button-secondary' style={{ flexShrink: 0 }}>{t('adminOrders.searchButton')}</button>
               {searchTerm ? (
-                <button type='button' className='button button-ghost' onClick={clearSearch}>Clear</button>
+                <button type='button' className='button button-ghost' onClick={clearSearch}>{t('adminOrders.clearSearch')}</button>
               ) : null}
             </form>
 
@@ -278,11 +287,11 @@ function AdminOrdersQueueInner() {
               onChange={(e) => handleTechFilter(e.target.value)}
               style={{ flex: '0 1 200px' }}
             >
-              <option value=''>All technicians</option>
-              <option value='unassigned'>Unassigned</option>
-              {techs.map((t) => (
-                <option key={t.user_id || t.id} value={t.user_id || t.id}>
-                  {t.full_name || t.name || 'Unknown'}
+              <option value=''>{t('adminOrders.allTechnicians')}</option>
+              <option value='unassigned'>{t('adminOrders.unassigned')}</option>
+              {techs.map((tech) => (
+                <option key={tech.user_id || tech.id} value={tech.user_id || tech.id}>
+                  {tech.full_name || tech.name || t('adminOrders.unknown')}
                 </option>
               ))}
             </select>
@@ -296,13 +305,15 @@ function AdminOrdersQueueInner() {
         {error ? (
           <div className='notice notice-error'>{error}</div>
         ) : loading ? (
-          <div className='policy-card center-card'>Loading {activeViewLabel.toLowerCase()} orders…</div>
+          <div className='policy-card center-card'>{t('adminOrders.loadingWithView', { view: activeViewLabel.toLowerCase() })}</div>
         ) : !orders.length ? (
           !searchTerm && activeView === 'active'
             ? <FirstOrderGuide />
             : (
               <div className='policy-card center-card'>
-                No {activeViewLabel.toLowerCase()} orders{searchTerm ? ` matching "${searchTerm}"` : ''}.
+                {searchTerm
+                  ? t('adminOrders.emptyWithSearch', { view: activeViewLabel.toLowerCase(), search: searchTerm })
+                  : t('adminOrders.emptyWithView', { view: activeViewLabel.toLowerCase() })}
               </div>
             )
         ) : (
@@ -310,35 +321,35 @@ function AdminOrdersQueueInner() {
             <table className='data-table'>
               <thead>
                 <tr>
-                  <th>Order</th>
-                  <th>Customer</th>
-                  <th>Device / Repair</th>
-                  <th>Status</th>
-                  <th>Priority</th>
-                  <th>Technician</th>
-                  <th>Due</th>
+                  <th>{t('adminOrders.colOrder')}</th>
+                  <th>{t('adminOrders.colCustomer')}</th>
+                  <th>{t('adminOrders.colDeviceRepair')}</th>
+                  <th>{t('adminOrders.colStatus')}</th>
+                  <th>{t('adminOrders.colPriority')}</th>
+                  <th>{t('adminOrders.colTechnician')}</th>
+                  <th>{t('adminOrders.colDue')}</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((order) => {
-                  const due = formatDue(order.due_at)
+                  const due = formatDue(order.due_at, t)
                   const isSaving = savingId === order.id
                   return (
                     <tr key={order.id} style={{ opacity: isSaving ? 0.6 : 1 }}>
                       {/* Order number + deposit badge */}
-                      <td data-label="Order" style={{ whiteSpace: 'nowrap' }}>
+                      <td data-label={t('adminOrders.colOrder')} style={{ whiteSpace: 'nowrap' }}>
                         <div className='id-mono' style={{ fontWeight: 600, fontSize: 13 }}>{order.order_number}</div>
                         {order.quote_id ? (
                           <div className='id-mono' style={{ fontSize: 11, color: 'var(--muted)' }}>{order.quote_id}</div>
                         ) : null}
                         {Number(order.inspection_deposit_required) > 0 && !order.inspection_deposit_paid_at ? (
-                          <span className='chip chip-warn' style={{ fontSize: 10, marginTop: 4 }}>Deposit due</span>
+                          <span className='chip chip-warn' style={{ fontSize: 10, marginTop: 4 }}>{t('adminOrders.depositDue')}</span>
                         ) : null}
                       </td>
 
                       {/* Customer */}
-                      <td data-label="Customer">
+                      <td data-label={t('adminOrders.colCustomer')}>
                         <div style={{ fontSize: 13 }}>{order.customer_name || '—'}</div>
                         {order.customer_email ? (
                           <div style={{ fontSize: 11, color: 'var(--muted)' }}>{order.customer_email}</div>
@@ -346,7 +357,7 @@ function AdminOrdersQueueInner() {
                       </td>
 
                       {/* Device */}
-                      <td data-label="Device">
+                      <td data-label={t('adminOrders.colDevice')}>
                         <div style={{ fontSize: 13 }}>
                           {[order.brand_name, order.model_name].filter(Boolean).join(' ') || '—'}
                         </div>
@@ -356,10 +367,10 @@ function AdminOrdersQueueInner() {
                       </td>
 
                       {/* Status — inline select */}
-                      <td data-label="Status">
+                      <td data-label={t('adminOrders.colStatus')}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <span className={statusPill(order.current_status).cls}>
-                            {statusPill(order.current_status).label}
+                          <span className={statusPill(order.current_status, t).cls}>
+                            {statusPill(order.current_status, t).label}
                           </span>
                           <select
                             className='field'
@@ -369,14 +380,14 @@ function AdminOrdersQueueInner() {
                             style={{ fontSize: 11, padding: '2px 6px', minWidth: 140 }}
                           >
                             {ALLOWED_STATUSES.map((s) => (
-                              <option key={s} value={s}>{formatStatus(s)}</option>
+                              <option key={s} value={s}>{statusPill(s, t).label}</option>
                             ))}
                           </select>
                         </div>
                       </td>
 
                       {/* Priority — inline select */}
-                      <td data-label="Priority">
+                      <td data-label={t('adminOrders.colPriority')}>
                         <select
                           className='field'
                           value={order.priority || 'normal'}
@@ -385,18 +396,18 @@ function AdminOrdersQueueInner() {
                           style={{ fontSize: 12, padding: '4px 8px' }}
                         >
                           {ALLOWED_PRIORITIES.map((p) => (
-                            <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                            <option key={p} value={p}>{t(`adminOrders.priority${p.charAt(0).toUpperCase()}${p.slice(1)}`)}</option>
                           ))}
                         </select>
                         {priorityClass(order.priority) ? (
                           <span className={priorityClass(order.priority)} style={{ fontSize: 10, marginLeft: 4 }}>
-                            {order.priority}
+                            {t(`adminOrders.priority${(order.priority || '').charAt(0).toUpperCase()}${(order.priority || '').slice(1)}`) || order.priority}
                           </span>
                         ) : null}
                       </td>
 
                       {/* Technician — inline select */}
-                      <td data-label="Tech">
+                      <td data-label={t('adminOrders.colTech')}>
                         <select
                           className='field'
                           value={order.assigned_technician_user_id || ''}
@@ -404,17 +415,17 @@ function AdminOrdersQueueInner() {
                           disabled={isSaving}
                           style={{ fontSize: 12, padding: '4px 8px', minWidth: 120 }}
                         >
-                          <option value=''>Unassigned</option>
-                          {techs.map((t) => (
-                            <option key={t.user_id || t.id} value={t.user_id || t.id}>
-                              {t.full_name || t.name || 'Unknown'}
+                          <option value=''>{t('adminOrders.unassigned')}</option>
+                          {techs.map((tech) => (
+                            <option key={tech.user_id || tech.id} value={tech.user_id || tech.id}>
+                              {tech.full_name || tech.name || t('adminOrders.unknown')}
                             </option>
                           ))}
                         </select>
                       </td>
 
                       {/* Due date — date input */}
-                      <td data-label="Due" style={{ whiteSpace: 'nowrap' }}>
+                      <td data-label={t('adminOrders.colDue')} style={{ whiteSpace: 'nowrap' }}>
                         <input
                           type='date'
                           className='field'
@@ -433,13 +444,13 @@ function AdminOrdersQueueInner() {
                       {/* Actions */}
                       <td data-label="" style={{ whiteSpace: 'nowrap' }}>
                         {order.quote_id ? (
-                          <Link
+                          <LocalizedLink
                             href={`/admin/quotes/${order.quote_id}/order`}
                             className='button button-secondary'
                             style={{ fontSize: 12, padding: '4px 10px' }}
                           >
-                            Open
-                          </Link>
+                            {t('adminOrders.open')}
+                          </LocalizedLink>
                         ) : null}
                       </td>
                     </tr>
@@ -458,22 +469,24 @@ function AdminOrdersQueueInner() {
               disabled={page === 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
             >
-              ← Prev
+              {t('adminOrders.prev')}
             </button>
             <span style={{ lineHeight: '36px', fontSize: 13 }}>
-              Page {page + 1} of {totalPages} ({totalCount} orders)
+              {t('adminOrders.pageOf', { page: String(page + 1), total: String(totalPages), count: String(totalCount) })}
             </span>
             <button
               className='button button-ghost'
               disabled={page >= totalPages - 1}
               onClick={() => setPage((p) => p + 1)}
             >
-              Next →
+              {t('adminOrders.next')}
             </button>
           </div>
         ) : (
           <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
-            {totalCount} order{totalCount !== 1 ? 's' : ''}
+            {totalCount === 1
+              ? t('adminOrders.orderCountOne', { count: String(totalCount) })
+              : t('adminOrders.orderCountOther', { count: String(totalCount) })}
           </p>
         )}
       </div>
@@ -482,13 +495,13 @@ function AdminOrdersQueueInner() {
 }
 
 function FirstOrderGuide() {
+  const t = useT()
   return (
     <div className='policy-card' style={{ padding: '32px 28px', textAlign: 'center', maxWidth: 560, margin: '0 auto' }}>
       <div style={{ fontSize: '2rem', marginBottom: 12 }}>🔧</div>
-      <h2 style={{ marginTop: 0, marginBottom: 8, letterSpacing: '-0.02em' }}>Your queue is empty</h2>
+      <h2 style={{ marginTop: 0, marginBottom: 8, letterSpacing: '-0.02em' }}>{t('adminOrders.emptyQueueHeading')}</h2>
       <p style={{ color: 'var(--muted)', marginBottom: 24, lineHeight: 1.6 }}>
-        Orders appear here once a customer&apos;s estimate is approved and converted to a repair order.
-        Get started by creating a quote request from a customer.
+        {t('adminOrders.emptyQueueBody')}
       </p>
 
       <div style={{
@@ -507,18 +520,18 @@ function FirstOrderGuide() {
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--warn, #f59e0b)', flexShrink: 0 }} />
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 600, fontFamily: 'monospace', fontSize: '0.82rem' }}>RCO-001</div>
-          <div style={{ color: 'var(--muted)' }}>Jane Doe — iPhone 14 Screen Replacement</div>
+          <div style={{ color: 'var(--muted)' }}>{t('adminOrders.mockOrderCustomer')}</div>
         </div>
-        <div style={{ whiteSpace: 'nowrap', color: 'var(--muted)' }}>Repairing · 2d left</div>
+        <div style={{ whiteSpace: 'nowrap', color: 'var(--muted)' }}>{t('adminOrders.mockOrderStatus')}</div>
       </div>
 
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-        <Link href='/admin/quotes' className='button button-secondary button-compact'>
-          Create a quote request
-        </Link>
-        <Link href='/admin/team' className='button button-ghost button-compact'>
-          Invite a technician
-        </Link>
+        <LocalizedLink href='/admin/quotes' className='button button-secondary button-compact'>
+          {t('adminOrders.createQuoteCta')}
+        </LocalizedLink>
+        <LocalizedLink href='/admin/team' className='button button-ghost button-compact'>
+          {t('adminOrders.inviteTechCta')}
+        </LocalizedLink>
       </div>
     </div>
   )
