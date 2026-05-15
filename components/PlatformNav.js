@@ -4,8 +4,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const NAV_LINKS = [
-  { href: '/platform',       label: 'Dashboard' },
-  { href: '/platform/orgs',  label: 'Organizations' },
+  { href: '/platform',            label: 'Dashboard' },
+  { href: '/platform/orgs',       label: 'Organizations' },
+  { href: '/platform/feedback',   label: 'Feedback' },
 ]
 
 export default function PlatformNav() {

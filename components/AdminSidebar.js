@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import AdminSignOutButton from './AdminSignOutButton'
+import FeedbackButton from './FeedbackButton'
 
 const NAV_SECTIONS = [
   {
@@ -254,8 +255,9 @@ export default function AdminSidebar() {
           ))}
         </nav>
 
-        {/* Sign out */}
-        <div style={{ padding: '8px 12px 20px', borderTop: '1px solid var(--line-dark)' }}>
+        {/* Bottom actions */}
+        <div style={{ padding: '8px 12px 20px', borderTop: '1px solid var(--line-dark)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <FeedbackButton />
           <AdminSignOutButton />
         </div>
       </aside>
