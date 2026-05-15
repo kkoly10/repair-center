@@ -45,7 +45,7 @@ const nextConfig = {
 
 // Wrap with Sentry only when configured. In dev / when SENTRY_DSN is unset,
 // the wrapper is skipped so contributors can run `next build` without Sentry
-// credentials.
+// credentials. Sourcemap upload is disabled unless an auth token is also set.
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { withSentryConfig } = require('@sentry/nextjs')
@@ -53,8 +53,7 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     silent: true,
     org: process.env.SENTRY_ORG,
     project: process.env.SENTRY_PROJECT,
-    // Only upload sourcemaps when an auth token is provided (CI/prod builds)
-    dryRun: !process.env.SENTRY_AUTH_TOKEN,
+    sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
     hideSourceMaps: true,
     disableLogger: true,
   })

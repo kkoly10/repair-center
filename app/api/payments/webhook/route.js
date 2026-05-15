@@ -6,6 +6,7 @@ import {
   sendMailInReadyNotification,
 } from '../../../../lib/notifications'
 import { finalizeFinalBalancePayment } from '../../../../lib/payments/finalizeFinalBalancePayment'
+import { reportError } from '../../../../lib/observability'
 
 export const runtime = 'nodejs'
 
@@ -82,7 +83,12 @@ export async function POST(request) {
       paymentIntentId: paymentIntent.id,
     })
   } catch (err) {
-    console.error('[webhook] Error processing payment_intent.succeeded:', err)
+    reportError(err, {
+      area: 'payments-webhook',
+      eventKey: 'payment_intent.succeeded',
+      paymentIntentId: paymentIntent?.id,
+      quoteId,
+    })
   }
 
   return NextResponse.json({ received: true })
@@ -265,7 +271,12 @@ export async function finalizeDepositPayment({
       orderNumber: repairOrder.order_number || null,
     })
   } catch (notificationError) {
-    console.error('[payments] notification failure after deposit payment:', notificationError)
+    reportError(notificationError, {
+      area: 'payments-webhook',
+      eventKey: 'deposit-paid-notification',
+      quoteRequestId,
+      repairOrderId: repairOrder?.id,
+    })
   }
 
   return {

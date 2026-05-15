@@ -1,5 +1,6 @@
 // Next.js instrumentation hook — runs once per server runtime.
 // https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
+import * as Sentry from '@sentry/nextjs'
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -10,9 +11,6 @@ export async function register() {
   }
 }
 
-export async function onRequestError(err, request, context) {
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN) {
-    const Sentry = await import('@sentry/nextjs')
-    Sentry.captureRequestError(err, request, context)
-  }
-}
+// Auto-captures uncaught route handler errors (server + edge). The captureRequestError
+// helper is a no-op when Sentry.init() was not called (i.e. no DSN configured).
+export const onRequestError = Sentry.captureRequestError

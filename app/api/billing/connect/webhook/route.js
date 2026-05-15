@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getSupabaseAdmin } from '../../../../../lib/supabase/admin'
+import { reportError } from '../../../../../lib/observability'
 
 export const runtime = 'nodejs'
 
@@ -62,7 +63,10 @@ export async function POST(request) {
 
     if (error) throw error
   } catch (err) {
-    console.error('[connect-webhook] Error handling account.updated:', err)
+    reportError(err, {
+      area: 'billing-connect-webhook',
+      eventKey: event?.type,
+    })
   }
 
   return NextResponse.json({ received: true })

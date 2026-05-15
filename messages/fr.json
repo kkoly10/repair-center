@@ -720,7 +720,8 @@
     "sentTitle": "Vérifiez votre e-mail",
     "sentBody": "Si un compte existe pour cet e-mail, vous recevrez un lien de réinitialisation dans la minute. Pensez à vérifier votre dossier spam.",
     "backToLogin": "Retour à la connexion",
-    "error": "Impossible d'envoyer le lien de réinitialisation. Veuillez réessayer."
+    "error": "Impossible d'envoyer le lien de réinitialisation. Veuillez réessayer.",
+    "rateLimited": "Trop de tentatives. Veuillez patienter quelques minutes et réessayer."
   },
   "adminResetPassword": {
     "kicker": "Accès au compte",
@@ -736,7 +737,10 @@
     "passwordTooShort": "Le mot de passe doit comporter au moins 8 caractères.",
     "passwordMismatch": "Les mots de passe ne correspondent pas.",
     "linkInvalid": "Ce lien de réinitialisation a expiré ou n'est pas valide. Demandez-en un nouveau depuis la page de connexion.",
-    "error": "Impossible de mettre à jour votre mot de passe. Veuillez réessayer."
+    "error": "Impossible de mettre à jour votre mot de passe. Veuillez réessayer.",
+    "goToDashboard": "Aller au tableau de bord",
+    "alreadyLoggedInTitle": "Vous êtes déjà connecté",
+    "alreadyLoggedInBody": "Les liens de réinitialisation sont destinés aux utilisateurs qui ne peuvent pas se connecter. Pour modifier votre mot de passe pendant que vous êtes connecté, utilisez les paramètres de votre compte."
   },
   "adminQuotes": {
     "title": "Devis",

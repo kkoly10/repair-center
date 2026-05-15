@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { getSupabaseBrowser } from '../lib/supabase/browser'
 import LocalizedLink from '../lib/i18n/LocalizedLink'
 import { useT } from '../lib/i18n/TranslationProvider'
 
@@ -17,18 +16,23 @@ export default function AdminForgotPasswordForm() {
     setLoading(true)
     setError('')
     try {
-      const supabase = getSupabaseBrowser()
       const origin = typeof window !== 'undefined' ? window.location.origin : ''
-      // Always show the same success state to avoid leaking which emails are
-      // registered. Errors from Supabase are still shown for transport-level
-      // failures (network, rate limit) but not for "user not found".
-      await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${origin}/admin/reset-password`,
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          redirectTo: `${origin}/admin/reset-password`,
+        }),
       })
+      if (res.status === 429) {
+        setError(t('adminForgotPassword.rateLimited'))
+        return
+      }
+      // The endpoint always returns OK regardless of whether the email
+      // exists — the success message is intentionally generic.
       setSent(true)
     } catch (err) {
-      // Network or unexpected errors only — Supabase resetPasswordForEmail
-      // does not throw for unknown emails.
       setError(err.message || t('adminForgotPassword.error'))
     } finally {
       setLoading(false)
