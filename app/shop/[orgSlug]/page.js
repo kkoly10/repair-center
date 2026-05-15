@@ -1,10 +1,12 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getSupabaseAdmin } from '../../../lib/supabase/admin'
+import LocalizedLink from '../../../lib/i18n/LocalizedLink'
+import { getT } from '../../../lib/i18n/server'
 
 export default async function ShopLandingPage({ params }) {
   const { orgSlug } = await params
   const supabase = getSupabaseAdmin()
+  const t = await getT()
 
   const { data: org } = await supabase
     .from('organizations')
@@ -35,7 +37,14 @@ export default async function ShopLandingPage({ params }) {
     : null
   const showReviews = reviewCount >= 5
 
-  const headline = branding?.hero_headline || `${org.name} repairs phones, tablets & laptops.`
+  const headline = branding?.hero_headline || t('shopLanding.defaultHeadline', { orgName: org.name })
+
+  const stepTexts = [
+    t('shopLanding.stepSubmit'),
+    t('shopLanding.stepInspect'),
+    t('shopLanding.stepRepair'),
+    t('shopLanding.stepShip'),
+  ]
 
   return (
     <main>
@@ -48,43 +57,38 @@ export default async function ShopLandingPage({ params }) {
         )}
         {branding?.logo_url && <span className='shop-header-name'>{org.name}</span>}
         <div style={{ marginLeft: 'auto' }}>
-          <Link href={`/shop/${orgSlug}/estimate`} className='button button-primary button-compact'>
-            Get Estimate
-          </Link>
+          <LocalizedLink href={`/shop/${orgSlug}/estimate`} className='button button-primary button-compact'>
+            {t('shopLanding.getEstimateButton')}
+          </LocalizedLink>
         </div>
       </header>
 
       {/* Hero */}
       <section className='shop-hero'>
         <h1>{headline}</h1>
-        <p>{branding?.hero_subheadline || 'Get a free estimate in under 60 seconds.'}</p>
+        <p>{branding?.hero_subheadline || t('shopLanding.defaultSubheadline')}</p>
         <div className='inline-actions'>
-          <Link href={`/shop/${orgSlug}/estimate`} className='button button-primary'>
-            Start Free Estimate
-          </Link>
-          <Link href={`/shop/${orgSlug}/book`} className='button button-secondary'>
-            Book Appointment
-          </Link>
+          <LocalizedLink href={`/shop/${orgSlug}/estimate`} className='button button-primary'>
+            {t('shopLanding.startFreeEstimate')}
+          </LocalizedLink>
+          <LocalizedLink href={`/shop/${orgSlug}/book`} className='button button-secondary'>
+            {t('shopLanding.bookAppointment')}
+          </LocalizedLink>
         </div>
         {showReviews && (
           <div className='shop-reviews-row'>
             {'★'.repeat(Math.round(Number(avgRating)))}{' '}
-            {avgRating} · {reviewCount} review{reviewCount !== 1 ? 's' : ''}
+            {avgRating} · {reviewCount} {reviewCount !== 1 ? t('shopLanding.reviewsPlural') : t('shopLanding.reviewsSingular')}
           </div>
         )}
       </section>
 
       {/* How it works */}
       <section className='shop-steps'>
-        <p className='kicker'>How it works</p>
-        <h3 style={{ margin: '4px 0 0', fontSize: '1.2rem', fontWeight: 700 }}>Four easy steps</h3>
+        <p className='kicker'>{t('shopLanding.howKicker')}</p>
+        <h3 style={{ margin: '4px 0 0', fontSize: '1.2rem', fontWeight: 700 }}>{t('shopLanding.fourEasySteps')}</h3>
         <div className='steps-grid'>
-          {[
-            'Submit your device',
-            'We inspect & estimate',
-            'We repair it',
-            'We ship it back',
-          ].map((s, i) => (
+          {stepTexts.map((s, i) => (
             <div key={i} className='step-tile'>
               <span className='step-number'>{String(i + 1).padStart(2, '0')}</span>
               <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--muted)', lineHeight: 1.5 }}>{s}</p>
@@ -95,8 +99,8 @@ export default async function ShopLandingPage({ params }) {
 
       {/* Secondary CTAs */}
       <section className='shop-secondary'>
-        <Link href={`/shop/${orgSlug}/track`}>Already submitted? Track your repair →</Link>
-        <Link href={`/shop/${orgSlug}/account`}>Returning customer? Sign in →</Link>
+        <LocalizedLink href={`/shop/${orgSlug}/track`}>{t('shopLanding.secondaryTrack')}</LocalizedLink>
+        <LocalizedLink href={`/shop/${orgSlug}/account`}>{t('shopLanding.secondarySignIn')}</LocalizedLink>
       </section>
     </main>
   )

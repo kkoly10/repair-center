@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '../utils/supabase/client'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function AdminOnboardingPage() {
+  const t = useT()
   const router = useRouter()
   const [sessionChecked, setSessionChecked] = useState(false)
   const [authed, setAuthed] = useState(false)
@@ -75,13 +77,13 @@ export default function AdminOnboardingPage() {
         if (json.error && /slug/i.test(json.error)) {
           setSlugError(json.error)
         } else {
-          setError(json.error || 'Failed to create organization.')
+          setError(json.error || t('adminOnboarding.errorGeneric'))
         }
         return
       }
       router.replace('/admin/quotes')
     } catch (err) {
-      setError(err.message || 'Something went wrong.')
+      setError(err.message || t('adminOnboarding.somethingWrong'))
     } finally {
       setSubmitting(false)
     }
@@ -91,7 +93,7 @@ export default function AdminOnboardingPage() {
     return (
       <main className='page-hero'>
         <div className='site-shell page-stack'>
-          <div className='policy-card'>Checking session...</div>
+          <div className='policy-card'>{t('adminOnboarding.loadingSession')}</div>
         </div>
       </main>
     )
@@ -105,36 +107,36 @@ export default function AdminOnboardingPage() {
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='policy-card'>
-          <div className='kicker'>Welcome</div>
-          <h1>Set up your shop</h1>
-          <p className='muted'>Create your organization to get started.</p>
+          <div className='kicker'>{t('adminOnboarding.kicker')}</div>
+          <h1>{t('adminOnboarding.heading')}</h1>
+          <p className='muted'>{t('adminOnboarding.intro')}</p>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 24 }}>
             <div>
-              <label style={labelStyle}>Shop Name <span style={{ color: '#ef4444' }}>*</span></label>
+              <label style={labelStyle}>{t('adminOnboarding.shopNameLabel')} <span style={{ color: '#ef4444' }}>*</span></label>
               <input
                 type='text'
                 required
                 value={name}
                 onChange={handleNameChange}
                 style={inputStyle}
-                placeholder='My Repair Shop'
+                placeholder={t('adminOnboarding.shopNamePlaceholder')}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>URL Slug <span style={{ color: '#ef4444' }}>*</span></label>
+              <label style={labelStyle}>{t('adminOnboarding.slugLabel')} <span style={{ color: '#ef4444' }}>*</span></label>
               <input
                 type='text'
                 required
                 value={slug}
                 onChange={handleSlugChange}
                 style={{ ...inputStyle, ...(slugError ? { borderColor: '#ef4444' } : {}) }}
-                placeholder='my-repair-shop'
+                placeholder={t('adminOnboarding.slugPlaceholder')}
               />
               {slug && (
                 <p className='muted' style={{ fontSize: '0.82rem', marginTop: 4 }}>
-                  Your shop URL: <code>{slug}</code>
+                  {t('adminOnboarding.slugHint')} <code>{slug}</code>
                 </p>
               )}
               {slugError && (
@@ -143,13 +145,13 @@ export default function AdminOnboardingPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>Display Name <span className='muted' style={{ fontWeight: 400 }}>(optional)</span></label>
+              <label style={labelStyle}>{t('adminOnboarding.displayNameLabel')} <span className='muted' style={{ fontWeight: 400 }}>{t('adminOnboarding.displayNameOptional')}</span></label>
               <input
                 type='text'
                 value={publicName}
                 onChange={(e) => setPublicName(e.target.value)}
                 style={inputStyle}
-                placeholder='Same as shop name'
+                placeholder={t('adminOnboarding.displayNamePlaceholder')}
               />
             </div>
 
@@ -157,7 +159,7 @@ export default function AdminOnboardingPage() {
 
             <div>
               <button type='submit' className='button' disabled={submitting || !name || !slug}>
-                {submitting ? 'Creating...' : 'Create Shop'}
+                {submitting ? t('adminOnboarding.submitting') : t('adminOnboarding.submitButton')}
               </button>
             </div>
           </form>

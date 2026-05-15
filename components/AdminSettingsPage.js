@@ -390,58 +390,58 @@ function AdminSettingsPageInner() {
 
         {/* Section 2 — Receiving Address */}
         <div className='policy-card'>
-          <h2>Receiving Address &amp; Mail-In Instructions</h2>
+          <h2>{t('adminSettings.receivingTitleFull')}</h2>
           <form onSubmit={handleSaveAddress} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
             <div>
-              <label style={labelStyle}>Address Line 1</label>
+              <label style={labelStyle}>{t('adminSettings.addressLine1')}</label>
               <input
                 type='text'
                 value={line1}
                 onChange={(e) => setLine1(e.target.value)}
                 style={inputStyle}
-                placeholder='123 Main St'
+                placeholder={t('adminSettings.addressLine1Placeholder')}
               />
             </div>
             <div>
-              <label style={labelStyle}>Address Line 2</label>
+              <label style={labelStyle}>{t('adminSettings.addressLine2')}</label>
               <input
                 type='text'
                 value={line2}
                 onChange={(e) => setLine2(e.target.value)}
                 style={inputStyle}
-                placeholder='Suite 100 (optional)'
+                placeholder={t('adminSettings.addressLine2Placeholder')}
               />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 120px', gap: 12 }}>
               <div>
-                <label style={labelStyle}>City</label>
+                <label style={labelStyle}>{t('adminSettings.city')}</label>
                 <input
                   type='text'
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   style={inputStyle}
-                  placeholder='City'
+                  placeholder={t('adminSettings.cityPlaceholder')}
                 />
               </div>
               <div>
-                <label style={labelStyle}>State</label>
+                <label style={labelStyle}>{t('adminSettings.state')}</label>
                 <input
                   type='text'
                   value={state}
                   onChange={(e) => setState(e.target.value)}
                   style={inputStyle}
-                  placeholder='CA'
+                  placeholder={t('adminSettings.statePlaceholder')}
                   maxLength={2}
                 />
               </div>
               <div>
-                <label style={labelStyle}>Postal Code</label>
+                <label style={labelStyle}>{t('adminSettings.postalCode')}</label>
                 <input
                   type='text'
                   value={postalCode}
                   onChange={(e) => setPostalCode(e.target.value)}
                   style={inputStyle}
-                  placeholder='90210'
+                  placeholder={t('adminSettings.postalCodePlaceholder')}
                 />
               </div>
             </div>
@@ -454,54 +454,54 @@ function AdminSettingsPageInner() {
                 style={{ width: 18, height: 18, cursor: 'pointer' }}
               />
               <label htmlFor='mail-in-enabled' style={{ fontWeight: 600, cursor: 'pointer' }}>
-                Mail-in repairs enabled
+                {t('adminSettings.mailInEnabledLabel')}
               </label>
             </div>
             <div>
-              <label style={labelStyle}>Packing Checklist (one item per line)</label>
+              <label style={labelStyle}>{t('adminSettings.packingChecklistLabel')}</label>
               <textarea
                 value={packingChecklist}
                 onChange={(e) => setPackingChecklist(e.target.value)}
                 style={{ ...inputStyle, minHeight: 100, resize: 'vertical' }}
-                placeholder={'Remove SIM card\nBackup your data\nInclude your charger'}
+                placeholder={t('adminSettings.packingChecklistPlaceholder')}
               />
             </div>
             <div>
-              <label style={labelStyle}>Shipping Notes (one item per line)</label>
+              <label style={labelStyle}>{t('adminSettings.shippingNotesLabel')}</label>
               <textarea
                 value={shippingNotes}
                 onChange={(e) => setShippingNotes(e.target.value)}
                 style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }}
-                placeholder={'Use a padded envelope\nShip via USPS Priority Mail'}
+                placeholder={t('adminSettings.shippingNotesPlaceholder')}
               />
             </div>
             {errorAddress && <div className='notice'>{errorAddress}</div>}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <button type='submit' className='button' disabled={savingAddress}>
-                {savingAddress ? 'Saving...' : 'Save Address & Instructions'}
+                {savingAddress ? t('adminSettings.savingDots') : t('adminSettings.saveAddressButton')}
               </button>
-              {savedAddress && <span style={{ color: '#16a34a', fontWeight: 600 }}>Saved!</span>}
+              {savedAddress && <span style={{ color: '#16a34a', fontWeight: 600 }}>{t('adminSettings.savedExclaim')}</span>}
             </div>
           </form>
         </div>
 
         {/* Section 3 — Branding */}
         <div className='policy-card'>
-          <h2>Branding</h2>
+          <h2>{t('adminSettings.brandingTitleSimple')}</h2>
           <form onSubmit={handleSaveBranding} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
             <div>
-              <label style={labelStyle}>Logo URL</label>
+              <label style={labelStyle}>{t('adminSettings.logoUrl')}</label>
               <input
                 type='text'
                 value={logoUrl}
                 onChange={(e) => setLogoUrl(e.target.value)}
                 style={inputStyle}
-                placeholder='https://yourshop.com/logo.png'
+                placeholder={t('adminSettings.logoUrlPlaceholder')}
               />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>Primary Color</label>
+                <label style={labelStyle}>{t('adminSettings.primaryColor')}</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <input
                     type='color'
@@ -519,7 +519,7 @@ function AdminSettingsPageInner() {
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>Accent Color</label>
+                <label style={labelStyle}>{t('adminSettings.accentColor')}</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <input
                     type='color'
@@ -538,123 +538,123 @@ function AdminSettingsPageInner() {
               </div>
             </div>
             <div>
-              <label style={labelStyle}>Hero Headline</label>
+              <label style={labelStyle}>{t('adminSettings.heroHeadlineLabel')}</label>
               <input
                 type='text'
                 value={heroHeadline}
                 onChange={(e) => setHeroHeadline(e.target.value)}
                 style={inputStyle}
-                placeholder='Fast, reliable device repair'
+                placeholder={t('adminSettings.heroHeadlinePlaceholder')}
               />
             </div>
             <div>
-              <label style={labelStyle}>Hero Subheadline</label>
+              <label style={labelStyle}>{t('adminSettings.heroSubheadlineLabel')}</label>
               <input
                 type='text'
                 value={heroSubheadline}
                 onChange={(e) => setHeroSubheadline(e.target.value)}
                 style={inputStyle}
-                placeholder='Get a free estimate in minutes'
+                placeholder={t('adminSettings.heroSubheadlinePlaceholder')}
               />
             </div>
             {errorBranding && <div className='notice'>{errorBranding}</div>}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <button type='submit' className='button' disabled={savingBranding}>
-                {savingBranding ? 'Saving...' : 'Save Branding'}
+                {savingBranding ? t('adminSettings.savingDots') : t('adminSettings.saveBrandingButton')}
               </button>
-              {savedBranding && <span style={{ color: '#16a34a', fontWeight: 600 }}>Saved!</span>}
+              {savedBranding && <span style={{ color: '#16a34a', fontWeight: 600 }}>{t('adminSettings.savedExclaim')}</span>}
             </div>
           </form>
         </div>
 
         {/* Section 4 — Payment Settings */}
         <div className='policy-card'>
-          <h2>Payment Settings</h2>
+          <h2>{t('adminSettings.paymentTitleFull')}</h2>
           <form onSubmit={handleSavePayment} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
             <div>
-              <label style={labelStyle}>Payment Mode</label>
+              <label style={labelStyle}>{t('adminSettings.paymentMode')}</label>
               <select
                 value={paymentMode}
                 onChange={(e) => setPaymentMode(e.target.value)}
                 style={inputStyle}
               >
-                <option value='manual'>Manual (cash, CashApp, Zelle, Square link, etc.)</option>
-                <option value='platform_stripe'>Platform Stripe (card via our Stripe account)</option>
-                <option value='stripe_connect'>Stripe Connect (your own Stripe account)</option>
+                <option value='manual'>{t('adminSettings.paymentModeManualOption')}</option>
+                <option value='platform_stripe'>{t('adminSettings.paymentModePlatformOption')}</option>
+                <option value='stripe_connect'>{t('adminSettings.paymentModeConnectOption')}</option>
               </select>
               <p style={{ fontSize: '0.84rem', color: 'var(--muted)', marginTop: 6 }}>
-                Manual mode: repair orders are created immediately on estimate approval; no Stripe redirect. Use the fields below to tell customers how to pay.
+                {t('adminSettings.paymentModeHint')}
               </p>
               {paymentMode === 'stripe_connect' && connectStatus && !connectStatus.connected && (
                 <p className='notice-warn' style={{ marginTop: 8, fontSize: '0.85rem' }}>
-                  Connect your Stripe account first on the <a href='/admin/billing'>Billing page</a>.
+                  {t('adminSettings.connectFirstHintPrefix')} <a href='/admin/billing'>{t('adminSettings.connectFirstHintLink')}</a>{t('adminSettings.connectFirstHintSuffix')}
                 </p>
               )}
               {paymentMode === 'stripe_connect' && connectStatus?.connected && !connectStatus.chargesEnabled && (
                 <p className='notice-warn' style={{ marginTop: 8, fontSize: '0.85rem' }}>
-                  Stripe account setup is incomplete. <a href='/admin/billing'>Finish setup on the Billing page.</a>
+                  {t('adminSettings.connectIncompleteSettings')} <a href='/admin/billing'>{t('adminSettings.connectIncompleteLink')}</a>
                 </p>
               )}
               {paymentMode === 'stripe_connect' && connectStatus?.connected && connectStatus.chargesEnabled && (
                 <p style={{ marginTop: 8, fontSize: '0.85rem', color: 'var(--success)' }}>
-                  ✓ Your Stripe account is connected and ready to accept payments.
+                  {t('adminSettings.connectReady')}
                 </p>
               )}
             </div>
 
             <div>
-              <label style={labelStyle}>Manual Payment Instructions</label>
+              <label style={labelStyle}>{t('adminSettings.manualInstructionsLabel')}</label>
               <textarea
                 value={manualPaymentInstructions}
                 onChange={(e) => setManualPaymentInstructions(e.target.value)}
                 style={{ ...inputStyle, minHeight: 100, resize: 'vertical' }}
-                placeholder={'Send $X via CashApp to $yourhandle\nOr Zelle to payments@yourshop.com\nInclude your order number in the note.'}
+                placeholder={t('adminSettings.manualInstructionsPlaceholder')}
               />
               <p style={{ fontSize: '0.84rem', color: 'var(--muted)', marginTop: 4 }}>
-                Shown to customers on the estimate approval and mail-in pages when a deposit is required.
+                {t('adminSettings.manualInstructionsHint')}
               </p>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>CashApp Tag</label>
+                <label style={labelStyle}>{t('adminSettings.cashappTagLabel')}</label>
                 <input
                   type='text'
                   value={cashappTag}
                   onChange={(e) => setCashappTag(e.target.value)}
                   style={inputStyle}
-                  placeholder='$YourCashTag'
+                  placeholder={t('adminSettings.cashappTagPlaceholder')}
                 />
               </div>
               <div>
-                <label style={labelStyle}>Zelle Contact</label>
+                <label style={labelStyle}>{t('adminSettings.zelleContactLabel')}</label>
                 <input
                   type='text'
                   value={zelleContact}
                   onChange={(e) => setZelleContact(e.target.value)}
                   style={inputStyle}
-                  placeholder='payments@yourshop.com or (555) 555-5555'
+                  placeholder={t('adminSettings.zelleContactPlaceholder')}
                 />
               </div>
             </div>
 
             <div>
-              <label style={labelStyle}>Square Payment Link</label>
+              <label style={labelStyle}>{t('adminSettings.squarePaymentLinkLabel')}</label>
               <input
                 type='url'
                 value={squarePaymentUrl}
                 onChange={(e) => setSquarePaymentUrl(e.target.value)}
                 style={inputStyle}
-                placeholder='https://square.link/u/yourlink'
+                placeholder={t('adminSettings.squarePaymentLinkPlaceholder')}
               />
             </div>
 
             {errorPayment && <div className='notice'>{errorPayment}</div>}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <button type='submit' className='button' disabled={savingPayment}>
-                {savingPayment ? 'Saving...' : 'Save Payment Settings'}
+                {savingPayment ? t('adminSettings.savingDots') : t('adminSettings.savePaymentButton')}
               </button>
-              {savedPayment && <span style={{ color: '#16a34a', fontWeight: 600 }}>Saved!</span>}
+              {savedPayment && <span style={{ color: '#16a34a', fontWeight: 600 }}>{t('adminSettings.savedExclaim')}</span>}
             </div>
           </form>
         </div>

@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function CustomerReviewPage({ quoteId, firstName, device, initialRating }) {
+  const t = useT()
   const [selectedRating, setSelectedRating] = useState(initialRating || 0)
   const [hoveredRating, setHoveredRating] = useState(0)
   const [comment, setComment] = useState('')
@@ -33,12 +35,12 @@ export default function CustomerReviewPage({ quoteId, firstName, device, initial
           setSubmitted(true)
           return
         }
-        setError(json.error || 'Failed to submit review.')
+        setError(json.error || t('customerReview.submitFailed'))
         return
       }
       setSubmitted(true)
     } catch {
-      setError('Network error. Please try again.')
+      setError(t('customerReview.networkError'))
     } finally {
       setLoading(false)
     }
@@ -57,9 +59,9 @@ export default function CustomerReviewPage({ quoteId, firstName, device, initial
       <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
         <div style={{ maxWidth: 480, width: '100%', background: '#fff', borderRadius: 16, padding: '40px 32px', textAlign: 'center', boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>⭐</div>
-          <h1 style={{ margin: '0 0 12px', fontSize: '1.5rem', fontWeight: 700, color: '#111' }}>Thanks for your feedback!</h1>
+          <h1 style={{ margin: '0 0 12px', fontSize: '1.5rem', fontWeight: 700, color: '#111' }}>{t('customerReview.thanksHeading')}</h1>
           <p style={{ margin: 0, color: '#666', lineHeight: 1.6 }}>
-            Your review helps us improve our service. We appreciate you taking the time.
+            {t('customerReview.thanksBody')}
           </p>
         </div>
       </div>
@@ -70,10 +72,10 @@ export default function CustomerReviewPage({ quoteId, firstName, device, initial
     <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
       <div style={{ maxWidth: 480, width: '100%', background: '#fff', borderRadius: 16, padding: '40px 32px', boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}>
         <h1 style={{ margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 700, color: '#111' }}>
-          How was your repair?
+          {t('customerReview.heading')}
         </h1>
         <p style={{ margin: '0 0 28px', color: '#666', lineHeight: 1.6 }}>
-          Hi {firstName}, we hope you&apos;re enjoying your repaired {device}. Tap a star to rate your experience.
+          {t('customerReview.bodyGreeting', { firstName, device })}
         </p>
 
         <form onSubmit={handleManualSubmit}>
@@ -106,12 +108,12 @@ export default function CustomerReviewPage({ quoteId, firstName, device, initial
           {selectedRating > 0 && (
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', marginBottom: 6, fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
-                Tell us more (optional)
+                {t('customerReview.tellMore')}
               </label>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder='What went well? Anything we can improve?'
+                placeholder={t('customerReview.tellMorePlaceholder')}
                 rows={3}
                 maxLength={2000}
                 style={{
@@ -148,7 +150,7 @@ export default function CustomerReviewPage({ quoteId, firstName, device, initial
               cursor: selectedRating >= 1 ? 'pointer' : 'not-allowed',
             }}
           >
-            {loading ? 'Submitting…' : 'Submit Review'}
+            {loading ? t('customerReview.submitting') : t('customerReview.submitButton')}
           </button>
         </form>
       </div>

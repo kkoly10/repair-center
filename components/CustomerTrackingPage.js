@@ -1,15 +1,16 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { statusPill } from '../lib/statusPills'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT, useLocale } from '../lib/i18n/TranslationProvider'
 
 const TIMELINE_NODES = [
-  { key: 'submitted',     label: 'Submitted' },
-  { key: 'inspection',    label: 'Inspecting' },
-  { key: 'repairing',     label: 'Repairing' },
-  { key: 'ready_to_ship', label: 'Ready' },
-  { key: 'shipped',       label: 'Shipped' },
+  { key: 'submitted',     labelKey: 'tracking.stepSubmitted' },
+  { key: 'inspection',    labelKey: 'tracking.stepInspecting' },
+  { key: 'repairing',     labelKey: 'tracking.stepRepairing' },
+  { key: 'ready_to_ship', labelKey: 'tracking.stepReady' },
+  { key: 'shipped',       labelKey: 'tracking.stepShipped' },
 ]
 
 const ORDER_TO_NODE = {
@@ -19,44 +20,55 @@ const ORDER_TO_NODE = {
   shipped: 4, delivered: 4,
 }
 
-const STATUS_DESCRIPTIONS = {
-  submitted:                'Your request has been received. We\'ll review it shortly.',
-  under_review:             'Our team is reviewing your device details and photos.',
-  estimate_sent:            'We\'ve sent you an estimate by email. Please review it to proceed.',
-  approved:                 'Estimate approved — awaiting your device.',
-  inspection:               'Your device has arrived and we\'re assessing it.',
-  repairing:                'Repair is in progress. We\'ll keep you updated.',
-  awaiting_parts:           'Waiting on parts to arrive before we continue.',
-  awaiting_balance_payment: 'Repair is complete! Please pay the remaining balance to ship.',
-  ready_to_ship:            'Your device is repaired and ready to be shipped back to you.',
-  shipped:                  'Your device is on its way back to you.',
-  delivered:                'Your device has been delivered. Enjoy!',
-  cancelled:                'This repair has been cancelled.',
-  returned_unrepaired:      'Your device was returned without repair.',
-  beyond_economical_repair: 'Unfortunately the repair cost would exceed the device value.',
-  no_fault_found:           'Our inspection found no fault with the device.',
+// Map status enum keys → tracking.desc* translation keys (agent's namespace)
+const STATUS_DESC_KEYS = {
+  submitted:                'tracking.descSubmitted',
+  under_review:             'tracking.descUnderReview',
+  estimate_sent:            'tracking.descEstimateSent',
+  approved:                 'tracking.descApproved',
+  inspection:               'tracking.descInspection',
+  repairing:                'tracking.descRepairing',
+  awaiting_parts:           'tracking.descAwaitingParts',
+  awaiting_balance_payment: 'tracking.descAwaitingBalancePayment',
+  ready_to_ship:            'tracking.descReadyToShip',
+  shipped:                  'tracking.descShipped',
+  delivered:                'tracking.descDelivered',
+  cancelled:                'tracking.descCancelled',
+  returned_unrepaired:      'tracking.descReturnedUnrepaired',
+  beyond_economical_repair: 'tracking.descBeyondEconomicalRepair',
+  no_fault_found:           'tracking.descNoFaultFound',
 }
 
-const SENDER_NAMES = { admin: 'Repair Team', tech: 'Technician', customer: 'You', system: 'System' }
+const SENDER_KEYS = {
+  admin:    'tracking.senderAdmin',
+  tech:     'tracking.senderTech',
+  customer: 'tracking.senderCustomer',
+  system:   'tracking.senderSystem',
+}
 
-function fmtRelTime(iso) {
-  if (!iso) return 'unknown'
+function fmtRelTime(iso, t) {
+  if (!iso) return t('tracking.timeUnknown')
   const diff = Date.now() - new Date(iso).getTime()
   const mins  = Math.floor(diff / 60000)
-  if (mins < 2)   return 'just now'
-  if (mins < 60)  return `${mins} minutes ago`
+  if (mins < 2)   return t('tracking.timeJustNow')
+  if (mins < 60)  return t('tracking.timeMinutesAgo', { count: mins })
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24)   return `${hrs} hour${hrs !== 1 ? 's' : ''} ago`
+  if (hrs < 24)   return hrs === 1 ? t('tracking.timeHourAgo') : t('tracking.timeHoursAgo', { count: hrs })
   const days = Math.floor(hrs / 24)
-  return `${days} day${days !== 1 ? 's' : ''} ago`
+  return days === 1 ? t('tracking.timeDayAgo') : t('tracking.timeDaysAgo', { count: days })
 }
 
-function fmtDate(iso) {
+const LOCALE_TO_BCP = { en: 'en-US', fr: 'fr-FR', es: 'es-ES', pt: 'pt-PT' }
+
+function fmtDate(iso, locale) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const bcp = LOCALE_TO_BCP[locale] || 'en-US'
+  return new Date(iso).toLocaleDateString(bcp, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEmail = '' }) {
+  const t              = useT()
+  const locale         = useLocale()
   const [email,        setEmail]        = useState(prefillEmail)
   const [loading,      setLoading]      = useState(!!prefillEmail)
   const [error,        setError]        = useState('')
@@ -70,15 +82,20 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
   const activeNode    = record ? (ORDER_TO_NODE[record.order?.current_status] ?? 0) : 0
   const lastUpdated   = record?.order?.updated_at || record?.quote?.created_at
 
-  const descriptionText = useMemo(() => STATUS_DESCRIPTIONS[currentStatus] || '', [currentStatus])
-  const msgCount        = useMemo(() => (record?.messages || []).length, [record])
+  const descriptionText = useMemo(() => {
+    const key = STATUS_DESC_KEYS[currentStatus]
+    if (!key) return ''
+    const v = t(key)
+    return v === key ? '' : v
+  }, [currentStatus, t])
 
-  // Auto-verify when a prefill email is provided (customer is logged in)
+  const msgCount = useMemo(() => (record?.messages || []).length, [record])
+
   const didAutoVerify = useRef(false)
   useEffect(() => {
     if (!prefillEmail || didAutoVerify.current) return
     didAutoVerify.current = true
-    const t = setTimeout(() => {
+    const tm = setTimeout(() => {
       setLoading(true)
       setError('')
       fetch(`/api/track/${quoteId}`, {
@@ -89,13 +106,13 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
         .then((r) => r.json())
         .then((result) => {
           if (!result.error) setRecord(result)
-          else setError(result.error || 'Unable to load tracking.')
+          else setError(result.error || t('tracking.trackingLoadError'))
         })
-        .catch(() => setError('Unable to load tracking.'))
+        .catch(() => setError(t('tracking.trackingLoadError')))
         .finally(() => setLoading(false))
     }, 0)
-    return () => clearTimeout(t)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => clearTimeout(tm)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleVerify(e) {
@@ -109,11 +126,11 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
         body: JSON.stringify({ email, ...(orgSlug ? { orgSlug } : {}), ...(tok ? { tok } : {}) }),
       })
       const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Unable to load tracking.')
+      if (!res.ok) throw new Error(result.error || t('tracking.trackingLoadError'))
       setRecord(result)
     } catch (err) {
       setRecord(null)
-      setError(err.message || 'Unable to load tracking.')
+      setError(err.message || t('tracking.trackingLoadError'))
     } finally { setLoading(false) }
   }
 
@@ -128,60 +145,53 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
         body: JSON.stringify({ email, body: replyBody, ...(orgSlug ? { orgSlug } : {}) }),
       })
       const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Unable to send your message.')
+      if (!res.ok) throw new Error(result.error || t('tracking.replyErrorDefault'))
       setRecord((prev) => prev ? { ...prev, messages: [...(prev.messages || []), result.message] } : prev)
       setReplyBody('')
-      setReplySuccess('Your message has been sent.')
+      setReplySuccess(t('tracking.replySuccessMsg'))
     } catch (err) {
-      setReplyError(err.message || 'Unable to send your message.')
+      setReplyError(err.message || t('tracking.replyErrorDefault'))
     } finally { setReplySending(false) }
   }
 
   return (
     <main>
-      {/* Shop header */}
       {orgSlug && (
         <header className='shop-header'>
-          <Link href={`/shop/${orgSlug}`} style={{ color: 'var(--muted)', fontSize: '0.85rem', textDecoration: 'none' }}>
-            ← Back to shop
-          </Link>
-          <span className='shop-header-name' style={{ flex: 1, textAlign: 'center' }}>Track Your Repair</span>
+          <LocalizedLink href={`/shop/${orgSlug}`} style={{ color: 'var(--muted)', fontSize: '0.85rem', textDecoration: 'none' }}>
+            {t('tracking.backToShop')}
+          </LocalizedLink>
+          <span className='shop-header-name' style={{ flex: 1, textAlign: 'center' }}>{t('tracking.pageTitleSimple')}</span>
         </header>
       )}
 
       <div className='site-shell page-stack' style={{ maxWidth: 700, paddingTop: 32, paddingBottom: 48 }}>
 
         {!record ? (
-          /* ─── Verify form ─────────────────────────────────── */
           <div className='info-card'>
-            <div className='kicker'>Repair tracking</div>
-            <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', marginBottom: 8 }}>Track your repair</h1>
-            <p style={{ color: 'var(--muted)', margin: '0 0 24px' }}>
-              Enter the email you used when submitting your request. You can use your Quote ID{' '}
-              (RCQ-…) or Order Number (RCO-…).
-            </p>
+            <div className='kicker'>{t('tracking.kicker')}</div>
+            <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', marginBottom: 8 }}>{t('tracking.titleAlt')}</h1>
+            <p style={{ color: 'var(--muted)', margin: '0 0 24px' }}>{t('tracking.prompt')}</p>
             <form onSubmit={handleVerify}>
               <div className='field' style={{ marginBottom: 16 }}>
-                <label htmlFor='track-email'>Email address</label>
+                <label htmlFor='track-email'>{t('tracking.emailLabel')}</label>
                 <input
                   id='track-email'
                   type='email'
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder='name@example.com'
+                  placeholder={t('tracking.emailPlaceholder')}
                   required
                 />
               </div>
               {error && <div className='notice notice-warn' style={{ marginBottom: 16 }}>{error}</div>}
               <button type='submit' className='button button-primary' disabled={loading}>
-                {loading ? 'Loading…' : 'Track Repair'}
+                {loading ? t('tracking.loading') : t('tracking.trackButton')}
               </button>
             </form>
           </div>
         ) : (
-          /* ─── Record found ────────────────────────────────── */
           <>
-            {/* 1 — Status card + timeline */}
             <div className='policy-card'>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
                 <div>
@@ -189,7 +199,7 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
                     {record.canonicalOrderNumber || record.canonicalQuoteId}
                   </div>
                   <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text)' }}>
-                    {[record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ') || 'Your device'}
+                    {[record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ') || t('tracking.unknownDevice')}
                   </div>
                   {record.quote.repair_type_key && (
                     <div style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: 3 }}>
@@ -197,10 +207,9 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
                     </div>
                   )}
                 </div>
-                <span className={statusPill(currentStatus).cls}>{statusPill(currentStatus).label}</span>
+                <span className={statusPill(currentStatus, t).cls}>{statusPill(currentStatus, t).label}</span>
               </div>
 
-              {/* Horizontal timeline */}
               <div className='repair-timeline'>
                 {TIMELINE_NODES.map((node, i) => {
                   const nodeState = i < activeNode ? 'done' : i === activeNode ? 'active' : 'upcoming'
@@ -211,7 +220,7 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
                         <div className={`timeline-dot${nodeState === 'done' ? ' done' : nodeState === 'active' ? ' active' : ''}`}>
                           {nodeState === 'done' ? '✓' : null}
                         </div>
-                        <div className={`timeline-label${nodeState === 'active' ? ' active' : ''}`}>{node.label}</div>
+                        <div className={`timeline-label${nodeState === 'active' ? ' active' : ''}`}>{t(node.labelKey)}</div>
                       </div>
                       {!isLast && <div className={`timeline-line${nodeState === 'done' ? ' done' : ''}`} />}
                     </div>
@@ -223,54 +232,52 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
                 <p style={{ margin: '16px 0 0', fontSize: '0.875rem', color: 'var(--muted)' }}>{descriptionText}</p>
               )}
               <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 8, opacity: 0.7 }}>
-                Updated {fmtRelTime(lastUpdated)}
+                {t('tracking.updatedRel', { time: fmtRelTime(lastUpdated, t) })}
               </div>
             </div>
 
-            {/* 2 — Action banners */}
             {record.order?.current_status === 'awaiting_final_approval' && (
               <div className='notice notice-warn'>
-                <strong style={{ display: 'block', marginBottom: 6 }}>Action required</strong>
-                A revised estimate needs your approval before the repair can continue.
+                <strong style={{ display: 'block', marginBottom: 6 }}>{t('tracking.actionRequiredTitle')}</strong>
+                {t('tracking.actionRequiredText')}
                 <div className='inline-actions' style={{ marginBottom: 0, marginTop: 12 }}>
-                  <Link href={record.reviewPath} className='button button-primary'>Review &amp; Approve</Link>
+                  <LocalizedLink href={record.reviewPath} className='button button-primary'>{t('tracking.reviewApproveBtn')}</LocalizedLink>
                 </div>
               </div>
             )}
             {record.depositRequired && !record.depositPaid && (
               <div className='notice notice-warn'>
-                <strong style={{ display: 'block', marginBottom: 6 }}>Deposit required</strong>
-                An inspection deposit is required before we can begin.
+                <strong style={{ display: 'block', marginBottom: 6 }}>{t('tracking.depositRequiredTitle')}</strong>
+                {t('tracking.depositRequiredText')}
                 <div className='inline-actions' style={{ marginBottom: 0, marginTop: 12 }}>
-                  <Link href={record.paymentPath} className='button button-primary'>Pay Inspection Deposit</Link>
+                  <LocalizedLink href={record.paymentPath} className='button button-primary'>{t('tracking.payDepositBtn')}</LocalizedLink>
                 </div>
               </div>
             )}
             {record.order?.current_status === 'awaiting_balance_payment' && (
               <div className='notice notice-warn'>
-                <strong style={{ display: 'block', marginBottom: 6 }}>Final payment required</strong>
-                Repair is complete. Pay the remaining balance so we can ship your device back.
+                <strong style={{ display: 'block', marginBottom: 6 }}>{t('tracking.finalPaymentTitle')}</strong>
+                {t('tracking.finalPaymentText')}
                 <div className='inline-actions' style={{ marginBottom: 0, marginTop: 12 }}>
-                  <Link href={record.balancePaymentPath} className='button button-primary'>Pay Final Balance</Link>
+                  <LocalizedLink href={record.balancePaymentPath} className='button button-primary'>{t('tracking.payFinalBalanceBtn')}</LocalizedLink>
                 </div>
               </div>
             )}
 
-            {/* 3 — Order summary (always visible) */}
             <div className='policy-card'>
-              <div className='kicker'>Order summary</div>
+              <div className='kicker'>{t('tracking.orderSummary')}</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 16, marginTop: 14 }}>
                 {[
-                  { label: 'Device',     value: [record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ') || '—' },
-                  { label: 'Quote ID',   value: <span className='id-mono'>{record.canonicalQuoteId || '—'}</span> },
-                  { label: 'Order #',    value: record.canonicalOrderNumber ? <span className='id-mono'>{record.canonicalOrderNumber}</span> : '—' },
-                  { label: 'Estimate',   value: record.estimate?.total_amount != null ? `$${Number(record.estimate.total_amount).toFixed(2)}` : '—' },
-                  { label: 'Submitted',  value: fmtDate(record.quote.created_at) },
+                  { label: t('tracking.deviceLabelSummary'),    value: [record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ') || '—' },
+                  { label: t('tracking.quoteIdLabel'),          value: <span className='id-mono'>{record.canonicalQuoteId || '—'}</span> },
+                  { label: t('tracking.orderNumberLabel'),      value: record.canonicalOrderNumber ? <span className='id-mono'>{record.canonicalOrderNumber}</span> : '—' },
+                  { label: t('tracking.estimateLabel'),         value: record.estimate?.total_amount != null ? `$${Number(record.estimate.total_amount).toFixed(2)}` : '—' },
+                  { label: t('tracking.submittedLabelSummary'), value: fmtDate(record.quote.created_at, locale) },
                   ...(record.depositRequired ? [{
-                    label: 'Deposit',
+                    label: t('tracking.depositLabelSummary'),
                     value: record.depositPaid
-                      ? <span style={{ color: '#16a34a', fontWeight: 600 }}>Paid ✓</span>
-                      : <span style={{ color: '#b45309', fontWeight: 600 }}>Unpaid</span>,
+                      ? <span style={{ color: '#16a34a', fontWeight: 600 }}>{t('tracking.paid')}</span>
+                      : <span style={{ color: '#b45309', fontWeight: 600 }}>{t('tracking.unpaid')}</span>,
                   }] : []),
                 ].map(({ label, value }) => (
                   <div key={label}>
@@ -280,38 +287,35 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
                 ))}
               </div>
 
-              {/* Shipments */}
               {(record.shipments || []).length > 0 && (
                 <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: 10 }}>Shipments</div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: 10 }}>{t('tracking.shipmentsHeader')}</div>
                   {record.shipments.map((s) => (
                     <div key={s.id} style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 4 }}>
-                      {s.shipment_type} · {s.carrier || 'Carrier pending'}
+                      {s.shipment_type} · {s.carrier || t('tracking.carrierPending')}
                       {s.tracking_number ? ` · ${s.tracking_number}` : ''}
-                      {' — '}<span style={{ color: 'var(--text)' }}>{s.status || 'Pending'}</span>
+                      {' — '}<span style={{ color: 'var(--text)' }}>{s.status || t('tracking.statusPendingDefault')}</span>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Quick links */}
               <div className='inline-actions' style={{ marginTop: 20 }}>
                 {record.reviewPath && (
-                  <Link href={record.reviewPath} className='button button-secondary' style={{ fontSize: '0.82rem' }}>View Estimate</Link>
+                  <LocalizedLink href={record.reviewPath} className='button button-secondary' style={{ fontSize: '0.82rem' }}>{t('tracking.viewEstimateBtn')}</LocalizedLink>
                 )}
                 {record.mailInPath && (
-                  <Link href={record.mailInPath} className='button button-secondary' style={{ fontSize: '0.82rem' }}>Mail-In Instructions</Link>
+                  <LocalizedLink href={record.mailInPath} className='button button-secondary' style={{ fontSize: '0.82rem' }}>{t('tracking.mailInBtn')}</LocalizedLink>
                 )}
               </div>
             </div>
 
-            {/* 4 — Messages (collapsed) */}
             <details className='policy-card tracking-details'>
               <summary>
                 <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-                  {msgCount > 0 ? `${msgCount} message${msgCount !== 1 ? 's' : ''}` : 'Messages'}
+                  {msgCount === 1 ? t('tracking.messagesOne') : (msgCount > 1 ? t('tracking.messagesMany', { count: msgCount }) : t('tracking.messagesLabel'))}
                 </span>
-                <span style={{ fontSize: '0.8rem', color: 'var(--muted)', marginLeft: 8 }}>with the repair team</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--muted)', marginLeft: 8 }}>{t('tracking.messagesWithTeam')}</span>
               </summary>
 
               <div style={{ marginTop: 20 }}>
@@ -319,55 +323,54 @@ export default function CustomerTrackingPage({ quoteId, orgSlug, tok, prefillEma
                   {(record.messages || []).length > 0 ? (
                     record.messages.map((m) => (
                       <div key={m.id} className={`message-bubble ${m.sender_role === 'customer' ? 'message-bubble-customer' : 'message-bubble-staff'}`}>
-                        <strong>{SENDER_NAMES[m.sender_role] || 'Team'}</strong>
+                        <strong>{SENDER_KEYS[m.sender_role] ? t(SENDER_KEYS[m.sender_role]) : t('tracking.senderDefault')}</strong>
                         <span>{m.body}</span>
-                        <small>{new Date(m.created_at).toLocaleString()}</small>
+                        <small>{new Date(m.created_at).toLocaleString(LOCALE_TO_BCP[locale] || 'en-US')}</small>
                       </div>
                     ))
                   ) : (
-                    <p style={{ color: 'var(--muted)', fontSize: '0.875rem', margin: 0 }}>No messages yet.</p>
+                    <p style={{ color: 'var(--muted)', fontSize: '0.875rem', margin: 0 }}>{t('tracking.noMessages')}</p>
                   )}
                 </div>
 
                 {record.order && (
                   <form onSubmit={handleReply} style={{ marginTop: 20 }}>
                     <div className='field' style={{ marginBottom: 12 }}>
-                      <label htmlFor='customer-reply'>Send a message</label>
+                      <label htmlFor='customer-reply'>{t('tracking.sendAMessageLabel')}</label>
                       <textarea
                         id='customer-reply'
                         value={replyBody}
                         onChange={(e) => setReplyBody(e.target.value)}
-                        placeholder='Ask a question or send a note about your repair.'
+                        placeholder={t('tracking.replyPlaceholder')}
                         style={{ minHeight: 80 }}
                       />
                     </div>
                     {replyError   && <div className='notice notice-warn' style={{ marginBottom: 10 }}>{replyError}</div>}
                     {replySuccess && <div className='notice notice-success' style={{ marginBottom: 10 }}>{replySuccess}</div>}
                     <button type='submit' className='button button-primary' disabled={replySending || !replyBody.trim()}>
-                      {replySending ? 'Sending…' : 'Send Message'}
+                      {replySending ? t('tracking.sendingBtn') : t('tracking.sendBtnLabel')}
                     </button>
                   </form>
                 )}
               </div>
             </details>
 
-            {/* 5 — Activity history (collapsed) */}
             {(record.statusHistory || []).length > 0 && (
               <details className='policy-card tracking-details'>
                 <summary>
-                  <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>View full history</span>
+                  <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{t('tracking.viewHistory')}</span>
                   <span style={{ fontSize: '0.8rem', color: 'var(--muted)', marginLeft: 8 }}>
-                    {record.statusHistory.length} event{record.statusHistory.length !== 1 ? 's' : ''}
+                    {record.statusHistory.length === 1 ? t('tracking.eventOne') : t('tracking.eventMany', { count: record.statusHistory.length })}
                   </span>
                 </summary>
                 <div style={{ marginTop: 16 }}>
                   {record.statusHistory.map((item) => (
                     <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--line)', fontSize: '0.875rem' }}>
                       <span style={{ color: 'var(--text)' }}>
-                        {statusPill(item.new_status).label}
+                        {statusPill(item.new_status, t).label}
                         {item.note ? ` — ${item.note}` : ''}
                       </span>
-                      <span style={{ color: 'var(--muted)', whiteSpace: 'nowrap' }}>{new Date(item.created_at).toLocaleString()}</span>
+                      <span style={{ color: 'var(--muted)', whiteSpace: 'nowrap' }}>{new Date(item.created_at).toLocaleString(LOCALE_TO_BCP[locale] || 'en-US')}</span>
                     </div>
                   ))}
                 </div>
