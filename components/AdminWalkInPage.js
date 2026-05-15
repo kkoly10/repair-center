@@ -124,10 +124,10 @@ function WalkInWizard() {
         }),
       })
       const json = await res.json()
-      if (!res.ok) { setSubmitError(json.error || 'Failed to create order.'); return }
+      if (!res.ok) { setSubmitError(json.error || t('adminWalkin.errorCreate')); return }
       router.push(`/admin/quotes/${json.quoteId}/order`)
     } catch {
-      setSubmitError('Network error. Please try again.')
+      setSubmitError(t('adminWalkin.errorNetwork'))
     } finally {
       setSubmitting(false)
     }
