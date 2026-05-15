@@ -706,7 +706,41 @@
     "longSetupAdmin": "admin",
     "longSetupOr": "o",
     "longSetupTech": "tech",
-    "longSetupAfter": "."
+    "longSetupAfter": ".",
+    "forgotPassword": "¿Olvidó su contraseña?"
+  },
+  "adminForgotPassword": {
+    "kicker": "Acceso a la cuenta",
+    "title": "Restablecer su contraseña",
+    "subtitle": "Introduzca el correo asociado a su cuenta. Si encontramos una coincidencia, le enviaremos un enlace para establecer una nueva contraseña.",
+    "emailLabel": "Correo electrónico",
+    "emailPlaceholder": "usted@ejemplo.com",
+    "submit": "Enviar enlace de restablecimiento",
+    "sending": "Enviando…",
+    "sentTitle": "Revise su correo",
+    "sentBody": "Si existe una cuenta con ese correo, recibirá un enlace de restablecimiento en un minuto. No olvide revisar la carpeta de spam.",
+    "backToLogin": "Volver al inicio de sesión",
+    "error": "No se pudo enviar el enlace. Por favor, inténtelo de nuevo.",
+    "rateLimited": "Demasiadas solicitudes. Espere unos minutos e inténtelo de nuevo."
+  },
+  "adminResetPassword": {
+    "kicker": "Acceso a la cuenta",
+    "title": "Establecer una nueva contraseña",
+    "subtitle": "Elija una contraseña segura que no haya usado antes.",
+    "passwordLabel": "Nueva contraseña",
+    "confirmLabel": "Confirmar contraseña",
+    "submit": "Actualizar contraseña",
+    "saving": "Guardando…",
+    "successTitle": "Contraseña actualizada",
+    "successBody": "Le estamos redirigiendo al panel de administración…",
+    "backToLogin": "Volver al inicio de sesión",
+    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
+    "passwordMismatch": "Las contraseñas no coinciden.",
+    "linkInvalid": "Este enlace de restablecimiento ha caducado o no es válido. Solicite uno nuevo desde la página de inicio de sesión.",
+    "error": "No se pudo actualizar la contraseña. Por favor, inténtelo de nuevo.",
+    "goToDashboard": "Ir al panel",
+    "alreadyLoggedInTitle": "Ya ha iniciado sesión",
+    "alreadyLoggedInBody": "Los enlaces de restablecimiento son para usuarios que no pueden iniciar sesión. Para cambiar su contraseña mientras tiene sesión iniciada, use los ajustes de su cuenta."
   },
   "adminQuotes": {
     "title": "Presupuestos",

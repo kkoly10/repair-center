@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
+import { isReservedSlug } from '../../../../lib/reservedSlugs'
 
 export const runtime = 'nodejs'
 
@@ -65,6 +66,13 @@ export async function POST(request) {
     if (slug.length < 3 || slug.length > 50) {
       return NextResponse.json(
         { error: 'Slug must be between 3 and 50 characters.' },
+        { status: 400 }
+      )
+    }
+
+    if (isReservedSlug(slug)) {
+      return NextResponse.json(
+        { error: 'This slug is reserved. Please choose a different one.' },
         { status: 400 }
       )
     }

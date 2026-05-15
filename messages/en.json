@@ -706,7 +706,41 @@
     "longSetupAdmin": "admin",
     "longSetupOr": "or",
     "longSetupTech": "tech",
-    "longSetupAfter": "."
+    "longSetupAfter": ".",
+    "forgotPassword": "Forgot password?"
+  },
+  "adminForgotPassword": {
+    "kicker": "Account access",
+    "title": "Reset your password",
+    "subtitle": "Enter the email associated with your account. If we find a match, we'll send you a link to set a new password.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "submit": "Send reset link",
+    "sending": "Sending…",
+    "sentTitle": "Check your email",
+    "sentBody": "If an account exists for that email, you'll receive a password-reset link within a minute. Don't forget to check your spam folder.",
+    "backToLogin": "Back to sign in",
+    "error": "Couldn't send the reset link. Please try again.",
+    "rateLimited": "Too many requests. Please wait a few minutes and try again."
+  },
+  "adminResetPassword": {
+    "kicker": "Account access",
+    "title": "Set a new password",
+    "subtitle": "Choose a strong password you haven't used before.",
+    "passwordLabel": "New password",
+    "confirmLabel": "Confirm password",
+    "submit": "Update password",
+    "saving": "Saving…",
+    "successTitle": "Password updated",
+    "successBody": "Redirecting you to the admin dashboard…",
+    "backToLogin": "Back to sign in",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "passwordMismatch": "Passwords don't match.",
+    "linkInvalid": "This reset link has expired or is invalid. Request a new one from the sign-in page.",
+    "error": "Couldn't update your password. Please try again.",
+    "goToDashboard": "Go to dashboard",
+    "alreadyLoggedInTitle": "You're already signed in",
+    "alreadyLoggedInBody": "Reset links are for users who can't sign in. To change your password while signed in, use your account settings."
   },
   "adminQuotes": {
     "title": "Quotes",

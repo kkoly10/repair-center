@@ -706,7 +706,41 @@
     "longSetupAdmin": "admin",
     "longSetupOr": "ou",
     "longSetupTech": "tech",
-    "longSetupAfter": "."
+    "longSetupAfter": ".",
+    "forgotPassword": "Esqueceu a palavra-passe?"
+  },
+  "adminForgotPassword": {
+    "kicker": "Acesso à conta",
+    "title": "Redefinir a sua palavra-passe",
+    "subtitle": "Introduza o e-mail associado à sua conta. Se encontrarmos uma correspondência, enviaremos um link para definir uma nova palavra-passe.",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "voce@exemplo.com",
+    "submit": "Enviar link de redefinição",
+    "sending": "A enviar…",
+    "sentTitle": "Verifique o seu e-mail",
+    "sentBody": "Se existir uma conta com esse e-mail, receberá um link de redefinição em alguns instantes. Não se esqueça de verificar a pasta de spam.",
+    "backToLogin": "Voltar ao início de sessão",
+    "error": "Não foi possível enviar o link. Por favor, tente novamente.",
+    "rateLimited": "Demasiados pedidos. Aguarde alguns minutos e tente novamente."
+  },
+  "adminResetPassword": {
+    "kicker": "Acesso à conta",
+    "title": "Definir uma nova palavra-passe",
+    "subtitle": "Escolha uma palavra-passe forte que não tenha utilizado antes.",
+    "passwordLabel": "Nova palavra-passe",
+    "confirmLabel": "Confirmar palavra-passe",
+    "submit": "Atualizar palavra-passe",
+    "saving": "A guardar…",
+    "successTitle": "Palavra-passe atualizada",
+    "successBody": "A redirecionar para o painel de administração…",
+    "backToLogin": "Voltar ao início de sessão",
+    "passwordTooShort": "A palavra-passe deve ter pelo menos 8 caracteres.",
+    "passwordMismatch": "As palavras-passe não coincidem.",
+    "linkInvalid": "Este link de redefinição expirou ou é inválido. Solicite um novo a partir da página de início de sessão.",
+    "error": "Não foi possível atualizar a palavra-passe. Por favor, tente novamente.",
+    "goToDashboard": "Ir para o painel",
+    "alreadyLoggedInTitle": "Já tem sessão iniciada",
+    "alreadyLoggedInBody": "Os links de redefinição destinam-se a utilizadores que não conseguem iniciar sessão. Para alterar a palavra-passe enquanto tem sessão, use as definições da conta."
   },
   "adminQuotes": {
     "title": "Orçamentos",
