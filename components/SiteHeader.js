@@ -1,57 +1,62 @@
 'use client'
 
-import Link from 'next/link'
 import { useState } from 'react'
 import StaffAuthActions from './StaffAuthActions'
-
-const navItems = [
-  { href: '/how-it-works', label: 'How It Works' },
-  { href: '/repairs', label: 'Repair Services' },
-  { href: '/devices', label: 'Supported Devices' },
-  { href: '/track', label: 'Track Repair' },
-  { href: '/faq', label: 'FAQ' },
-  { href: '/for-shops', label: 'For Shops' },
-]
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import LanguageSwitcher from '../lib/i18n/LanguageSwitcher'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function SiteHeader() {
   const [open, setOpen] = useState(false)
+  const t = useT()
+
+  const navItems = [
+    { href: '/how-it-works', label: t('siteHeader.navHowItWorks') },
+    { href: '/repairs',      label: t('siteHeader.navRepairs') },
+    { href: '/devices',      label: t('siteHeader.navDevices') },
+    { href: '/track',        label: t('siteHeader.navTrack') },
+    { href: '/faq',          label: t('siteHeader.navFaq') },
+    { href: '/for-shops',    label: t('siteHeader.navForShops') },
+  ]
 
   return (
     <header className='site-header'>
       <div className='site-shell site-header-inner'>
-        <Link href='/' className='brand'>
+        <LocalizedLink href='/' className='brand'>
           <span className='brand-mark'>RC</span>
           <span>
-            <strong>Repair Center</strong>
-            <small>Premium mail-in device repair</small>
+            <strong>{t('common.appName')}</strong>
+            <small>{t('common.tagline')}</small>
           </span>
-        </Link>
+        </LocalizedLink>
 
         <nav className='desktop-nav' aria-label='Primary'>
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
+            <LocalizedLink key={item.href} href={item.href}>
               {item.label}
-            </Link>
+            </LocalizedLink>
           ))}
         </nav>
 
         <div className='header-actions'>
-          <Link href='/track' className='button button-secondary button-compact'>
-            Track Order
-          </Link>
+          <LocalizedLink href='/track' className='button button-secondary button-compact'>
+            {t('siteHeader.trackOrder')}
+          </LocalizedLink>
 
           <StaffAuthActions />
 
-          <Link href='/estimate' className='button button-primary button-compact'>
-            Get Free Estimate
-          </Link>
+          <LocalizedLink href='/estimate' className='button button-primary button-compact'>
+            {t('siteHeader.freeEstimate')}
+          </LocalizedLink>
+
+          <LanguageSwitcher className='language-switcher header-language-switcher' />
 
           <button
             className='mobile-menu-button'
             type='button'
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
-            aria-label='Toggle menu'
+            aria-label={t('siteHeader.toggleMenu')}
           >
             <span />
             <span />
@@ -64,20 +69,22 @@ export default function SiteHeader() {
         <div className='mobile-panel'>
           <div className='site-shell mobile-panel-inner'>
             {navItems.map((item) => (
-              <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>
+              <LocalizedLink key={item.href} href={item.href} onClick={() => setOpen(false)}>
                 {item.label}
-              </Link>
+              </LocalizedLink>
             ))}
 
-            <Link href='/track' className='button button-secondary' onClick={() => setOpen(false)}>
-              Track Order
-            </Link>
+            <LocalizedLink href='/track' className='button button-secondary' onClick={() => setOpen(false)}>
+              {t('siteHeader.trackOrder')}
+            </LocalizedLink>
 
             <StaffAuthActions mobile />
 
-            <Link href='/estimate' className='button button-primary' onClick={() => setOpen(false)}>
-              Get Free Estimate
-            </Link>
+            <LocalizedLink href='/estimate' className='button button-primary' onClick={() => setOpen(false)}>
+              {t('siteHeader.freeEstimate')}
+            </LocalizedLink>
+
+            <LanguageSwitcher className='language-switcher' />
           </div>
         </div>
       ) : null}
