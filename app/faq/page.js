@@ -1,49 +1,25 @@
-import Link from 'next/link'
+import LocalizedLink from '../../lib/i18n/LocalizedLink'
+import { getT } from '../../lib/i18n/server'
 
-const faqs = [
-  {
-    question: 'Do I need an account to request an estimate?',
-    answer:
-      'No. You can submit a free estimate request without creating an account.',
-  },
-  {
-    question: 'Is the photo estimate always the final price?',
-    answer:
-      'No. Photo estimates are preliminary unless clearly marked otherwise. Final pricing can change after in-hand inspection if hidden damage or additional parts are involved.',
-  },
-  {
-    question: 'When do I ship my device?',
-    answer:
-      'You only ship your device after reviewing and approving the estimate or next step shown in your repair flow.',
-  },
-  {
-    question: 'Can I track the repair after approval?',
-    answer:
-      'Yes. Once your repair moves forward, you can follow status updates, shipment changes, and repair messages from the tracking page.',
-  },
-  {
-    question: 'What if inspection changes the repair scope?',
-    answer:
-      'If inspection reveals more damage or different repair needs, a revised estimate can be sent before work continues.',
-  },
-  {
-    question: 'What should I do before mailing my device?',
-    answer:
-      'Back up your data, remove any SIM or memory cards if appropriate, and follow the mail-in instructions shown after approval.',
-  },
-  {
-    question: 'Will I approve the repair before work starts?',
-    answer:
-      'Yes. The repair should not move forward without your approval of the applicable estimate.',
-  },
-  {
-    question: 'Do you repair every kind of device?',
-    answer:
-      'No. We focus on phones, tablets, laptops, and selected jobs that fit a practical mail-in repair process.',
-  },
-]
+export async function generateMetadata() {
+  const t = await getT()
+  return { title: t('faq.metaTitle') }
+}
 
-export default function FaqPage() {
+export default async function FaqPage() {
+  const t = await getT()
+
+  const faqs = [
+    { question: t('faq.q1'), answer: t('faq.a1') },
+    { question: t('faq.q2'), answer: t('faq.a2') },
+    { question: t('faq.q3'), answer: t('faq.a3') },
+    { question: t('faq.q4'), answer: t('faq.a4') },
+    { question: t('faq.q5'), answer: t('faq.a5') },
+    { question: t('faq.q6'), answer: t('faq.a6') },
+    { question: t('faq.q7'), answer: t('faq.a7') },
+    { question: t('faq.q8'), answer: t('faq.a8') },
+  ]
+
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
@@ -56,29 +32,24 @@ export default function FaqPage() {
           }}
         >
           <div style={{ padding: 28, display: 'grid', alignContent: 'center', gap: 16 }}>
-            <div className='kicker'>FAQ</div>
-            <h1 style={{ margin: 0 }}>
-              Answers to the questions customers usually have before mailing in a device
-            </h1>
-            <p className='muted' style={{ margin: 0, maxWidth: 58 + 'ch' }}>
-              We want the process to feel clear from the start, so you know what to expect before,
-              during, and after the repair.
-            </p>
+            <div className='kicker'>{t('faq.kicker')}</div>
+            <h1 style={{ margin: 0 }}>{t('faq.heroTitle')}</h1>
+            <p className='muted' style={{ margin: 0, maxWidth: 58 + 'ch' }}>{t('faq.heroBody')}</p>
 
             <div className='inline-actions' style={{ marginBottom: 0 }}>
-              <Link href='/estimate' className='button button-primary'>
-                Start Free Estimate
-              </Link>
-              <Link href='/how-it-works' className='button button-secondary'>
-                See How It Works
-              </Link>
+              <LocalizedLink href='/estimate' className='button button-primary'>
+                {t('faq.ctaStart')}
+              </LocalizedLink>
+              <LocalizedLink href='/how-it-works' className='button button-secondary'>
+                {t('faq.ctaHowItWorks')}
+              </LocalizedLink>
             </div>
           </div>
 
           <div style={{ minHeight: 340, position: 'relative' }}>
             <img
               src='/images/laptop-open.jpg'
-              alt='Laptop on a desk'
+              alt={t('faq.imageAlt')}
               style={{
                 width: '100%',
                 height: '100%',
@@ -99,12 +70,9 @@ export default function FaqPage() {
         </div>
 
         <section className='policy-card'>
-          <div className='kicker'>Still not sure?</div>
-          <h3>Start with the estimate</h3>
-          <p>
-            The estimate request is the best first step because it lets us review your device
-            details, photos, and issue description before anything is shipped.
-          </p>
+          <div className='kicker'>{t('faq.stillNotSureKicker')}</div>
+          <h3>{t('faq.stillNotSureTitle')}</h3>
+          <p>{t('faq.stillNotSureBody')}</p>
         </section>
       </div>
     </main>

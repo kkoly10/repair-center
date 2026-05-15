@@ -1,15 +1,19 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import Link from 'next/link'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 import { searchArticles, CATEGORY_MAP } from '../lib/helpContent'
 
-export default function HelpSearch({ placeholder = 'Search help articles…', autoFocus = false }) {
+export default function HelpSearch({ placeholder, autoFocus = false }) {
+  const t = useT()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [focused, setFocused] = useState(false)
   const debounceRef = useRef(null)
   const inputRef = useRef(null)
+
+  const effectivePlaceholder = placeholder || t('helpCenter.searchPlaceholder')
 
   const handleChange = useCallback((e) => {
     const val = e.target.value
@@ -37,10 +41,10 @@ export default function HelpSearch({ placeholder = 'Search help articles…', au
           onChange={handleChange}
           onFocus={() => setFocused(true)}
           onBlur={() => setTimeout(() => setFocused(false), 150)}
-          placeholder={placeholder}
+          placeholder={effectivePlaceholder}
           autoFocus={autoFocus}
           style={{ paddingLeft: 42, fontSize: '1rem', borderRadius: 'var(--radius-md)', width: '100%', boxSizing: 'border-box' }}
-          aria-label='Search help articles'
+          aria-label={t('helpCenter.searchAria')}
         />
       </div>
       {showDropdown && (
@@ -52,12 +56,12 @@ export default function HelpSearch({ placeholder = 'Search help articles…', au
         }}>
           {results.length === 0 ? (
             <div style={{ padding: '14px 16px', color: 'var(--muted)', fontSize: 14 }}>
-              No articles found for &ldquo;{query}&rdquo;
+              {t('helpCenter.searchNoResults', { query })}
             </div>
           ) : results.map((article) => {
             const cat = CATEGORY_MAP[article.category]
             return (
-              <Link
+              <LocalizedLink
                 key={article.slug}
                 href={`/help/${article.category}/${article.slug}`}
                 style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', borderBottom: '1px solid var(--line)' }}
@@ -65,9 +69,9 @@ export default function HelpSearch({ placeholder = 'Search help articles…', au
               >
                 <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{article.title}</div>
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-                  {cat?.title} · {article.readMinutes} min read
+                  {cat?.title} · {t('helpCenter.minRead', { minutes: article.readMinutes })}
                 </div>
-              </Link>
+              </LocalizedLink>
             )
           })}
         </div>

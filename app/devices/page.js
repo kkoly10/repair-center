@@ -1,4 +1,10 @@
 import { REPAIR_CATALOG } from '../../lib/repairCatalog'
+import { getT } from '../../lib/i18n/server'
+
+export async function generateMetadata() {
+  const t = await getT()
+  return { title: t('devicesPage.metaTitle') }
+}
 
 const grouped = REPAIR_CATALOG.reduce((acc, item) => {
   acc[item.category] ??= []
@@ -9,7 +15,8 @@ const grouped = REPAIR_CATALOG.reduce((acc, item) => {
 const devicesImage =
   'https://images.unsplash.com/photo-1710855492709-aa06902e181c?auto=format&fit=crop&fm=jpg&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&ixlib=rb-4.1.0&q=80&w=2200'
 
-export default function DevicesPage() {
+export default async function DevicesPage() {
+  const t = await getT()
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
@@ -22,18 +29,15 @@ export default function DevicesPage() {
           }}
         >
           <div style={{ padding: 28, display: 'grid', alignContent: 'center', gap: 16 }}>
-            <div className='kicker'>Supported devices</div>
-            <h1 style={{ margin: 0 }}>Browse supported models before requesting an estimate</h1>
-            <p className='muted' style={{ margin: 0, maxWidth: 56 + 'ch' }}>
-              Choose the device that matches yours so the estimate request starts with the right
-              repair options and pricing path.
-            </p>
+            <div className='kicker'>{t('devicesPage.kicker')}</div>
+            <h1 style={{ margin: 0 }}>{t('devicesPage.heroTitle')}</h1>
+            <p className='muted' style={{ margin: 0, maxWidth: 56 + 'ch' }}>{t('devicesPage.heroBody')}</p>
           </div>
 
           <div style={{ minHeight: 360, position: 'relative' }}>
             <img
               src={devicesImage}
-              alt='A laptop, tablet, and phone on a white desk'
+              alt={t('devicesPage.imageAlt')}
               style={{
                 width: '100%',
                 height: '100%',
@@ -50,7 +54,7 @@ export default function DevicesPage() {
               {category}
             </div>
             <h3 style={{ marginTop: 0 }}>
-              {category.charAt(0).toUpperCase() + category.slice(1)} models
+              {category.charAt(0).toUpperCase() + category.slice(1)} {t('devicesPage.modelsSuffix')}
             </h3>
 
             <div className='grid-3' style={{ marginTop: 18 }}>
@@ -59,8 +63,9 @@ export default function DevicesPage() {
                   <span className='mini-chip'>{item.brand}</span>
                   <h3 style={{ marginTop: 14 }}>{item.model}</h3>
                   <p>
-                    {item.repairs.length} supported repair
-                    {item.repairs.length === 1 ? '' : 's'} available for this model.
+                    {item.repairs.length}{' '}
+                    {item.repairs.length === 1 ? t('devicesPage.supportedRepair') : t('devicesPage.supportedRepairs')}{' '}
+                    {t('devicesPage.availableForModel')}
                   </p>
                 </div>
               ))}

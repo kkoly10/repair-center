@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { statusPill } from '../lib/statusPills'
+import { useT, useLocale } from '../lib/i18n/TranslationProvider'
 
 function getMonday(d) {
   const copy = new Date(d)
@@ -40,22 +41,29 @@ function buildGridRows() {
   return rows.join(' ')
 }
 
-const TIME_LABELS = Array.from({ length: 12 }, (_, i) => {
-  const h = i + 8
-  const label = h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h - 12}pm`
-  return { line: `time-${String(h).padStart(2, '0')}00`, label }
-})
+function buildTimeLabels(locale) {
+  return Array.from({ length: 12 }, (_, i) => {
+    const h = i + 8
+    const dt = new Date()
+    dt.setHours(h, 0, 0, 0)
+    const label = new Intl.DateTimeFormat(locale || 'en-US', { hour: 'numeric' }).format(dt)
+    return { line: `time-${String(h).padStart(2, '0')}00`, label }
+  })
+}
 
-function fmtDatetime(iso) {
+function fmtDatetime(iso, locale) {
   if (!iso) return '—'
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale || 'en-US', {
     weekday: 'short', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit',
   }).format(new Date(iso))
 }
 
 export default function AdminAppointmentCalendar() {
+  const t = useT()
+  const locale = useLocale()
   const router = useRouter()
+  const TIME_LABELS = buildTimeLabels(locale)
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()))
   const [appointments, setAppts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -98,7 +106,7 @@ export default function AdminAppointmentCalendar() {
     const d = addDays(weekStart, dayStartIndex + i)
     return {
       isoDate: d.toISOString().slice(0, 10),
-      label: d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+      label: d.toLocaleDateString(locale || 'en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
     }
   })
 
@@ -133,7 +141,7 @@ export default function AdminAppointmentCalendar() {
   }
 
   async function convertToOrder(apptId) {
-    if (!window.confirm('Convert this appointment to a walk-in repair order?')) return
+    if (!window.confirm(t('adminAppointments.confirmConvert'))) return
     setConverting(true)
     setConvertError('')
     try {
@@ -143,17 +151,17 @@ export default function AdminAppointmentCalendar() {
         body: JSON.stringify({ action: 'convert' }),
       })
       const json = await res.json()
-      if (!res.ok) { setConvertError(json.error || 'Conversion failed.'); setConverting(false); return }
+      if (!res.ok) { setConvertError(json.error || t('adminAppointments.errorConvert')); setConverting(false); return }
       router.push(`/admin/quotes/${json.quoteId}/order`)
     } catch {
-      setConvertError('Network error.')
+      setConvertError(t('adminAppointments.errorNetworkShort'))
       setConverting(false)
     }
   }
 
   const weekLabel = singleDay
     ? days[0]?.label
-    : `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${addDays(weekStart, 6).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+    : `${weekStart.toLocaleDateString(locale || 'en-US', { month: 'short', day: 'numeric' })} – ${addDays(weekStart, 6).toLocaleDateString(locale || 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
 
   const cols = `60px repeat(${visibleDays}, 1fr)`
 
@@ -161,11 +169,11 @@ export default function AdminAppointmentCalendar() {
     <div>
       {/* Navigation */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        <button className='button button-secondary' style={{ fontSize: 13, padding: '4px 10px' }} onClick={prev}>← Prev</button>
-        <button className='button button-secondary' style={{ fontSize: 13, padding: '4px 10px' }} onClick={today}>Today</button>
-        <button className='button button-secondary' style={{ fontSize: 13, padding: '4px 10px' }} onClick={next}>Next →</button>
+        <button className='button button-secondary' style={{ fontSize: 13, padding: '4px 10px' }} onClick={prev}>{t('adminAppointments.calPrev')}</button>
+        <button className='button button-secondary' style={{ fontSize: 13, padding: '4px 10px' }} onClick={today}>{t('adminAppointments.calToday')}</button>
+        <button className='button button-secondary' style={{ fontSize: 13, padding: '4px 10px' }} onClick={next}>{t('adminAppointments.calNext')}</button>
         <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{weekLabel}</span>
-        {loading && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Loading…</span>}
+        {loading && <span style={{ fontSize: 12, color: 'var(--muted)' }}>{t('adminAppointments.loading')}</span>}
       </div>
 
       <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
@@ -293,8 +301,8 @@ export default function AdminAppointmentCalendar() {
                 )}
               </div>
               <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span className={statusPill(selectedAppt.status).cls}>{statusPill(selectedAppt.status).label}</span>
-                <span style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDatetime(selectedAppt.preferred_at)}</span>
+                <span className={statusPill(selectedAppt.status, t).cls}>{statusPill(selectedAppt.status, t).label}</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDatetime(selectedAppt.preferred_at, locale)}</span>
               </div>
               {selectedAppt.status === 'confirmed' && !selectedAppt.quote_request_id && (
                 <div style={{ marginTop: 10 }}>
@@ -303,13 +311,13 @@ export default function AdminAppointmentCalendar() {
                     style={{ fontSize: 12, padding: '4px 12px' }}
                     disabled={converting}
                     onClick={() => convertToOrder(selectedAppt.id)}
-                  >{converting ? 'Converting…' : 'Convert to order →'}</button>
+                  >{converting ? t('adminAppointments.converting') : t('adminAppointments.convertToOrder')}</button>
                   {convertError && <div style={{ marginTop: 4, fontSize: 12, color: 'var(--danger, #dc2626)' }}>{convertError}</div>}
                 </div>
               )}
               {selectedAppt.quote_request_id && (
                 <div style={{ marginTop: 10 }}>
-                  <a href={`/admin/quotes/${selectedAppt.quote_request_id}/order`} style={{ fontSize: 12, color: 'var(--blue)' }}>View order →</a>
+                  <a href={`/admin/quotes/${selectedAppt.quote_request_id}/order`} style={{ fontSize: 12, color: 'var(--blue)' }}>{t('adminAppointments.viewOrder')}</a>
                 </div>
               )}
             </div>
@@ -323,7 +331,7 @@ export default function AdminAppointmentCalendar() {
 
       {visibleAppts.length === 0 && !loading && (
         <div style={{ textAlign: 'center', color: 'var(--muted)', padding: '32px 0', fontSize: 13 }}>
-          No appointments in the visible window.
+          {t('adminAppointments.calendarEmpty')}
         </div>
       )}
     </div>

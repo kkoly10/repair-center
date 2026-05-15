@@ -1,21 +1,24 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 const CATEGORIES = ['phone', 'tablet', 'laptop', 'desktop']
 const PRICE_MODES = ['fixed', 'range', 'manual']
 
 function GlobalBadge() {
+  const t = useT()
   return (
     <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 99, background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-      Global
+      {t('adminCatalog.badgeGlobal')}
     </span>
   )
 }
 
 function CustomBadge() {
+  const t = useT()
   return (
     <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 99, background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-      Custom
+      {t('adminCatalog.badgeCustom')}
     </span>
   )
 }
@@ -23,6 +26,7 @@ function CustomBadge() {
 // ── Brands Tab ────────────────────────────────────────────────────────────────
 
 function BrandsTab() {
+  const t = useT()
   const [brands, setBrands] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -36,9 +40,9 @@ function BrandsTab() {
   useEffect(() => {
     fetch('/admin/api/catalog/brands')
       .then((r) => r.json())
-      .then((d) => { if (d.ok) setBrands(d.brands || []); else setError(d.error || 'Failed to load brands.'); setLoading(false) })
-      .catch(() => { setError('Failed to load brands.'); setLoading(false) })
-  }, [])
+      .then((d) => { if (d.ok) setBrands(d.brands || []); else setError(d.error || t('adminCatalog.errorLoadBrands')); setLoading(false) })
+      .catch(() => { setError(t('adminCatalog.errorLoadBrands')); setLoading(false) })
+  }, [t])
 
   async function handleAdd(e) {
     e.preventDefault()
@@ -50,7 +54,7 @@ function BrandsTab() {
         body: JSON.stringify(draft),
       })
       const json = await res.json()
-      if (!res.ok) { setActionError(json.error || 'Failed to add brand.'); return }
+      if (!res.ok) { setActionError(json.error || t('adminCatalog.errorAddBrand')); return }
       setBrands((prev) => [...prev, json.brand].sort((a, b) => a.brand_name.localeCompare(b.brand_name)))
       setDraft({ brandName: '', category: 'phone' })
       setShowAdd(false)
@@ -66,47 +70,54 @@ function BrandsTab() {
         body: JSON.stringify(editDraft),
       })
       const json = await res.json()
-      if (!res.ok) { setActionError(json.error || 'Failed to save changes.'); return }
+      if (!res.ok) { setActionError(json.error || t('adminCatalog.errorSaveChanges')); return }
       setBrands((prev) => prev.map((b) => b.id === brandId ? json.brand : b))
       setEditId(null)
     } finally { setSaving(false) }
   }
 
   async function handleDelete(brandId) {
-    if (!confirm('Delete this brand? This will also remove its models and any linked pricing rules.')) return
+    if (!confirm(t('adminCatalog.confirmDeleteBrand'))) return
     setActionError('')
     const res = await fetch(`/admin/api/catalog/brands/${brandId}`, { method: 'DELETE' })
     const json = await res.json()
-    if (!res.ok) { setActionError(json.error || 'Failed to delete brand.'); return }
+    if (!res.ok) { setActionError(json.error || t('adminCatalog.errorDeleteBrand')); return }
     setBrands((prev) => prev.filter((b) => b.id !== brandId))
   }
 
-  if (loading) return <div style={{ color: 'var(--muted)', padding: 24 }}>Loading…</div>
+  if (loading) return <div style={{ color: 'var(--muted)', padding: 24 }}>{t('adminCatalog.loading')}</div>
   if (error) return <div className='notice-error'>{error}</div>
+
+  const customCount = brands.filter((b) => b.is_org_owned).length
+  const globalCount = brands.filter((b) => !b.is_org_owned).length
 
   return (
     <div>
       {actionError && <div className='notice notice-warn' style={{ marginBottom: 12 }}>{actionError}</div>}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ fontSize: 13, color: '#555' }}>{brands.filter((b) => b.is_org_owned).length} custom brand{brands.filter((b) => b.is_org_owned).length !== 1 ? 's' : ''} · {brands.filter((b) => !b.is_org_owned).length} global</div>
+        <div style={{ fontSize: 13, color: '#555' }}>
+          {customCount === 1
+            ? t('adminCatalog.brandCountsOne', { custom: String(customCount), global: String(globalCount) })
+            : t('adminCatalog.brandCountsOther', { custom: String(customCount), global: String(globalCount) })}
+        </div>
         <button className='button' onClick={() => setShowAdd((v) => !v)} style={{ fontSize: 13, padding: '5px 14px' }}>
-          {showAdd ? 'Cancel' : '+ Add Brand'}
+          {showAdd ? t('adminCatalog.cancel') : t('adminCatalog.addBrand')}
         </button>
       </div>
 
       {showAdd && (
         <form onSubmit={handleAdd} className='policy-card' style={{ marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Brand Name</label>
-            <input className='input' value={draft.brandName} onChange={(e) => setDraft((d) => ({ ...d, brandName: e.target.value }))} placeholder='e.g. Nothing' required style={{ width: 200 }} />
+            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminCatalog.brandNameLabel')}</label>
+            <input className='input' value={draft.brandName} onChange={(e) => setDraft((d) => ({ ...d, brandName: e.target.value }))} placeholder={t('adminCatalog.brandNamePlaceholder')} required style={{ width: 200 }} />
           </div>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Category</label>
+            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminCatalog.categoryLabel')}</label>
             <select className='input' value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {CATEGORIES.map((c) => <option key={c} value={c}>{t(`adminCatalog.category_${c}`)}</option>)}
             </select>
           </div>
-          <button className='button' type='submit' disabled={saving} style={{ alignSelf: 'flex-end' }}>Save</button>
+          <button className='button' type='submit' disabled={saving} style={{ alignSelf: 'flex-end' }}>{t('adminCatalog.save')}</button>
         </form>
       )}
 
@@ -114,8 +125,8 @@ function BrandsTab() {
         <table width='100%' style={{ borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #f0f0f0', background: '#fafafa' }}>
-              {['Brand', 'Category', 'Status', 'Type', ''].map((h) => (
-                <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#888' }}>{h}</th>
+              {[t('adminCatalog.colBrand'), t('adminCatalog.colCategory'), t('adminCatalog.colStatus'), t('adminCatalog.colType'), ''].map((h, i) => (
+                <th key={i} style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#888' }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -130,18 +141,18 @@ function BrandsTab() {
                 <td style={{ padding: '10px 12px', fontSize: 13 }}>
                   {editId === brand.id ? (
                     <select className='input' value={editDraft.category ?? brand.category} onChange={(e) => setEditDraft((d) => ({ ...d, category: e.target.value }))}>
-                      {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      {CATEGORIES.map((c) => <option key={c} value={c}>{t(`adminCatalog.category_${c}`)}</option>)}
                     </select>
-                  ) : brand.category}
+                  ) : t(`adminCatalog.category_${brand.category}`)}
                 </td>
                 <td style={{ padding: '10px 12px' }}>
                   {editId === brand.id ? (
                     <select className='input' value={String(editDraft.active ?? brand.active)} onChange={(e) => setEditDraft((d) => ({ ...d, active: e.target.value === 'true' }))}>
-                      <option value='true'>Active</option>
-                      <option value='false'>Inactive</option>
+                      <option value='true'>{t('adminCatalog.active')}</option>
+                      <option value='false'>{t('adminCatalog.inactive')}</option>
                     </select>
                   ) : (
-                    <span style={{ fontSize: 12, fontWeight: 600, color: brand.active ? '#166534' : '#991b1b' }}>{brand.active ? 'Active' : 'Inactive'}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: brand.active ? '#166534' : '#991b1b' }}>{brand.active ? t('adminCatalog.active') : t('adminCatalog.inactive')}</span>
                   )}
                 </td>
                 <td style={{ padding: '10px 12px' }}>{brand.is_org_owned ? <CustomBadge /> : <GlobalBadge />}</td>
@@ -150,13 +161,13 @@ function BrandsTab() {
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                       {editId === brand.id ? (
                         <>
-                          <button className='button button-small' onClick={() => handleSaveEdit(brand.id)} disabled={saving} style={{ fontSize: 12 }}>Save</button>
-                          <button className='button button-small' onClick={() => setEditId(null)} style={{ fontSize: 12, background: '#f3f4f6', color: '#374151' }}>Cancel</button>
+                          <button className='button button-small' onClick={() => handleSaveEdit(brand.id)} disabled={saving} style={{ fontSize: 12 }}>{t('adminCatalog.save')}</button>
+                          <button className='button button-small' onClick={() => setEditId(null)} style={{ fontSize: 12, background: '#f3f4f6', color: '#374151' }}>{t('adminCatalog.cancel')}</button>
                         </>
                       ) : (
                         <>
-                          <button className='button button-small' onClick={() => { setEditId(brand.id); setEditDraft({}) }} style={{ fontSize: 12 }}>Edit</button>
-                          <button className='button button-small' onClick={() => handleDelete(brand.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>Delete</button>
+                          <button className='button button-small' onClick={() => { setEditId(brand.id); setEditDraft({}) }} style={{ fontSize: 12 }}>{t('adminCatalog.edit')}</button>
+                          <button className='button button-small' onClick={() => handleDelete(brand.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>{t('adminCatalog.delete')}</button>
                         </>
                       )}
                     </div>
@@ -174,6 +185,7 @@ function BrandsTab() {
 // ── Models Tab ────────────────────────────────────────────────────────────────
 
 function ModelsTab() {
+  const t = useT()
   const [models, setModels] = useState([])
   const [brands, setBrands] = useState([])
   const [loading, setLoading] = useState(true)
@@ -191,11 +203,11 @@ function ModelsTab() {
       fetch('/admin/api/catalog/models').then((r) => r.json()),
       fetch('/admin/api/catalog/brands').then((r) => r.json()),
     ]).then(([mRes, bRes]) => {
-      if (mRes.ok) setModels(mRes.models || []); else setError(mRes.error || 'Failed to load models.')
+      if (mRes.ok) setModels(mRes.models || []); else setError(mRes.error || t('adminCatalog.errorLoadModels'))
       if (bRes.ok) setBrands(bRes.brands || [])
       setLoading(false)
-    }).catch(() => { setError('Failed to load.'); setLoading(false) })
-  }, [])
+    }).catch(() => { setError(t('adminCatalog.errorLoad')); setLoading(false) })
+  }, [t])
 
   const filtered = search.trim()
     ? models.filter((m) => m.model_name.toLowerCase().includes(search.toLowerCase()) || m.repair_catalog_brands?.brand_name?.toLowerCase().includes(search.toLowerCase()))
@@ -211,7 +223,7 @@ function ModelsTab() {
         body: JSON.stringify(draft),
       })
       const json = await res.json()
-      if (!res.ok) { setActionError(json.error || 'Failed to add model.'); return }
+      if (!res.ok) { setActionError(json.error || t('adminCatalog.errorAddModel')); return }
       setModels((prev) => [...prev, json.model].sort((a, b) => a.model_name.localeCompare(b.model_name)))
       setDraft({ modelName: '', familyName: '', brandId: '', category: 'phone' })
       setShowAdd(false)
@@ -227,33 +239,36 @@ function ModelsTab() {
         body: JSON.stringify(editDraft),
       })
       const json = await res.json()
-      if (!res.ok) { setActionError(json.error || 'Failed to save changes.'); return }
+      if (!res.ok) { setActionError(json.error || t('adminCatalog.errorSaveChanges')); return }
       setModels((prev) => prev.map((m) => m.id === modelId ? json.model : m))
       setEditId(null)
     } finally { setSaving(false) }
   }
 
   async function handleDelete(modelId) {
-    if (!confirm('Delete this model? Pricing rules for this model will also be removed.')) return
+    if (!confirm(t('adminCatalog.confirmDeleteModel'))) return
     setActionError('')
     const res = await fetch(`/admin/api/catalog/models/${modelId}`, { method: 'DELETE' })
     const json = await res.json()
-    if (!res.ok) { setActionError(json.error || 'Failed to delete model.'); return }
+    if (!res.ok) { setActionError(json.error || t('adminCatalog.errorDeleteModel')); return }
     setModels((prev) => prev.filter((m) => m.id !== modelId))
   }
 
-  if (loading) return <div style={{ color: 'var(--muted)', padding: 24 }}>Loading…</div>
+  if (loading) return <div style={{ color: 'var(--muted)', padding: 24 }}>{t('adminCatalog.loading')}</div>
   if (error) return <div className='notice-error'>{error}</div>
+
+  const customCount = models.filter((m) => m.is_org_owned).length
+  const globalCount = models.filter((m) => !m.is_org_owned).length
 
   return (
     <div>
       {actionError && <div className='notice notice-warn' style={{ marginBottom: 12 }}>{actionError}</div>}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 10, flexWrap: 'wrap' }}>
-        <input className='input' placeholder='Search models…' value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 220, fontSize: 13 }} />
+        <input className='input' placeholder={t('adminCatalog.searchModelsPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 220, fontSize: 13 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 13, color: '#555' }}>{models.filter((m) => m.is_org_owned).length} custom · {models.filter((m) => !m.is_org_owned).length} global</span>
+          <span style={{ fontSize: 13, color: '#555' }}>{t('adminCatalog.itemCounts', { custom: String(customCount), global: String(globalCount) })}</span>
           <button className='button' onClick={() => setShowAdd((v) => !v)} style={{ fontSize: 13, padding: '5px 14px' }}>
-            {showAdd ? 'Cancel' : '+ Add Model'}
+            {showAdd ? t('adminCatalog.cancel') : t('adminCatalog.addModel')}
           </button>
         </div>
       </div>
@@ -261,27 +276,27 @@ function ModelsTab() {
       {showAdd && (
         <form onSubmit={handleAdd} className='policy-card' style={{ marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Brand</label>
+            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminCatalog.brandLabel')}</label>
             <select className='input' value={draft.brandId} onChange={(e) => setDraft((d) => ({ ...d, brandId: e.target.value }))} required>
-              <option value=''>Select brand…</option>
-              {brands.map((b) => <option key={b.id} value={b.id}>{b.brand_name} ({b.category})</option>)}
+              <option value=''>{t('adminCatalog.selectBrand')}</option>
+              {brands.map((b) => <option key={b.id} value={b.id}>{b.brand_name} ({t(`adminCatalog.category_${b.category}`)})</option>)}
             </select>
           </div>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Model Name</label>
-            <input className='input' value={draft.modelName} onChange={(e) => setDraft((d) => ({ ...d, modelName: e.target.value }))} placeholder='e.g. Phone 2' required style={{ width: 160 }} />
+            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminCatalog.modelNameLabel')}</label>
+            <input className='input' value={draft.modelName} onChange={(e) => setDraft((d) => ({ ...d, modelName: e.target.value }))} placeholder={t('adminCatalog.modelNamePlaceholder')} required style={{ width: 160 }} />
           </div>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Family (optional)</label>
-            <input className='input' value={draft.familyName} onChange={(e) => setDraft((d) => ({ ...d, familyName: e.target.value }))} placeholder='e.g. Phone' style={{ width: 120 }} />
+            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminCatalog.familyLabel')}</label>
+            <input className='input' value={draft.familyName} onChange={(e) => setDraft((d) => ({ ...d, familyName: e.target.value }))} placeholder={t('adminCatalog.familyPlaceholder')} style={{ width: 120 }} />
           </div>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Category</label>
+            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminCatalog.categoryLabel')}</label>
             <select className='input' value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {CATEGORIES.map((c) => <option key={c} value={c}>{t(`adminCatalog.category_${c}`)}</option>)}
             </select>
           </div>
-          <button className='button' type='submit' disabled={saving} style={{ alignSelf: 'flex-end' }}>Save</button>
+          <button className='button' type='submit' disabled={saving} style={{ alignSelf: 'flex-end' }}>{t('adminCatalog.save')}</button>
         </form>
       )}
 
@@ -290,8 +305,8 @@ function ModelsTab() {
           <table width='100%' style={{ borderCollapse: 'collapse', minWidth: 560 }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #f0f0f0', background: '#fafafa' }}>
-                {['Model', 'Brand', 'Category', 'Status', 'Type', ''].map((h) => (
-                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#888' }}>{h}</th>
+                {[t('adminCatalog.colModel'), t('adminCatalog.colBrand'), t('adminCatalog.colCategory'), t('adminCatalog.colStatus'), t('adminCatalog.colType'), ''].map((h, i) => (
+                  <th key={i} style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#888' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -312,18 +327,18 @@ function ModelsTab() {
                   <td style={{ padding: '10px 12px', fontSize: 13 }}>
                     {editId === model.id ? (
                       <select className='input' value={editDraft.category ?? model.category} onChange={(e) => setEditDraft((d) => ({ ...d, category: e.target.value }))}>
-                        {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                        {CATEGORIES.map((c) => <option key={c} value={c}>{t(`adminCatalog.category_${c}`)}</option>)}
                       </select>
-                    ) : model.category}
+                    ) : t(`adminCatalog.category_${model.category}`)}
                   </td>
                   <td style={{ padding: '10px 12px' }}>
                     {editId === model.id ? (
                       <select className='input' value={String(editDraft.active ?? model.active)} onChange={(e) => setEditDraft((d) => ({ ...d, active: e.target.value === 'true' }))}>
-                        <option value='true'>Active</option>
-                        <option value='false'>Inactive</option>
+                        <option value='true'>{t('adminCatalog.active')}</option>
+                        <option value='false'>{t('adminCatalog.inactive')}</option>
                       </select>
                     ) : (
-                      <span style={{ fontSize: 12, fontWeight: 600, color: model.active ? '#166534' : '#991b1b' }}>{model.active ? 'Active' : 'Inactive'}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: model.active ? '#166534' : '#991b1b' }}>{model.active ? t('adminCatalog.active') : t('adminCatalog.inactive')}</span>
                     )}
                   </td>
                   <td style={{ padding: '10px 12px' }}>{model.is_org_owned ? <CustomBadge /> : <GlobalBadge />}</td>
@@ -332,13 +347,13 @@ function ModelsTab() {
                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                         {editId === model.id ? (
                           <>
-                            <button className='button button-small' onClick={() => handleSaveEdit(model.id)} disabled={saving} style={{ fontSize: 12 }}>Save</button>
-                            <button className='button button-small' onClick={() => setEditId(null)} style={{ fontSize: 12, background: '#f3f4f6', color: '#374151' }}>Cancel</button>
+                            <button className='button button-small' onClick={() => handleSaveEdit(model.id)} disabled={saving} style={{ fontSize: 12 }}>{t('adminCatalog.save')}</button>
+                            <button className='button button-small' onClick={() => setEditId(null)} style={{ fontSize: 12, background: '#f3f4f6', color: '#374151' }}>{t('adminCatalog.cancel')}</button>
                           </>
                         ) : (
                           <>
-                            <button className='button button-small' onClick={() => { setEditId(model.id); setEditDraft({}) }} style={{ fontSize: 12 }}>Edit</button>
-                            <button className='button button-small' onClick={() => handleDelete(model.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>Delete</button>
+                            <button className='button button-small' onClick={() => { setEditId(model.id); setEditDraft({}) }} style={{ fontSize: 12 }}>{t('adminCatalog.edit')}</button>
+                            <button className='button button-small' onClick={() => handleDelete(model.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>{t('adminCatalog.delete')}</button>
                           </>
                         )}
                       </div>
@@ -347,7 +362,7 @@ function ModelsTab() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 32, textAlign: 'center', color: '#aaa' }}>No models found.</td></tr>
+                <tr><td colSpan={6} style={{ padding: 32, textAlign: 'center', color: '#aaa' }}>{t('adminCatalog.noModelsFound')}</td></tr>
               )}
             </tbody>
           </table>
@@ -360,6 +375,7 @@ function ModelsTab() {
 // ── Repair Types Tab ──────────────────────────────────────────────────────────
 
 function RepairTypesTab() {
+  const t = useT()
   const [repairTypes, setRepairTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -373,9 +389,9 @@ function RepairTypesTab() {
   useEffect(() => {
     fetch('/admin/api/catalog/repair-types')
       .then((r) => r.json())
-      .then((d) => { if (d.ok) setRepairTypes(d.repairTypes || []); else setError(d.error || 'Failed to load repair types.'); setLoading(false) })
-      .catch(() => { setError('Failed to load repair types.'); setLoading(false) })
-  }, [])
+      .then((d) => { if (d.ok) setRepairTypes(d.repairTypes || []); else setError(d.error || t('adminCatalog.errorLoadRepairTypes')); setLoading(false) })
+      .catch(() => { setError(t('adminCatalog.errorLoadRepairTypes')); setLoading(false) })
+  }, [t])
 
   async function handleAdd(e) {
     e.preventDefault()
@@ -387,7 +403,7 @@ function RepairTypesTab() {
         body: JSON.stringify(draft),
       })
       const json = await res.json()
-      if (!res.ok) { setActionError(json.error || 'Failed to add repair type.'); return }
+      if (!res.ok) { setActionError(json.error || t('adminCatalog.errorAddRepairType')); return }
       setRepairTypes((prev) => [...prev, json.repairType].sort((a, b) => a.repair_name.localeCompare(b.repair_name)))
       setDraft({ repairName: '', category: '', priceModeDefault: 'manual', warrantyDaysDefault: '' })
       setShowAdd(false)
@@ -403,58 +419,61 @@ function RepairTypesTab() {
         body: JSON.stringify(editDraft),
       })
       const json = await res.json()
-      if (!res.ok) { setActionError(json.error || 'Failed to save changes.'); return }
+      if (!res.ok) { setActionError(json.error || t('adminCatalog.errorSaveChanges')); return }
       setRepairTypes((prev) => prev.map((r) => r.id === typeId ? json.repairType : r))
       setEditId(null)
     } finally { setSaving(false) }
   }
 
   async function handleDelete(typeId) {
-    if (!confirm('Delete this repair type? Pricing rules using it will also be removed.')) return
+    if (!confirm(t('adminCatalog.confirmDeleteRepairType'))) return
     setActionError('')
     const res = await fetch(`/admin/api/catalog/repair-types/${typeId}`, { method: 'DELETE' })
     const json = await res.json()
-    if (!res.ok) { setActionError(json.error || 'Failed to delete repair type.'); return }
+    if (!res.ok) { setActionError(json.error || t('adminCatalog.errorDeleteRepairType')); return }
     setRepairTypes((prev) => prev.filter((r) => r.id !== typeId))
   }
 
-  if (loading) return <div style={{ color: 'var(--muted)', padding: 24 }}>Loading…</div>
+  if (loading) return <div style={{ color: 'var(--muted)', padding: 24 }}>{t('adminCatalog.loading')}</div>
   if (error) return <div className='notice-error'>{error}</div>
+
+  const customCount = repairTypes.filter((r) => r.is_org_owned).length
+  const globalCount = repairTypes.filter((r) => !r.is_org_owned).length
 
   return (
     <div>
       {actionError && <div className='notice notice-warn' style={{ marginBottom: 12 }}>{actionError}</div>}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ fontSize: 13, color: '#555' }}>{repairTypes.filter((r) => r.is_org_owned).length} custom · {repairTypes.filter((r) => !r.is_org_owned).length} global</div>
+        <div style={{ fontSize: 13, color: '#555' }}>{t('adminCatalog.itemCounts', { custom: String(customCount), global: String(globalCount) })}</div>
         <button className='button' onClick={() => setShowAdd((v) => !v)} style={{ fontSize: 13, padding: '5px 14px' }}>
-          {showAdd ? 'Cancel' : '+ Add Repair Type'}
+          {showAdd ? t('adminCatalog.cancel') : t('adminCatalog.addRepairType')}
         </button>
       </div>
 
       {showAdd && (
         <form onSubmit={handleAdd} className='policy-card' style={{ marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Repair Name</label>
-            <input className='input' value={draft.repairName} onChange={(e) => setDraft((d) => ({ ...d, repairName: e.target.value }))} placeholder='e.g. Motherboard Repair' required style={{ width: 200 }} />
+            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminCatalog.repairNameLabel')}</label>
+            <input className='input' value={draft.repairName} onChange={(e) => setDraft((d) => ({ ...d, repairName: e.target.value }))} placeholder={t('adminCatalog.repairNamePlaceholder')} required style={{ width: 200 }} />
           </div>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Category (optional)</label>
+            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminCatalog.categoryOptionalLabel')}</label>
             <select className='input' value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}>
-              <option value=''>All devices</option>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              <option value=''>{t('adminCatalog.allDevices')}</option>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{t(`adminCatalog.category_${c}`)}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Price mode</label>
+            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminCatalog.priceModeLabel')}</label>
             <select className='input' value={draft.priceModeDefault} onChange={(e) => setDraft((d) => ({ ...d, priceModeDefault: e.target.value }))}>
-              {PRICE_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
+              {PRICE_MODES.map((m) => <option key={m} value={m}>{t(`adminCatalog.priceMode_${m}`)}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Warranty days</label>
-            <input className='input' type='number' min='0' value={draft.warrantyDaysDefault} onChange={(e) => setDraft((d) => ({ ...d, warrantyDaysDefault: e.target.value }))} placeholder='e.g. 90' style={{ width: 90 }} />
+            <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>{t('adminCatalog.warrantyDaysLabel')}</label>
+            <input className='input' type='number' min='0' value={draft.warrantyDaysDefault} onChange={(e) => setDraft((d) => ({ ...d, warrantyDaysDefault: e.target.value }))} placeholder={t('adminCatalog.warrantyDaysPlaceholder')} style={{ width: 90 }} />
           </div>
-          <button className='button' type='submit' disabled={saving} style={{ alignSelf: 'flex-end' }}>Save</button>
+          <button className='button' type='submit' disabled={saving} style={{ alignSelf: 'flex-end' }}>{t('adminCatalog.save')}</button>
         </form>
       )}
 
@@ -463,8 +482,8 @@ function RepairTypesTab() {
           <table width='100%' style={{ borderCollapse: 'collapse', minWidth: 560 }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #f0f0f0', background: '#fafafa' }}>
-                {['Repair Type', 'Category', 'Price Mode', 'Warranty', 'Status', 'Type', ''].map((h) => (
-                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#888' }}>{h}</th>
+                {[t('adminCatalog.colRepairType'), t('adminCatalog.colCategory'), t('adminCatalog.colPriceMode'), t('adminCatalog.colWarranty'), t('adminCatalog.colStatus'), t('adminCatalog.colType'), ''].map((h, i) => (
+                  <th key={i} style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#888' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -479,31 +498,31 @@ function RepairTypesTab() {
                   <td style={{ padding: '10px 12px', fontSize: 13 }}>
                     {editId === rt.id ? (
                       <select className='input' value={editDraft.category ?? (rt.category || '')} onChange={(e) => setEditDraft((d) => ({ ...d, category: e.target.value }))}>
-                        <option value=''>All</option>
-                        {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                        <option value=''>{t('adminCatalog.all')}</option>
+                        {CATEGORIES.map((c) => <option key={c} value={c}>{t(`adminCatalog.category_${c}`)}</option>)}
                       </select>
-                    ) : (rt.category || 'All')}
+                    ) : (rt.category ? t(`adminCatalog.category_${rt.category}`) : t('adminCatalog.all'))}
                   </td>
                   <td style={{ padding: '10px 12px', fontSize: 13 }}>
                     {editId === rt.id ? (
                       <select className='input' value={editDraft.priceModeDefault ?? rt.price_mode_default} onChange={(e) => setEditDraft((d) => ({ ...d, priceModeDefault: e.target.value }))}>
-                        {PRICE_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
+                        {PRICE_MODES.map((m) => <option key={m} value={m}>{t(`adminCatalog.priceMode_${m}`)}</option>)}
                       </select>
-                    ) : rt.price_mode_default}
+                    ) : t(`adminCatalog.priceMode_${rt.price_mode_default}`)}
                   </td>
                   <td style={{ padding: '10px 12px', fontSize: 13 }}>
                     {editId === rt.id ? (
                       <input className='input' type='number' min='0' value={editDraft.warrantyDaysDefault ?? (rt.warranty_days_default || '')} onChange={(e) => setEditDraft((d) => ({ ...d, warrantyDaysDefault: e.target.value }))} style={{ width: 80 }} />
-                    ) : (rt.warranty_days_default ? `${rt.warranty_days_default}d` : '—')}
+                    ) : (rt.warranty_days_default ? t('adminCatalog.daysShort', { days: String(rt.warranty_days_default) }) : '—')}
                   </td>
                   <td style={{ padding: '10px 12px' }}>
                     {editId === rt.id ? (
                       <select className='input' value={String(editDraft.active ?? rt.active)} onChange={(e) => setEditDraft((d) => ({ ...d, active: e.target.value === 'true' }))}>
-                        <option value='true'>Active</option>
-                        <option value='false'>Inactive</option>
+                        <option value='true'>{t('adminCatalog.active')}</option>
+                        <option value='false'>{t('adminCatalog.inactive')}</option>
                       </select>
                     ) : (
-                      <span style={{ fontSize: 12, fontWeight: 600, color: rt.active ? '#166534' : '#991b1b' }}>{rt.active ? 'Active' : 'Inactive'}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: rt.active ? '#166534' : '#991b1b' }}>{rt.active ? t('adminCatalog.active') : t('adminCatalog.inactive')}</span>
                     )}
                   </td>
                   <td style={{ padding: '10px 12px' }}>{rt.is_org_owned ? <CustomBadge /> : <GlobalBadge />}</td>
@@ -512,13 +531,13 @@ function RepairTypesTab() {
                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                         {editId === rt.id ? (
                           <>
-                            <button className='button button-small' onClick={() => handleSaveEdit(rt.id)} disabled={saving} style={{ fontSize: 12 }}>Save</button>
-                            <button className='button button-small' onClick={() => setEditId(null)} style={{ fontSize: 12, background: '#f3f4f6', color: '#374151' }}>Cancel</button>
+                            <button className='button button-small' onClick={() => handleSaveEdit(rt.id)} disabled={saving} style={{ fontSize: 12 }}>{t('adminCatalog.save')}</button>
+                            <button className='button button-small' onClick={() => setEditId(null)} style={{ fontSize: 12, background: '#f3f4f6', color: '#374151' }}>{t('adminCatalog.cancel')}</button>
                           </>
                         ) : (
                           <>
-                            <button className='button button-small' onClick={() => { setEditId(rt.id); setEditDraft({}) }} style={{ fontSize: 12 }}>Edit</button>
-                            <button className='button button-small' onClick={() => handleDelete(rt.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>Delete</button>
+                            <button className='button button-small' onClick={() => { setEditId(rt.id); setEditDraft({}) }} style={{ fontSize: 12 }}>{t('adminCatalog.edit')}</button>
+                            <button className='button button-small' onClick={() => handleDelete(rt.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>{t('adminCatalog.delete')}</button>
                           </>
                         )}
                       </div>
@@ -527,7 +546,7 @@ function RepairTypesTab() {
                 </tr>
               ))}
               {repairTypes.length === 0 && (
-                <tr><td colSpan={7} style={{ padding: 32, textAlign: 'center', color: '#aaa' }}>No repair types found.</td></tr>
+                <tr><td colSpan={7} style={{ padding: 32, textAlign: 'center', color: '#aaa' }}>{t('adminCatalog.noRepairTypesFound')}</td></tr>
               )}
             </tbody>
           </table>
@@ -540,24 +559,25 @@ function RepairTypesTab() {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function AdminCatalogPage() {
+  const t = useT()
   const [tab, setTab] = useState('brands')
   const TABS = [
-    { key: 'brands', label: 'Brands' },
-    { key: 'models', label: 'Models' },
-    { key: 'repair-types', label: 'Repair Types' },
+    { key: 'brands', label: t('adminCatalog.tabBrands') },
+    { key: 'models', label: t('adminCatalog.tabModels') },
+    { key: 'repair-types', label: t('adminCatalog.tabRepairTypes') },
   ]
 
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='info-card'>
-          <div className='kicker'>Admin — Catalog</div>
-          <h1>Repair Catalog</h1>
-          <p>View the global device catalog and add custom brands, models, and repair types for your shop. Custom items are available alongside global ones when creating pricing rules.</p>
+          <div className='kicker'>{t('adminCatalog.kicker')}</div>
+          <h1>{t('adminCatalog.heading')}</h1>
+          <p>{t('adminCatalog.intro')}</p>
         </div>
 
         <div className='notice notice-warn' style={{ fontSize: 13 }}>
-          <strong>Global items</strong> are maintained by the platform and are read-only. <strong>Custom items</strong> belong to your shop — you can edit or delete them.
+          {t('adminCatalog.globalCustomNotice')}
         </div>
 
         {/* Tab bar */}

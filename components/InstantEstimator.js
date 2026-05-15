@@ -1,7 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 import {
   CATEGORY_OPTIONS,
   formatPriceDisplay,
@@ -43,6 +44,7 @@ const popularEstimates = [
 ]
 
 export default function InstantEstimator() {
+  const t = useT()
   const [category, setCategory] = useState(null)
   const [brand, setBrand] = useState(null)
   const [modelKey, setModelKey] = useState(null)
@@ -119,19 +121,16 @@ export default function InstantEstimator() {
         <div className="site-shell">
           <div className="page-stack">
             <div className="hero-copy" style={{ padding: 32 }}>
-              <div className="eyebrow">Instant estimate</div>
+              <div className="eyebrow">{t('instantEstimate.kicker')}</div>
               <h1 style={{ maxWidth: '16ch', fontSize: 'clamp(2.3rem, 5vw, 3.7rem)' }}>
-                Get your repair price in seconds.
+                {t('instantEstimate.title')}
               </h1>
-              <p>
-                Pick your device and repair type below. No forms, no waiting. See
-                your estimated price instantly.
-              </p>
+              <p>{t('instantEstimate.body')}</p>
             </div>
 
             {/* Step 1: Category */}
             <div style={{ marginTop: 8 }}>
-              <div className="kicker">Step 1: Choose your device type</div>
+              <div className="kicker">{t('instantEstimate.step1')}</div>
               <div className="grid-4" style={{ marginTop: 12 }}>
                 {CATEGORY_OPTIONS.map((option) => (
                   <button
@@ -156,7 +155,7 @@ export default function InstantEstimator() {
             {/* Step 2: Brand */}
             {category && brands.length > 0 && (
               <div style={{ marginTop: 24 }}>
-                <div className="kicker">Step 2: Select brand</div>
+                <div className="kicker">{t('instantEstimate.step2')}</div>
                 <div className="inline-actions" style={{ marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
                   {brands.map((b) => (
                     <button
@@ -175,7 +174,7 @@ export default function InstantEstimator() {
             {/* Step 3: Model */}
             {brand && models.length > 0 && (
               <div style={{ marginTop: 24 }}>
-                <div className="kicker">Step 3: Select model</div>
+                <div className="kicker">{t('instantEstimate.step3')}</div>
                 <div className="field" style={{ marginTop: 12, maxWidth: 400 }}>
                   <select
                     value={modelKey || ''}
@@ -183,7 +182,7 @@ export default function InstantEstimator() {
                     style={{ width: '100%' }}
                   >
                     <option value="" disabled>
-                      Choose a model...
+                      {t('instantEstimate.chooseModel')}
                     </option>
                     {models.map((m) => (
                       <option key={m.modelKey} value={m.modelKey}>
@@ -198,7 +197,7 @@ export default function InstantEstimator() {
             {/* Step 4: Repair type */}
             {modelKey && repairs.length > 0 && (
               <div style={{ marginTop: 24 }}>
-                <div className="kicker">Step 4: What needs fixing?</div>
+                <div className="kicker">{t('instantEstimate.step4')}</div>
                 <div className="inline-actions" style={{ marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
                   {repairs.map((r) => (
                     <button
@@ -217,7 +216,7 @@ export default function InstantEstimator() {
             {/* Instant Estimate Result */}
             {allSelected && (
               <div className="preview-card" style={{ marginTop: 32 }}>
-                <div className="kicker">Your instant estimate</div>
+                <div className="kicker">{t('instantEstimate.resultKicker')}</div>
                 <div className="preview-price" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
                   {formatPriceDisplay(selectedRepair)}
                 </div>
@@ -227,74 +226,74 @@ export default function InstantEstimator() {
 
                 <div className="preview-meta">
                   <div className="preview-meta-row">
-                    <span>Repair cost</span>
+                    <span>{t('instantEstimate.rowRepairCost')}</span>
                     <span>{formatPriceDisplay(selectedRepair)}</span>
                   </div>
                   <div className="preview-meta-row">
-                    <span>Inspection deposit</span>
-                    <span>{selectedRepair.deposit ? `$${selectedRepair.deposit}` : 'Quoted later'}</span>
+                    <span>{t('instantEstimate.rowDeposit')}</span>
+                    <span>{selectedRepair.deposit ? `$${selectedRepair.deposit}` : t('instantEstimate.quotedLater')}</span>
                   </div>
                   <div className="preview-meta-row">
-                    <span>Return shipping</span>
-                    <span>{selectedRepair.shipping ? `$${selectedRepair.shipping}` : 'Quoted later'}</span>
+                    <span>{t('instantEstimate.rowReturnShipping')}</span>
+                    <span>{selectedRepair.shipping ? `$${selectedRepair.shipping}` : t('instantEstimate.quotedLater')}</span>
                   </div>
                   <div className="preview-meta-row">
-                    <span>Expected turnaround</span>
-                    <span>{selectedRepair.turnaround ?? 'After review'}</span>
+                    <span>{t('instantEstimate.rowTurnaround')}</span>
+                    <span>{selectedRepair.turnaround ?? t('instantEstimate.afterReview')}</span>
                   </div>
                   <div className="preview-meta-row">
-                    <span>Warranty</span>
-                    <span>90 days</span>
+                    <span>{t('instantEstimate.rowWarranty')}</span>
+                    <span>{t('instantEstimate.warrantyValue')}</span>
                   </div>
                 </div>
 
                 <div className="info-card" style={{ marginTop: 20 }}>
-                  <div className="kicker">What you will pay</div>
+                  <div className="kicker">{t('instantEstimate.whatYouPayKicker')}</div>
                   <div className="preview-meta" style={{ marginTop: 8 }}>
                     <div className="preview-meta-row">
-                      <span>Deposit (applied to repair)</span>
+                      <span>{t('instantEstimate.rowDepositApplied')}</span>
                       <span>{selectedRepair.deposit ? `$${selectedRepair.deposit}` : '--'}</span>
                     </div>
                     <div className="preview-meta-row">
-                      <span>Remaining balance</span>
+                      <span>{t('instantEstimate.rowRemainingBalance')}</span>
                       <span>
                         {selectedRepair.mode === 'fixed' && selectedRepair.deposit
                           ? `$${selectedRepair.price - selectedRepair.deposit}`
                           : selectedRepair.mode === 'range' && selectedRepair.deposit
                             ? `$${selectedRepair.min - selectedRepair.deposit}–$${selectedRepair.max - selectedRepair.deposit}`
-                            : 'After inspection'}
+                            : t('instantEstimate.afterInspection')}
                       </span>
                     </div>
                     <div className="preview-meta-row">
-                      <span>Return shipping</span>
+                      <span>{t('instantEstimate.rowReturnShipping')}</span>
                       <span>{selectedRepair.shipping ? `$${selectedRepair.shipping}` : '--'}</span>
                     </div>
                     <div className="preview-meta-row" style={{ fontWeight: 700 }}>
-                      <span>Estimated total</span>
+                      <span>{t('instantEstimate.rowEstimatedTotal')}</span>
                       <span>
                         {selectedRepair.mode === 'fixed' && selectedRepair.shipping
                           ? `$${(selectedRepair.price + selectedRepair.shipping).toFixed(2)}`
                           : selectedRepair.mode === 'range' && selectedRepair.shipping
                             ? `$${(selectedRepair.min + selectedRepair.shipping).toFixed(2)}–$${(selectedRepair.max + selectedRepair.shipping).toFixed(2)}`
-                            : 'After inspection'}
+                            : t('instantEstimate.afterInspection')}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="inline-actions" style={{ marginTop: 24, flexWrap: 'wrap', gap: 10 }}>
-                  <Link href={estimateUrl} className="button button-primary">
-                    Proceed with Repair
-                  </Link>
-                  <Link href={estimateUrl} className="button button-secondary">
-                    Get Detailed Estimate
-                  </Link>
+                  <LocalizedLink href={estimateUrl} className="button button-primary">
+                    {t('instantEstimate.proceedWithRepair')}
+                  </LocalizedLink>
+                  <LocalizedLink href={estimateUrl} className="button button-secondary">
+                    {t('instantEstimate.detailedEstimate')}
+                  </LocalizedLink>
                   <button
                     type="button"
                     className="button button-compact button-secondary"
                     onClick={handleCopyLink}
                   >
-                    {copied ? 'Link copied!' : 'Save this estimate'}
+                    {copied ? t('instantEstimate.linkCopied') : t('instantEstimate.saveEstimate')}
                   </button>
                 </div>
               </div>
@@ -302,8 +301,8 @@ export default function InstantEstimator() {
 
             {/* Popular Estimates */}
             <div style={{ marginTop: 48 }}>
-              <div className="kicker">Popular estimates</div>
-              <h2 style={{ marginTop: 4, marginBottom: 16 }}>One-click pricing for common repairs</h2>
+              <div className="kicker">{t('instantEstimate.popularKicker')}</div>
+              <h2 style={{ marginTop: 4, marginBottom: 16 }}>{t('instantEstimate.popularTitle')}</h2>
               <div className="grid-4" style={{ gap: 16 }}>
                 {popularEstimates.map((item) => {
                   const repair = getPricingForSelection(item.modelKey, item.repairKey)

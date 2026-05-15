@@ -1,13 +1,18 @@
 import HelpSearch from '../../components/HelpSearch'
 import HelpCategoryGrid from '../../components/HelpCategoryGrid'
 import { HELP_CATEGORIES } from '../../lib/helpContent'
+import { getT } from '../../lib/i18n/server'
 
-export const metadata = {
-  title: 'Help Center',
-  description: 'Find answers about repair tracking, bookings, payments, and managing your repair shop.',
+export async function generateMetadata() {
+  const t = await getT()
+  return {
+    title: t('helpCenter.metaTitle'),
+    description: t('helpCenter.metaDescription'),
+  }
 }
 
-export default function HelpHomePage() {
+export default async function HelpHomePage() {
+  const t = await getT()
   const operatorCategories = HELP_CATEGORIES.filter((c) => c.audience === 'operator')
   const customerCategories = HELP_CATEGORIES.filter((c) => c.audience === 'customer')
 
@@ -16,10 +21,10 @@ export default function HelpHomePage() {
       {/* Hero */}
       <div style={{ background: 'var(--blue)', padding: '56px 24px 64px', textAlign: 'center' }}>
         <h1 style={{ color: '#fff', fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', margin: '0 0 10px', fontWeight: 800 }}>
-          How can we help?
+          {t('helpCenter.heroTitle')}
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.82)', margin: '0 0 28px', fontSize: '1.05rem' }}>
-          Search articles or browse by category below.
+          {t('helpCenter.heroSubtitle')}
         </p>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <HelpSearch />
@@ -30,14 +35,14 @@ export default function HelpHomePage() {
 
         <section style={{ marginBottom: 48 }}>
           <h2 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: 20, color: 'var(--text)' }}>
-            For shop owners &amp; technicians
+            {t('helpCenter.operatorsHeading')}
           </h2>
           <HelpCategoryGrid categories={operatorCategories} />
         </section>
 
         <section>
           <h2 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: 20, color: 'var(--text)' }}>
-            For customers
+            {t('helpCenter.customersHeading')}
           </h2>
           <HelpCategoryGrid categories={customerCategories} />
         </section>

@@ -1,10 +1,11 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 import AdminSignOutButton from './AdminSignOutButton'
 import AdminPaymentSummaryCard from './AdminPaymentSummaryCard'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function AdminPaymentsPage({ quoteId }) {
   return (
@@ -15,6 +16,7 @@ export default function AdminPaymentsPage({ quoteId }) {
 }
 
 function AdminPaymentsInner({ quoteId }) {
+  const t = useT()
   const [loading, setLoading] = useState(true)
   const [requesting, setRequesting] = useState(false)
   const [error, setError] = useState('')
@@ -33,10 +35,10 @@ function AdminPaymentsInner({ quoteId }) {
           cache: 'no-store',
         })
         const result = await response.json()
-        if (!response.ok) throw new Error(result.error || 'Unable to load payment summary.')
+        if (!response.ok) throw new Error(result.error || t('adminPayments.loadFailed'))
         if (!ignore) setPaymentData(result)
       } catch (err) {
-        if (!ignore) setError(err.message || 'Unable to load payment summary.')
+        if (!ignore) setError(err.message || t('adminPayments.loadFailed'))
       } finally {
         if (!ignore) setLoading(false)
       }
@@ -46,7 +48,7 @@ function AdminPaymentsInner({ quoteId }) {
     return () => {
       ignore = true
     }
-  }, [quoteId])
+  }, [quoteId, t])
 
   const handleRequestFinalBalance = async () => {
     setRequesting(true)
@@ -59,12 +61,12 @@ function AdminPaymentsInner({ quoteId }) {
         headers: { 'Content-Type': 'application/json' },
       })
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Unable to request final balance.')
+      if (!response.ok) throw new Error(result.error || t('adminPayments.requestFailed'))
 
       setSuccess(
         result.amountDue > 0
-          ? `Final balance request sent for $${Number(result.amountDue).toFixed(2)}.`
-          : 'Final balance request sent.'
+          ? t('adminPayments.successWithAmount', { amount: Number(result.amountDue).toFixed(2) })
+          : t('adminPayments.successSimple')
       )
 
       const refreshResponse = await fetch(`/admin/api/quotes/${quoteId}/payment-summary`, {
@@ -73,7 +75,7 @@ function AdminPaymentsInner({ quoteId }) {
       const refreshResult = await refreshResponse.json()
       if (refreshResponse.ok) setPaymentData(refreshResult)
     } catch (err) {
-      setError(err.message || 'Unable to request final balance.')
+      setError(err.message || t('adminPayments.requestFailed'))
     } finally {
       setRequesting(false)
     }
@@ -83,7 +85,7 @@ function AdminPaymentsInner({ quoteId }) {
     return (
       <main className='page-hero'>
         <div className='site-shell'>
-          <div className='policy-card center-card'>Loading payment operations…</div>
+          <div className='policy-card center-card'>{t('adminPayments.loading')}</div>
         </div>
       </main>
     )
@@ -94,12 +96,12 @@ function AdminPaymentsInner({ quoteId }) {
       <main className='page-hero'>
         <div className='site-shell'>
           <div className='policy-card center-card'>
-            <h1>Unable to open payments</h1>
+            <h1>{t('adminPayments.headingUnableToOpen')}</h1>
             <p>{error}</p>
             <div className='inline-actions'>
-              <Link href={`/admin/quotes/${quoteId}`} className='button button-secondary'>
-                Back to quote
-              </Link>
+              <LocalizedLink href={`/admin/quotes/${quoteId}`} className='button button-secondary'>
+                {t('adminPayments.backToQuote')}
+              </LocalizedLink>
             </div>
           </div>
         </div>
@@ -108,7 +110,7 @@ function AdminPaymentsInner({ quoteId }) {
   }
 
   const summary = paymentData?.summary || {}
-  const orderNumber = paymentData?.repairOrder?.order_number || 'Pending'
+  const orderNumber = paymentData?.repairOrder?.order_number || t('adminPayments.orderPending')
 
   return (
     <main className='page-hero'>
@@ -117,10 +119,10 @@ function AdminPaymentsInner({ quoteId }) {
           <div className='quote-top'>
             <div>
               <div className='quote-id'>{paymentData?.quote?.quote_id}</div>
-              <h1 className='quote-title'>Payments · Order #{orderNumber}</h1>
+              <h1 className='quote-title'>{t('adminPayments.title', { order: orderNumber })}</h1>
               <p className='muted'>
                 {[paymentData?.quote?.brand_name, paymentData?.quote?.model_name].filter(Boolean).join(' ')} ·{' '}
-                {paymentData?.quote?.repair_type_key || 'Repair type not set'}
+                {paymentData?.quote?.repair_type_key || t('adminPayments.repairTypeNotSet')}
               </p>
             </div>
             <div className='inline-actions' style={{ margin: 0 }}>
@@ -129,15 +131,15 @@ function AdminPaymentsInner({ quoteId }) {
           </div>
 
           <div className='inline-actions' style={{ marginTop: 0 }}>
-            <Link href={`/admin/quotes/${quoteId}`} className='button button-secondary button-compact'>
-              Back to Quote
-            </Link>
-            <Link href={`/admin/quotes/${quoteId}/order`} className='button button-secondary button-compact'>
-              Back to Repair Order
-            </Link>
-            <Link href={`/track/${quoteId}`} className='button button-secondary button-compact'>
-              Open Customer Tracking
-            </Link>
+            <LocalizedLink href={`/admin/quotes/${quoteId}`} className='button button-secondary button-compact'>
+              {t('adminPayments.backToQuote')}
+            </LocalizedLink>
+            <LocalizedLink href={`/admin/quotes/${quoteId}/order`} className='button button-secondary button-compact'>
+              {t('adminPayments.backToRepairOrder')}
+            </LocalizedLink>
+            <LocalizedLink href={`/track/${quoteId}`} className='button button-secondary button-compact'>
+              {t('adminPayments.openCustomerTracking')}
+            </LocalizedLink>
           </div>
         </div>
 
@@ -146,19 +148,17 @@ function AdminPaymentsInner({ quoteId }) {
             <AdminPaymentSummaryCard quoteId={quoteId} paymentData={paymentData} />
 
             <div className='policy-card'>
-              <div className='kicker'>Final balance operations</div>
-              <h3>Request customer payment</h3>
-              <p>
-                Use this action when the repair is complete and the customer needs to pay the remaining balance before return shipping.
-              </p>
+              <div className='kicker'>{t('adminPayments.finalBalanceKicker')}</div>
+              <h3>{t('adminPayments.finalBalanceTitle')}</h3>
+              <p>{t('adminPayments.finalBalanceIntro')}</p>
               <div className='preview-meta' style={{ marginTop: 18 }}>
                 <div className='preview-meta-row'>
-                  <span>Current final balance due</span>
+                  <span>{t('adminPayments.finalBalanceDueLabel')}</span>
                   <span>${Number(summary.finalBalanceDue || 0).toFixed(2)}</span>
                 </div>
                 <div className='preview-meta-row'>
-                  <span>Shipping blocked</span>
-                  <span>{summary.paymentBlockedShipping ? 'Yes' : 'No'}</span>
+                  <span>{t('adminPayments.shippingBlockedLabel')}</span>
+                  <span>{summary.paymentBlockedShipping ? t('adminPayments.yes') : t('adminPayments.no')}</span>
                 </div>
               </div>
               {error ? <div className='notice' style={{ marginTop: 16 }}>{error}</div> : null}
@@ -170,42 +170,42 @@ function AdminPaymentsInner({ quoteId }) {
                   disabled={requesting || Number(summary.finalBalanceDue || 0) <= 0}
                   onClick={handleRequestFinalBalance}
                 >
-                  {requesting ? 'Requesting…' : 'Request Final Balance'}
+                  {requesting ? t('adminPayments.requestingEllipsis') : t('adminPayments.requestFinalBalance')}
                 </button>
-                <Link href={`/pay/${quoteId}/balance`} className='button button-secondary'>
-                  Open Customer Balance Page
-                </Link>
+                <LocalizedLink href={`/pay/${quoteId}/balance`} className='button button-secondary'>
+                  {t('adminPayments.openCustomerBalance')}
+                </LocalizedLink>
               </div>
             </div>
           </div>
 
           <div className='page-stack'>
             <div className='policy-card'>
-              <div className='kicker'>Payment policy</div>
-              <h3>Operational guidance</h3>
+              <div className='kicker'>{t('adminPayments.policyKicker')}</div>
+              <h3>{t('adminPayments.policyTitle')}</h3>
               <div className='preview-meta' style={{ marginTop: 18 }}>
-                <div className='preview-meta-row'><span>Deposit</span><span>Collected before mail-in when required</span></div>
-                <div className='preview-meta-row'><span>Balance</span><span>Collected before outbound shipping</span></div>
-                <div className='preview-meta-row'><span>Tracking</span><span>Customer can follow status from the tracking page</span></div>
+                <div className='preview-meta-row'><span>{t('adminPayments.policyDepositLabel')}</span><span>{t('adminPayments.policyDepositValue')}</span></div>
+                <div className='preview-meta-row'><span>{t('adminPayments.policyBalanceLabel')}</span><span>{t('adminPayments.policyBalanceValue')}</span></div>
+                <div className='preview-meta-row'><span>{t('adminPayments.policyTrackingLabel')}</span><span>{t('adminPayments.policyTrackingValue')}</span></div>
               </div>
             </div>
 
             <div className='policy-card'>
-              <div className='kicker'>Next pages</div>
-              <h3>Customer-facing links</h3>
+              <div className='kicker'>{t('adminPayments.quickLinksKicker')}</div>
+              <h3>{t('adminPayments.quickLinksTitle')}</h3>
               <div className='inline-actions'>
-                <Link href={`/estimate-review/${quoteId}`} className='button button-secondary'>
-                  Review Page
-                </Link>
-                <Link href={`/mail-in/${quoteId}`} className='button button-secondary'>
-                  Mail-In Page
-                </Link>
-                <Link href={`/track/${quoteId}`} className='button button-secondary'>
-                  Tracking Page
-                </Link>
-                <Link href={`/pay/${quoteId}/balance`} className='button button-secondary'>
-                  Balance Page
-                </Link>
+                <LocalizedLink href={`/estimate-review/${quoteId}`} className='button button-secondary'>
+                  {t('adminPayments.reviewPage')}
+                </LocalizedLink>
+                <LocalizedLink href={`/mail-in/${quoteId}`} className='button button-secondary'>
+                  {t('adminPayments.mailInPage')}
+                </LocalizedLink>
+                <LocalizedLink href={`/track/${quoteId}`} className='button button-secondary'>
+                  {t('adminPayments.trackingPage')}
+                </LocalizedLink>
+                <LocalizedLink href={`/pay/${quoteId}/balance`} className='button button-secondary'>
+                  {t('adminPayments.balancePage')}
+                </LocalizedLink>
               </div>
             </div>
           </div>

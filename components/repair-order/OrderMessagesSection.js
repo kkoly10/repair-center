@@ -1,8 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useT, useLocale } from '../../lib/i18n/TranslationProvider'
 
 export default function OrderMessagesSection({ quoteId }) {
+  const t = useT()
+  const locale = useLocale()
   const [messages, setMessages] = useState([])
   const [messagesLoading, setMessagesLoading] = useState(true)
   const [messageBody, setMessageBody] = useState('')
@@ -41,11 +44,11 @@ export default function OrderMessagesSection({ quoteId }) {
         body: JSON.stringify({ body: messageBody, senderRole: 'admin', internalOnly: messageInternalOnly }),
       })
       const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Unable to send message.')
+      if (!res.ok) throw new Error(result.error || t('adminRepairOrder.messagesErrorSend'))
       setMessages((prev) => [...prev, result.message])
       setMessageBody('')
     } catch (err) {
-      setMessageError(err.message || 'Unable to send message.')
+      setMessageError(err.message || t('adminRepairOrder.messagesErrorSend'))
     } finally {
       setMessageSending(false)
     }
@@ -61,7 +64,7 @@ export default function OrderMessagesSection({ quoteId }) {
         body: JSON.stringify({ action: 'mark_customer_read' }),
       })
       const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Unable to mark messages as read.')
+      if (!res.ok) throw new Error(result.error || t('adminRepairOrder.messagesErrorMarkRead'))
       const now = new Date().toISOString()
       setUnreadCustomerCount(0)
       setMessages((prev) =>
@@ -72,27 +75,33 @@ export default function OrderMessagesSection({ quoteId }) {
         )
       )
     } catch (err) {
-      setMessageError(err.message || 'Unable to mark messages as read.')
+      setMessageError(err.message || t('adminRepairOrder.messagesErrorMarkRead'))
     } finally {
       setMarkingMessagesRead(false)
     }
   }
 
+  const unreadSuffix = unreadCustomerCount > 0
+    ? (unreadCustomerCount === 1
+        ? ` · ${t('adminRepairOrder.messagesUnreadOne', { count: String(unreadCustomerCount) })}`
+        : ` · ${t('adminRepairOrder.messagesUnreadOther', { count: String(unreadCustomerCount) })}`)
+    : ''
+
   return (
     <div className='policy-card'>
-      <div className='kicker'>Messages</div>
+      <div className='kicker'>{t('adminRepairOrder.messagesKicker')}</div>
       <h3>
-        Order communication log
-        {unreadCustomerCount > 0 ? ` · ${unreadCustomerCount} unread customer repl${unreadCustomerCount === 1 ? 'y' : 'ies'}` : ''}
+        {t('adminRepairOrder.messagesHeading')}
+        {unreadSuffix}
       </h3>
       <p style={{ marginBottom: 18 }}>
-        Staff notes and customer-facing messages. Mark internal-only to keep a note visible only to staff.
+        {t('adminRepairOrder.messagesIntro')}
       </p>
 
       <div className='preview-meta' style={{ marginTop: 0 }}>
         {messagesLoading ? (
           <div className='preview-meta-row'>
-            <span>Loading messages…</span>
+            <span>{t('adminRepairOrder.messagesLoading')}</span>
             <span>—</span>
           </div>
         ) : messages.length ? (
@@ -100,16 +109,16 @@ export default function OrderMessagesSection({ quoteId }) {
             <div key={msg.id} className='preview-meta-row'>
               <span>
                 <strong>{msg.sender_role}</strong>
-                {msg.internal_only ? ' (internal)' : ''}: {msg.body}
+                {msg.internal_only ? ` (${t('adminRepairOrder.messagesInternalSuffix')})` : ''}: {msg.body}
               </span>
               <span style={{ whiteSpace: 'nowrap' }}>
-                {new Date(msg.created_at).toLocaleString()}
+                {new Date(msg.created_at).toLocaleString(locale || 'en-US')}
               </span>
             </div>
           ))
         ) : (
           <div className='preview-meta-row'>
-            <span>No messages yet.</span>
+            <span>{t('adminRepairOrder.messagesEmpty')}</span>
             <span>—</span>
           </div>
         )}
@@ -123,19 +132,19 @@ export default function OrderMessagesSection({ quoteId }) {
             onClick={handleMarkCustomerRepliesRead}
             disabled={markingMessagesRead}
           >
-            {markingMessagesRead ? 'Marking…' : 'Mark Customer Replies Read'}
+            {markingMessagesRead ? t('adminRepairOrder.messagesMarking') : t('adminRepairOrder.messagesMarkRead')}
           </button>
         </div>
       )}
 
       <form onSubmit={handleSendMessage} style={{ marginTop: 18 }}>
         <div className='field'>
-          <label htmlFor='message-body'>New message</label>
+          <label htmlFor='message-body'>{t('adminRepairOrder.messagesNewLabel')}</label>
           <textarea
             id='message-body'
             value={messageBody}
             onChange={(e) => setMessageBody(e.target.value)}
-            placeholder='Type a message or internal note…'
+            placeholder={t('adminRepairOrder.messagesNewPlaceholder')}
           />
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, cursor: 'pointer', fontSize: 14 }}>
@@ -144,7 +153,7 @@ export default function OrderMessagesSection({ quoteId }) {
             checked={messageInternalOnly}
             onChange={(e) => setMessageInternalOnly(e.target.checked)}
           />
-          Internal only (not visible to customer)
+          {t('adminRepairOrder.messagesInternalCheckbox')}
         </label>
         {messageError && <div className='notice' style={{ marginTop: 10 }}>{messageError}</div>}
         <div className='inline-actions' style={{ marginTop: 12 }}>
@@ -153,7 +162,7 @@ export default function OrderMessagesSection({ quoteId }) {
             className='button button-primary'
             disabled={messageSending || !messageBody.trim()}
           >
-            {messageSending ? 'Sending…' : 'Send Message'}
+            {messageSending ? t('adminRepairOrder.messagesSending') : t('adminRepairOrder.messagesSend')}
           </button>
         </div>
       </form>

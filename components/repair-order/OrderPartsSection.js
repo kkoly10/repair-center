@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useT } from '../../lib/i18n/TranslationProvider'
 
 export default function OrderPartsSection({ orderId }) {
+  const t = useT()
   const [partsUsed, setPartsUsed] = useState([])
   const [partsTotalCost, setPartsTotalCost] = useState(0)
   const [partsLoading, setPartsLoading] = useState(true)
@@ -66,13 +68,13 @@ export default function OrderPartsSection({ orderId }) {
         }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Failed to add part.')
+      if (!res.ok) throw new Error(json.error || t('adminRepairOrder.partsErrorAdd'))
       await reloadUsage()
       setAddPartId('')
       setAddPartQty('1')
       setAddPartNotes('')
     } catch (err) {
-      setAddPartError(err.message || 'Failed to add part.')
+      setAddPartError(err.message || t('adminRepairOrder.partsErrorAdd'))
     } finally {
       setAddPartSaving(false)
     }
@@ -84,22 +86,22 @@ export default function OrderPartsSection({ orderId }) {
       const res = await fetch(`/admin/api/orders/${orderId}/parts?usageId=${usageId}`, { method: 'DELETE' })
       if (!res.ok) {
         const json = await res.json().catch(() => ({}))
-        setPartsError(json.error || 'Failed to remove part.')
+        setPartsError(json.error || t('adminRepairOrder.partsErrorRemove'))
         return
       }
       await reloadUsage()
     } catch (err) {
-      setPartsError(err.message || 'Failed to remove part.')
+      setPartsError(err.message || t('adminRepairOrder.partsErrorRemove'))
     }
   }
 
   return (
     <div className='policy-card'>
-      <div className='kicker'>Parts &amp; materials</div>
-      <h3>Parts used in this repair</h3>
+      <div className='kicker'>{t('adminRepairOrder.partsKicker')}</div>
+      <h3>{t('adminRepairOrder.partsHeading')}</h3>
 
       {partsLoading ? (
-        <p className='muted' style={{ marginTop: 12 }}>Loading…</p>
+        <p className='muted' style={{ marginTop: 12 }}>{t('adminRepairOrder.partsLoading')}</p>
       ) : (
         <>
           {partsUsed.length > 0 ? (
@@ -107,8 +109,8 @@ export default function OrderPartsSection({ orderId }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    {['Part', 'Qty', 'Cost ea.', 'Total', ''].map((h) => (
-                      <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 700, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)' }}>{h}</th>
+                    {[t('adminRepairOrder.partsColPart'), t('adminRepairOrder.partsColQty'), t('adminRepairOrder.partsColCostEach'), t('adminRepairOrder.partsColTotal'), ''].map((h, i) => (
+                      <th key={i} style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 700, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -129,7 +131,7 @@ export default function OrderPartsSection({ orderId }) {
                           style={{ fontSize: '0.78rem' }}
                           onClick={() => handleRemovePart(row.id)}
                         >
-                          Remove
+                          {t('adminRepairOrder.partsRemove')}
                         </button>
                       </td>
                     </tr>
@@ -137,11 +139,11 @@ export default function OrderPartsSection({ orderId }) {
                 </tbody>
               </table>
               <div style={{ marginTop: 10, textAlign: 'right', fontWeight: 700, fontSize: '0.9rem' }}>
-                Parts total: ${Number(partsTotalCost).toFixed(2)}
+                {t('adminRepairOrder.partsTotal', { amount: Number(partsTotalCost).toFixed(2) })}
               </div>
             </div>
           ) : (
-            <p className='muted' style={{ marginTop: 12 }}>No parts recorded yet.</p>
+            <p className='muted' style={{ marginTop: 12 }}>{t('adminRepairOrder.partsNoneRecorded')}</p>
           )}
 
           {partsError && <p className='notice' style={{ marginTop: 8 }}>{partsError}</p>}
@@ -150,18 +152,18 @@ export default function OrderPartsSection({ orderId }) {
             <form onSubmit={handleAddPart} style={{ marginTop: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, alignItems: 'end' }}>
                 <div>
-                  <label className='label' style={{ fontSize: '0.82rem' }}>Add part</label>
+                  <label className='label' style={{ fontSize: '0.82rem' }}>{t('adminRepairOrder.partsAddPart')}</label>
                   <select className='input' value={addPartId} onChange={(e) => setAddPartId(e.target.value)} required>
-                    <option value=''>— Select part —</option>
+                    <option value=''>{t('adminRepairOrder.partsSelectPart')}</option>
                     {availableParts.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name}{p.sku ? ` (${p.sku})` : ''} — ${Number(p.cost_price).toFixed(2)} · {p.quantity_on_hand} in stock
+                        {p.name}{p.sku ? ` (${p.sku})` : ''} — ${Number(p.cost_price).toFixed(2)} · {t('adminRepairOrder.partsInStock', { count: String(p.quantity_on_hand) })}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className='label' style={{ fontSize: '0.82rem' }}>Qty</label>
+                  <label className='label' style={{ fontSize: '0.82rem' }}>{t('adminRepairOrder.partsQtyLabel')}</label>
                   <input
                     className='input'
                     type='number'
@@ -178,13 +180,13 @@ export default function OrderPartsSection({ orderId }) {
                   disabled={addPartSaving || !addPartId}
                   style={{ alignSelf: 'flex-end' }}
                 >
-                  {addPartSaving ? '…' : 'Add'}
+                  {addPartSaving ? '…' : t('adminRepairOrder.partsAdd')}
                 </button>
               </div>
               <div style={{ marginTop: 8 }}>
                 <input
                   className='input'
-                  placeholder='Notes (optional)'
+                  placeholder={t('adminRepairOrder.partsNotesPlaceholder')}
                   value={addPartNotes}
                   onChange={(e) => setAddPartNotes(e.target.value)}
                 />

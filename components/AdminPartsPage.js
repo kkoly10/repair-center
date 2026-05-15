@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
-import Link from 'next/link'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function AdminPartsPage() {
   return (
@@ -15,6 +16,7 @@ export default function AdminPartsPage() {
 const EMPTY_FORM = { name: '', sku: '', description: '', cost_price: '', quantity_on_hand: '0', low_stock_threshold: '0' }
 
 function AdminPartsPageInner() {
+  const t = useT()
   const [parts, setParts] = useState([])
   const [lowStockCount, setLowStockCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -39,14 +41,14 @@ function AdminPartsPageInner() {
       setError('')
       try {
         const res = await fetch('/admin/api/parts')
-        if (!res.ok) throw new Error('Failed to load parts.')
+        if (!res.ok) throw new Error(t('adminParts.errorLoad'))
         const json = await res.json()
         if (!cancelled) {
           setParts(json.parts || [])
           setLowStockCount(json.lowStockCount || 0)
         }
       } catch (err) {
-        if (!cancelled) setError(err.message || 'Unable to load parts.')
+        if (!cancelled) setError(err.message || t('adminParts.errorLoadUnable'))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -54,7 +56,7 @@ function AdminPartsPageInner() {
 
     load()
     return () => { cancelled = true }
-  }, [])
+  }, [t])
 
   const filtered = parts.filter((p) => {
     if (!showInactive && !p.active) return false
@@ -88,7 +90,7 @@ function AdminPartsPageInner() {
         }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Failed to create part.')
+      if (!res.ok) throw new Error(json.error || t('adminParts.errorCreate'))
 
       // Reload parts
       const reloadRes = await fetch('/admin/api/parts')
@@ -100,7 +102,7 @@ function AdminPartsPageInner() {
       setAddForm(EMPTY_FORM)
       setShowAddForm(false)
     } catch (err) {
-      setAddError(err.message || 'Failed to create part.')
+      setAddError(err.message || t('adminParts.errorCreate'))
     } finally {
       setAddSaving(false)
     }
@@ -138,7 +140,7 @@ function AdminPartsPageInner() {
         }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Failed to update part.')
+      if (!res.ok) throw new Error(json.error || t('adminParts.errorUpdate'))
 
       const newIsLowStock = Number(editForm.low_stock_threshold || 0) > 0 && Number(editForm.quantity_on_hand || 0) <= Number(editForm.low_stock_threshold || 0)
       const oldPart = parts.find((p) => p.id === partId)
@@ -161,7 +163,7 @@ function AdminPartsPageInner() {
       }
       setEditingId(null)
     } catch (err) {
-      setEditError(err.message || 'Failed to update part.')
+      setEditError(err.message || t('adminParts.errorUpdate'))
     } finally {
       setEditSaving(false)
     }
@@ -180,7 +182,7 @@ function AdminPartsPageInner() {
     return (
       <main className='page-hero'>
         <div className='site-shell page-stack'>
-          <div className='policy-card'>Loading parts catalog...</div>
+          <div className='policy-card'>{t('adminParts.loading')}</div>
         </div>
       </main>
     )
@@ -202,29 +204,32 @@ function AdminPartsPageInner() {
 
         {/* Header */}
         <div className='info-card'>
-          <div className='kicker'>Admin workspace</div>
-          <h1>Parts Catalog</h1>
-          <p className='muted'>Track parts inventory and costs used in repairs.</p>
+          <div className='kicker'>{t('adminParts.kicker')}</div>
+          <h1>{t('adminParts.heading')}</h1>
+          <p className='muted'>{t('adminParts.intro')}</p>
           <div className='inline-actions' style={{ marginTop: 12 }}>
             <button className='button button-compact' onClick={() => { setShowAddForm(true); setAddError('') }}>
-              + Add Part
+              {t('adminParts.addPart')}
             </button>
-            <Link href='/admin/quotes' className='button button-secondary button-compact'>
-              Back to Quotes
-            </Link>
+            <LocalizedLink href='/admin/quotes' className='button button-secondary button-compact'>
+              {t('adminParts.backToQuotes')}
+            </LocalizedLink>
           </div>
         </div>
 
         {/* Low stock alert */}
         {lowStockCount > 0 && (
           <div className='notice-warn'>
-            {lowStockCount} part{lowStockCount !== 1 ? 's are' : ' is'} below the low-stock threshold.{' '}
+            {lowStockCount === 1
+              ? t('adminParts.lowStockAlertOne', { count: String(lowStockCount) })
+              : t('adminParts.lowStockAlertOther', { count: String(lowStockCount) })}
+            {' '}
             <button
               className='link-button'
               onClick={() => setShowLowStock((v) => !v)}
               style={{ fontWeight: 600, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
             >
-              {showLowStock ? 'Show all' : 'Show low stock only'}
+              {showLowStock ? t('adminParts.showAll') : t('adminParts.showLowStockOnly')}
             </button>
           </div>
         )}
@@ -232,38 +237,38 @@ function AdminPartsPageInner() {
         {/* Add part form */}
         {showAddForm && (
           <div className='info-card'>
-            <h3 style={{ marginBottom: 16 }}>Add New Part</h3>
+            <h3 style={{ marginBottom: 16 }}>{t('adminParts.addNewPart')}</h3>
             <form onSubmit={handleAdd}>
               <div className='form-grid' style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                 <div>
-                  <label className='label'>Name *</label>
-                  <input className='input' value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder='e.g. iPhone 14 Screen' required />
+                  <label className='label'>{t('adminParts.nameLabel')}</label>
+                  <input className='input' value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder={t('adminParts.namePlaceholder')} required />
                 </div>
                 <div>
-                  <label className='label'>SKU</label>
-                  <input className='input' value={addForm.sku} onChange={(e) => setAddForm((f) => ({ ...f, sku: e.target.value }))} placeholder='e.g. IP14-LCD-OEM' />
+                  <label className='label'>{t('adminParts.skuLabel')}</label>
+                  <input className='input' value={addForm.sku} onChange={(e) => setAddForm((f) => ({ ...f, sku: e.target.value }))} placeholder={t('adminParts.skuPlaceholder')} />
                 </div>
                 <div>
-                  <label className='label'>Cost Price ($)</label>
+                  <label className='label'>{t('adminParts.costLabel')}</label>
                   <input className='input' type='number' min='0' step='0.01' value={addForm.cost_price} onChange={(e) => setAddForm((f) => ({ ...f, cost_price: e.target.value }))} placeholder='0.00' />
                 </div>
                 <div>
-                  <label className='label'>Qty on Hand</label>
+                  <label className='label'>{t('adminParts.qtyLabel')}</label>
                   <input className='input' type='number' min='0' step='1' value={addForm.quantity_on_hand} onChange={(e) => setAddForm((f) => ({ ...f, quantity_on_hand: e.target.value }))} />
                 </div>
                 <div>
-                  <label className='label'>Low Stock Alert At</label>
-                  <input className='input' type='number' min='0' step='1' value={addForm.low_stock_threshold} onChange={(e) => setAddForm((f) => ({ ...f, low_stock_threshold: e.target.value }))} placeholder='0 = disabled' />
+                  <label className='label'>{t('adminParts.lowStockLabel')}</label>
+                  <input className='input' type='number' min='0' step='1' value={addForm.low_stock_threshold} onChange={(e) => setAddForm((f) => ({ ...f, low_stock_threshold: e.target.value }))} placeholder={t('adminParts.lowStockPlaceholder')} />
                 </div>
                 <div>
-                  <label className='label'>Description</label>
-                  <input className='input' value={addForm.description} onChange={(e) => setAddForm((f) => ({ ...f, description: e.target.value }))} placeholder='Optional notes' />
+                  <label className='label'>{t('adminParts.descriptionLabel')}</label>
+                  <input className='input' value={addForm.description} onChange={(e) => setAddForm((f) => ({ ...f, description: e.target.value }))} placeholder={t('adminParts.descriptionPlaceholder')} />
                 </div>
               </div>
               {addError && <p className='notice' style={{ marginBottom: 12 }}>{addError}</p>}
               <div className='inline-actions'>
-                <button className='button button-compact' type='submit' disabled={addSaving}>{addSaving ? 'Saving…' : 'Add Part'}</button>
-                <button className='button button-secondary button-compact' type='button' onClick={() => { setShowAddForm(false); setAddError('') }}>Cancel</button>
+                <button className='button button-compact' type='submit' disabled={addSaving}>{addSaving ? t('adminParts.saving') : t('adminParts.addPartButton')}</button>
+                <button className='button button-secondary button-compact' type='button' onClick={() => { setShowAddForm(false); setAddError('') }}>{t('adminParts.cancel')}</button>
               </div>
             </form>
           </div>
@@ -273,35 +278,35 @@ function AdminPartsPageInner() {
         <div className='list-card'>
           <div className='section-head'>
             <div>
-              <div className='kicker'>Inventory</div>
-              <h3>Parts ({filtered.length})</h3>
+              <div className='kicker'>{t('adminParts.inventoryKicker')}</div>
+              <h3>{t('adminParts.partsCount', { count: String(filtered.length) })}</h3>
             </div>
             <div className='inline-actions'>
               <input
                 className='input'
                 style={{ width: 200 }}
-                placeholder='Search name, SKU…'
+                placeholder={t('adminParts.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
               <label style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input type='checkbox' checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
-                Show inactive
+                {t('adminParts.showInactive')}
               </label>
             </div>
           </div>
 
           {filtered.length === 0 ? (
             <p className='muted' style={{ padding: '12px 0' }}>
-              {parts.length === 0 ? 'No parts yet. Add your first part above.' : 'No parts match your filters.'}
+              {parts.length === 0 ? t('adminParts.emptyAddFirst') : t('adminParts.emptyNoMatch')}
             </p>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    {['Name / SKU', 'Cost', 'In Stock', 'Alert At', 'Status', ''].map((h) => (
-                      <th key={h} style={thStyle}>{h}</th>
+                    {[t('adminParts.colName'), t('adminParts.colCost'), t('adminParts.colInStock'), t('adminParts.colAlertAt'), t('adminParts.colStatus'), ''].map((h, i) => (
+                      <th key={i} style={thStyle}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -311,17 +316,17 @@ function AdminPartsPageInner() {
                       <tr key={part.id} style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle, #fafafa)' }}>
                         <td style={tdStyle} colSpan={6}>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr) auto', gap: 8, alignItems: 'center' }}>
-                            <input className='input' value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} placeholder='Name *' />
-                            <input className='input' value={editForm.sku} onChange={(e) => setEditForm((f) => ({ ...f, sku: e.target.value }))} placeholder='SKU' />
-                            <input className='input' type='number' min='0' step='0.01' value={editForm.cost_price} onChange={(e) => setEditForm((f) => ({ ...f, cost_price: e.target.value }))} placeholder='Cost $' />
-                            <input className='input' type='number' min='0' step='1' value={editForm.quantity_on_hand} onChange={(e) => setEditForm((f) => ({ ...f, quantity_on_hand: e.target.value }))} placeholder='Qty' />
-                            <input className='input' type='number' min='0' step='1' value={editForm.low_stock_threshold} onChange={(e) => setEditForm((f) => ({ ...f, low_stock_threshold: e.target.value }))} placeholder='Alert' />
+                            <input className='input' value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} placeholder={t('adminParts.nameLabel')} />
+                            <input className='input' value={editForm.sku} onChange={(e) => setEditForm((f) => ({ ...f, sku: e.target.value }))} placeholder={t('adminParts.skuShort')} />
+                            <input className='input' type='number' min='0' step='0.01' value={editForm.cost_price} onChange={(e) => setEditForm((f) => ({ ...f, cost_price: e.target.value }))} placeholder={t('adminParts.costShort')} />
+                            <input className='input' type='number' min='0' step='1' value={editForm.quantity_on_hand} onChange={(e) => setEditForm((f) => ({ ...f, quantity_on_hand: e.target.value }))} placeholder={t('adminParts.qtyShort')} />
+                            <input className='input' type='number' min='0' step='1' value={editForm.low_stock_threshold} onChange={(e) => setEditForm((f) => ({ ...f, low_stock_threshold: e.target.value }))} placeholder={t('adminParts.alertShort')} />
                             <div style={{ display: 'flex', gap: 6 }}>
                               <button className='button button-compact' style={{ fontSize: '0.8rem' }} onClick={() => handleEdit(part.id)} disabled={editSaving}>
-                                {editSaving ? '…' : 'Save'}
+                                {editSaving ? '…' : t('adminParts.save')}
                               </button>
                               <button className='button button-secondary button-compact' style={{ fontSize: '0.8rem' }} onClick={() => setEditingId(null)}>
-                                Cancel
+                                {t('adminParts.cancel')}
                               </button>
                             </div>
                           </div>
@@ -341,7 +346,7 @@ function AdminPartsPageInner() {
                           </span>
                           {part.is_low_stock && (
                             <span style={{ marginLeft: 6, fontSize: '0.75rem', background: '#fee2e2', color: '#ef4444', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>
-                              LOW
+                              {t('adminParts.lowBadge')}
                             </span>
                           )}
                         </td>
@@ -350,16 +355,16 @@ function AdminPartsPageInner() {
                         </td>
                         <td style={tdStyle}>
                           <span style={{ fontSize: '0.8rem', color: part.active ? '#16a34a' : 'var(--muted)', fontWeight: 600 }}>
-                            {part.active ? 'Active' : 'Inactive'}
+                            {part.active ? t('adminParts.statusActive') : t('adminParts.statusInactive')}
                           </span>
                         </td>
                         <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
                           <button className='button button-secondary button-compact' style={{ fontSize: '0.8rem', marginRight: 4 }} onClick={() => startEdit(part)}>
-                            Edit
+                            {t('adminParts.edit')}
                           </button>
                           {part.active && (
                             <button className='button button-secondary button-compact' style={{ fontSize: '0.8rem' }} onClick={() => handleDeactivate(part.id)}>
-                              Deactivate
+                              {t('adminParts.deactivate')}
                             </button>
                           )}
                         </td>

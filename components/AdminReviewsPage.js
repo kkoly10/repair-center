@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT, useLocale } from '../lib/i18n/TranslationProvider'
 
 function StarDisplay({ rating, size = 16 }) {
   return (
@@ -14,6 +15,8 @@ function StarDisplay({ rating, size = 16 }) {
 }
 
 export default function AdminReviewsPage() {
+  const t = useT()
+  const locale = useLocale()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -43,22 +46,22 @@ export default function AdminReviewsPage() {
   return (
     <div style={{ padding: '32px 24px', maxWidth: 960, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, gap: 12, flexWrap: 'wrap' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>Customer Reviews</h1>
-        <a href='/admin/api/export/reviews' download style={{ fontSize: '0.875rem', padding: '7px 14px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: 'var(--text)', textDecoration: 'none', whiteSpace: 'nowrap' }}>Export CSV</a>
+        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{t('adminReviews.title')}</h1>
+        <a href='/admin/api/export/reviews' download style={{ fontSize: '0.875rem', padding: '7px 14px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: 'var(--text)', textDecoration: 'none', whiteSpace: 'nowrap' }}>{t('adminReviews.exportCsv')}</a>
       </div>
 
       {loading ? (
-        <p style={{ color: 'var(--muted)' }}>Loading…</p>
+        <p style={{ color: 'var(--muted)' }}>{t('adminReviews.loading')}</p>
       ) : (
         <>
           {/* Summary cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }}>
             <div className='card' style={{ padding: '20px 24px' }}>
-              <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: 6 }}>Total Reviews</div>
+              <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: 6 }}>{t('adminReviews.totalReviews')}</div>
               <div style={{ fontSize: '2rem', fontWeight: 700 }}>{summary.total}</div>
             </div>
             <div className='card' style={{ padding: '20px 24px' }}>
-              <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: 6 }}>Avg Rating</div>
+              <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: 6 }}>{t('adminReviews.avgRating')}</div>
               <div style={{ fontSize: '2rem', fontWeight: 700 }}>{summary.total > 0 ? summary.avgRating.toFixed(1) : '—'}</div>
               {summary.total > 0 && <StarDisplay rating={Math.round(summary.avgRating)} size={14} />}
             </div>
@@ -87,7 +90,7 @@ export default function AdminReviewsPage() {
           <div style={{ marginBottom: 20 }}>
             <input
               type='search'
-              placeholder='Search by customer, device, or comment…'
+              placeholder={t('adminReviews.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
@@ -106,13 +109,19 @@ export default function AdminReviewsPage() {
 
           {/* Reviews table */}
           {filtered.length === 0 ? (
-            <p style={{ color: 'var(--muted)' }}>{reviews.length === 0 ? 'No reviews yet.' : 'No reviews match your search.'}</p>
+            <p style={{ color: 'var(--muted)' }}>{reviews.length === 0 ? t('adminReviews.emptyNone') : t('adminReviews.emptySearch')}</p>
           ) : (
             <div className='card' style={{ overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border, rgba(255,255,255,0.08))' }}>
-                    {['Rating', 'Customer', 'Device', 'Comment', 'Date'].map((h) => (
+                    {[
+                      t('adminReviews.colRating'),
+                      t('adminReviews.colCustomer'),
+                      t('adminReviews.colDevice'),
+                      t('adminReviews.colComment'),
+                      t('adminReviews.colDate'),
+                    ].map((h) => (
                       <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -125,9 +134,9 @@ export default function AdminReviewsPage() {
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: '0.875rem' }}>
                         {r.quoteId ? (
-                          <Link href={`/admin/quotes/${r.quoteId}`} style={{ color: 'var(--accent, #818cf8)', textDecoration: 'none' }}>
+                          <LocalizedLink href={`/admin/quotes/${r.quoteId}`} style={{ color: 'var(--accent, #818cf8)', textDecoration: 'none' }}>
                             {r.customerName || r.quoteId}
-                          </Link>
+                          </LocalizedLink>
                         ) : (r.customerName || '—')}
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: '0.875rem', color: 'var(--muted)' }}>
@@ -143,7 +152,7 @@ export default function AdminReviewsPage() {
                         )}
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: '0.8rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-                        {new Date(r.createdAt).toLocaleDateString()}
+                        {new Date(r.createdAt).toLocaleDateString(locale)}
                       </td>
                     </tr>
                   ))}

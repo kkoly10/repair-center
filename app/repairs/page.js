@@ -1,41 +1,50 @@
-const repairBuckets = [
-  {
-    title: 'Phone repairs',
-    items: [
-      'Screen replacement',
-      'Battery replacement',
-      'Charging port repair',
-      'Rear camera repair',
-      'Speaker and microphone issues',
-      'Software recovery and restore',
-    ],
-  },
-  {
-    title: 'Tablet repairs',
-    items: [
-      'Glass and screen service',
-      'Battery replacement',
-      'Charging issues',
-      'Button and port repairs',
-      'Software troubleshooting',
-    ],
-  },
-  {
-    title: 'Laptop repairs',
-    items: [
-      'Battery replacement',
-      'Keyboard and trackpad repair',
-      'SSD upgrade and installation',
-      'Operating system reinstall',
-      'General cleanup and tune-up',
-    ],
-  },
-]
+import { getT } from '../../lib/i18n/server'
+
+export async function generateMetadata() {
+  const t = await getT()
+  return { title: t('repairsPage.metaTitle') }
+}
 
 const repairImage =
   'https://images.unsplash.com/photo-1771189958197-06850d4828af?auto=format&fit=crop&fm=jpg&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&ixlib=rb-4.1.0&q=80&w=2200'
 
-export default function RepairsPage() {
+export default async function RepairsPage() {
+  const t = await getT()
+
+  const repairBuckets = [
+    {
+      title: t('repairsPage.bucketPhonesTitle'),
+      items: [
+        t('repairsPage.bucketPhone1'),
+        t('repairsPage.bucketPhone2'),
+        t('repairsPage.bucketPhone3'),
+        t('repairsPage.bucketPhone4'),
+        t('repairsPage.bucketPhone5'),
+        t('repairsPage.bucketPhone6'),
+      ],
+    },
+    {
+      title: t('repairsPage.bucketTabletsTitle'),
+      items: [
+        t('repairsPage.bucketTablet1'),
+        t('repairsPage.bucketTablet2'),
+        t('repairsPage.bucketTablet3'),
+        t('repairsPage.bucketTablet4'),
+        t('repairsPage.bucketTablet5'),
+      ],
+    },
+    {
+      title: t('repairsPage.bucketLaptopsTitle'),
+      items: [
+        t('repairsPage.bucketLaptop1'),
+        t('repairsPage.bucketLaptop2'),
+        t('repairsPage.bucketLaptop3'),
+        t('repairsPage.bucketLaptop4'),
+        t('repairsPage.bucketLaptop5'),
+      ],
+    },
+  ]
+
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
@@ -50,7 +59,7 @@ export default function RepairsPage() {
           <div style={{ minHeight: 360, position: 'relative' }}>
             <img
               src={repairImage}
-              alt='Close-up of an electronic circuit board'
+              alt={t('repairsPage.imageAlt')}
               style={{
                 width: '100%',
                 height: '100%',
@@ -61,12 +70,9 @@ export default function RepairsPage() {
           </div>
 
           <div style={{ padding: 28, display: 'grid', alignContent: 'center', gap: 16 }}>
-            <div className='kicker'>Repair services</div>
-            <h1 style={{ margin: 0 }}>Common repairs for the devices people use every day</h1>
-            <p className='muted' style={{ margin: 0, maxWidth: 58 + 'ch' }}>
-              We focus on repair categories that are practical for a mail-in service and easy for
-              customers to start with through the estimate process.
-            </p>
+            <div className='kicker'>{t('repairsPage.kicker')}</div>
+            <h1 style={{ margin: 0 }}>{t('repairsPage.heroTitle')}</h1>
+            <p className='muted' style={{ margin: 0, maxWidth: 58 + 'ch' }}>{t('repairsPage.heroBody')}</p>
           </div>
         </section>
 
@@ -84,12 +90,9 @@ export default function RepairsPage() {
         </div>
 
         <section className='policy-card'>
-          <div className='kicker'>Before you send it in</div>
-          <h3>Some repairs need inspection before final approval</h3>
-          <p>
-            Certain issues, especially liquid damage, no-power problems, or hidden internal damage,
-            may need in-hand inspection before the repair can be fully confirmed.
-          </p>
+          <div className='kicker'>{t('repairsPage.noteKicker')}</div>
+          <h3>{t('repairsPage.noteTitle')}</h3>
+          <p>{t('repairsPage.noteBody')}</p>
         </section>
       </div>
     </main>

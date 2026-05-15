@@ -1,7 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 import { statusPill } from '../lib/statusPills'
 
 const STATUS_FILTERS = ['all', 'active', 'trialing', 'past_due', 'suspended', 'cancelled']
@@ -12,6 +13,7 @@ function fmtDate(iso) {
 }
 
 export default function PlatformOrgsPage() {
+  const t = useT()
   const [orgs,         setOrgs]         = useState([])
   const [loading,      setLoading]      = useState(true)
   const [error,        setError]        = useState('')
@@ -21,9 +23,10 @@ export default function PlatformOrgsPage() {
   useEffect(() => {
     fetch('/platform/api/orgs')
       .then((r) => r.json())
-      .then((json) => { if (json.ok) setOrgs(json.orgs); else setError(json.error || 'Failed to load.') })
-      .catch(() => setError('Failed to load organizations.'))
+      .then((json) => { if (json.ok) setOrgs(json.orgs); else setError(json.error || t('platformAdmin.loadError')) })
+      .catch(() => setError(t('platformAdmin.loadOrgsError')))
       .finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const filtered = orgs.filter((o) => {
@@ -35,20 +38,20 @@ export default function PlatformOrgsPage() {
     return true
   })
 
-  if (loading) return <div className='notice' style={{ margin: 32 }}>Loading…</div>
+  if (loading) return <div className='notice' style={{ margin: 32 }}>{t('platformAdmin.loading')}</div>
   if (error)   return <div className='notice notice-warn' style={{ margin: 32 }}>{error}</div>
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
         <div>
-          <div className='kicker'>Platform Admin</div>
-          <h1 style={{ margin: '4px 0 0', letterSpacing: '-0.02em' }}>Organizations</h1>
+          <div className='kicker'>{t('platformAdmin.kicker')}</div>
+          <h1 style={{ margin: '4px 0 0', letterSpacing: '-0.02em' }}>{t('platformAdmin.navOrgs')}</h1>
         </div>
         <input
           type='search'
           className='search-box'
-          placeholder='Search name or slug…'
+          placeholder={t('platformAdmin.searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ width: 220 }}
@@ -68,7 +71,7 @@ export default function PlatformOrgsPage() {
               className={`button ${active ? 'button-primary' : 'button-secondary'}`}
               style={{ padding: '4px 12px', fontSize: '0.8rem' }}
             >
-              {s === 'all' ? 'All' : statusPill(s).label} ({cnt})
+              {s === 'all' ? t('platformAdmin.filterAll') : statusPill(s).label} ({cnt})
             </button>
           )
         })}
@@ -78,7 +81,14 @@ export default function PlatformOrgsPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--line)', background: 'var(--bg-deep)' }}>
-              {['Organization', 'Status', 'Plan', 'Trial / Renewal', 'Members', 'Joined'].map((h) => (
+              {[
+                t('platformAdmin.tableOrganization'),
+                t('platformAdmin.tableStatus'),
+                t('platformAdmin.tablePlan'),
+                t('platformAdmin.tableTrialRenewal'),
+                t('platformAdmin.tableMembers'),
+                t('platformAdmin.tableJoined'),
+              ].map((h) => (
                 <th
                   key={h}
                   style={{
@@ -95,7 +105,7 @@ export default function PlatformOrgsPage() {
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={6} style={{ padding: '24px 16px', color: 'var(--muted)', textAlign: 'center', fontSize: '0.875rem' }}>
-                  No organizations found.
+                  {t('platformAdmin.noOrgsFound')}
                 </td>
               </tr>
             ) : filtered.map((org) => {
@@ -103,9 +113,9 @@ export default function PlatformOrgsPage() {
               return (
                 <tr key={org.id} style={{ borderBottom: '1px solid var(--line)' }}>
                   <td style={{ padding: '12px 16px' }}>
-                    <Link href={`/platform/orgs/${org.id}`} style={{ fontWeight: 600, color: 'var(--text)' }}>
+                    <LocalizedLink href={`/platform/orgs/${org.id}`} style={{ fontWeight: 600, color: 'var(--text)' }}>
                       {org.name}
-                    </Link>
+                    </LocalizedLink>
                     <div className='id-mono' style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: 2 }}>
                       {org.slug}
                     </div>
@@ -114,7 +124,7 @@ export default function PlatformOrgsPage() {
                     <span className={statusPill(org.status).cls}>{statusPill(org.status).label}</span>
                   </td>
                   <td style={{ padding: '12px 16px', fontSize: '0.875rem', color: 'var(--muted)' }}>
-                    {org.subscription?.plan_key || org.plan_key || 'trial'}
+                    {org.subscription?.plan_key || org.plan_key || t('platformAdmin.planTrial')}
                   </td>
                   <td style={{ padding: '12px 16px', fontSize: '0.875rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
                     {fmtDate(renewalDate)}

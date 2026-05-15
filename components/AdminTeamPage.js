@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function AdminTeamPage() {
   return (
@@ -12,6 +13,7 @@ export default function AdminTeamPage() {
 }
 
 function AdminTeamPageInner({ currentUserId }) {
+  const t = useT()
   const [members, setMembers] = useState([])
   const [invitations, setInvitations] = useState([])
   const [loading, setLoading] = useState(true)
@@ -30,18 +32,19 @@ function AdminTeamPageInner({ currentUserId }) {
   const [cancellingId, setCancellingId] = useState(null)
   const [cancelError, setCancelError] = useState('')
 
-  async function fetchTeam() {
-    try {
-      const res = await fetch('/admin/api/team')
-      if (!res.ok) throw new Error('Failed to load team data.')
-      const json = await res.json()
-      setMembers(json.members || [])
-      setInvitations(json.invitations || [])
-      setLoading(false)
-    } catch (err) {
-      setError(err.message || 'Unable to load team.')
-      setLoading(false)
+  function formatRole(role) {
+    const map = {
+      owner: t('adminTeam.roleOwner'),
+      admin: t('adminTeam.roleAdmin'),
+      tech: t('adminTeam.roleTech'),
+      viewer: t('adminTeam.roleViewer'),
     }
+    return map[role] || role || t('adminTeam.unknown')
+  }
+
+  function formatStatus(status) {
+    if (!status) return t('adminTeam.unknown')
+    return status.charAt(0).toUpperCase() + status.slice(1)
   }
 
   useEffect(() => {
@@ -50,7 +53,7 @@ function AdminTeamPageInner({ currentUserId }) {
     async function load() {
       try {
         const res = await fetch('/admin/api/team')
-        if (!res.ok) throw new Error('Failed to load team data.')
+        if (!res.ok) throw new Error(t('adminTeam.fetchFailed'))
         const json = await res.json()
         if (!cancelled) {
           setMembers(json.members || [])
@@ -59,7 +62,7 @@ function AdminTeamPageInner({ currentUserId }) {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err.message || 'Unable to load team.')
+          setError(err.message || t('adminTeam.loadFailed'))
           setLoading(false)
         }
       }
@@ -67,7 +70,7 @@ function AdminTeamPageInner({ currentUserId }) {
 
     load()
     return () => { cancelled = true }
-  }, [])
+  }, [t])
 
   async function handleRemove(memberId) {
     setRemovingId(memberId)
@@ -77,10 +80,10 @@ function AdminTeamPageInner({ currentUserId }) {
         method: 'DELETE',
       })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json.error || 'Failed to remove member.')
+      if (!res.ok) throw new Error(json.error || t('adminTeam.removeFailed'))
       setMembers((prev) => prev.filter((m) => m.id !== memberId))
     } catch (err) {
-      setRemoveError(err.message || 'Failed to remove member.')
+      setRemoveError(err.message || t('adminTeam.removeFailed'))
     } finally {
       setRemovingId(null)
     }
@@ -96,10 +99,10 @@ function AdminTeamPageInner({ currentUserId }) {
         body: JSON.stringify({ invitationId }),
       })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json.error || 'Failed to cancel invitation.')
+      if (!res.ok) throw new Error(json.error || t('adminTeam.cancelFailed'))
       setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId))
     } catch (err) {
-      setCancelError(err.message || 'Failed to cancel invitation.')
+      setCancelError(err.message || t('adminTeam.cancelFailed'))
     } finally {
       setCancellingId(null)
     }
@@ -117,7 +120,7 @@ function AdminTeamPageInner({ currentUserId }) {
         body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
       })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json.error || 'Failed to send invitation.')
+      if (!res.ok) throw new Error(json.error || t('adminTeam.inviteFailed'))
       if (json.token) {
         setInviteLink(`${window.location.origin}/invite/${json.token}`)
       }
@@ -130,7 +133,7 @@ function AdminTeamPageInner({ currentUserId }) {
         setInvitations(teamJson.invitations || [])
       }
     } catch (err) {
-      setInviteError(err.message || 'Failed to send invitation.')
+      setInviteError(err.message || t('adminTeam.inviteFailed'))
     } finally {
       setSendingInvite(false)
     }
@@ -140,7 +143,7 @@ function AdminTeamPageInner({ currentUserId }) {
     return (
       <main className='page-hero'>
         <div className='site-shell page-stack'>
-          <div className='policy-card'>Loading team...</div>
+          <div className='policy-card'>{t('adminTeam.loading')}</div>
         </div>
       </main>
     )
@@ -162,18 +165,18 @@ function AdminTeamPageInner({ currentUserId }) {
 
         {/* Current Members */}
         <div className='policy-card'>
-          <h2>Team Members</h2>
+          <h2>{t('adminTeam.membersTitle')}</h2>
           {removeError && <div className='notice' style={{ marginTop: 12 }}>{removeError}</div>}
           {members.length === 0 ? (
-            <p className='muted' style={{ marginTop: 12 }}>No team members found.</p>
+            <p className='muted' style={{ marginTop: 12 }}>{t('adminTeam.noMembers')}</p>
           ) : (
             <div style={{ overflowX: 'auto', marginTop: 16 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    <th style={thStyle}>Name</th>
-                    <th style={thStyle}>Role</th>
-                    <th style={thStyle}>Status</th>
+                    <th style={thStyle}>{t('adminTeam.nameHeader')}</th>
+                    <th style={thStyle}>{t('adminTeam.roleHeader')}</th>
+                    <th style={thStyle}>{t('adminTeam.statusHeader')}</th>
                     <th style={thStyle}></th>
                   </tr>
                 </thead>
@@ -181,9 +184,9 @@ function AdminTeamPageInner({ currentUserId }) {
                   {members.map((member) => (
                     <tr key={member.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={tdStyle}>
-                        {member.full_name || member.email || 'Unknown'}
+                        {member.full_name || member.email || t('adminTeam.unknown')}
                         {member.user_id === currentUserId && (
-                          <span className='muted' style={{ marginLeft: 8, fontSize: '0.8rem' }}>(you)</span>
+                          <span className='muted' style={{ marginLeft: 8, fontSize: '0.8rem' }}>{t('adminTeam.youSuffix')}</span>
                         )}
                       </td>
                       <td style={tdStyle}>{formatRole(member.role)}</td>
@@ -195,7 +198,7 @@ function AdminTeamPageInner({ currentUserId }) {
                           onClick={() => handleRemove(member.id)}
                           style={{ fontSize: '0.82rem' }}
                         >
-                          {removingId === member.id ? 'Removing...' : 'Remove'}
+                          {removingId === member.id ? t('adminTeam.removingEllipsis') : t('adminTeam.remove')}
                         </button>
                       </td>
                     </tr>
@@ -208,18 +211,18 @@ function AdminTeamPageInner({ currentUserId }) {
 
         {/* Pending Invitations */}
         <div className='policy-card'>
-          <h2>Pending Invitations</h2>
+          <h2>{t('adminTeam.invitationsTitle')}</h2>
           {cancelError && <div className='notice' style={{ marginTop: 12 }}>{cancelError}</div>}
           {invitations.length === 0 ? (
-            <p className='muted' style={{ marginTop: 12 }}>No pending invitations.</p>
+            <p className='muted' style={{ marginTop: 12 }}>{t('adminTeam.noInvitations')}</p>
           ) : (
             <div style={{ overflowX: 'auto', marginTop: 16 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    <th style={thStyle}>Email</th>
-                    <th style={thStyle}>Role</th>
-                    <th style={thStyle}>Expires</th>
+                    <th style={thStyle}>{t('adminTeam.emailHeader')}</th>
+                    <th style={thStyle}>{t('adminTeam.roleHeader')}</th>
+                    <th style={thStyle}>{t('adminTeam.expiresHeader')}</th>
                     <th style={thStyle}></th>
                   </tr>
                 </thead>
@@ -229,7 +232,7 @@ function AdminTeamPageInner({ currentUserId }) {
                       <td style={tdStyle}>{inv.email}</td>
                       <td style={tdStyle}>{formatRole(inv.role)}</td>
                       <td style={tdStyle}>
-                        {inv.expires_at ? new Date(inv.expires_at).toLocaleDateString() : 'N/A'}
+                        {inv.expires_at ? new Date(inv.expires_at).toLocaleDateString() : t('adminTeam.notAvailable')}
                       </td>
                       <td style={{ ...tdStyle, textAlign: 'right' }}>
                         <button
@@ -238,7 +241,7 @@ function AdminTeamPageInner({ currentUserId }) {
                           onClick={() => handleCancelInvite(inv.id)}
                           style={{ fontSize: '0.82rem' }}
                         >
-                          {cancellingId === inv.id ? 'Cancelling...' : 'Cancel'}
+                          {cancellingId === inv.id ? t('adminTeam.cancellingEllipsis') : t('adminTeam.cancel')}
                         </button>
                       </td>
                     </tr>
@@ -251,39 +254,39 @@ function AdminTeamPageInner({ currentUserId }) {
 
         {/* Invite New Member */}
         <div className='policy-card'>
-          <h2>Invite a Team Member</h2>
+          <h2>{t('adminTeam.inviteTitle')}</h2>
           <form onSubmit={handleSendInvite} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
             <div>
-              <label style={labelStyle}>Email Address</label>
+              <label style={labelStyle}>{t('adminTeam.inviteEmailLabel')}</label>
               <input
                 type='email'
                 required
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 style={inputStyle}
-                placeholder='staff@yourshop.com'
+                placeholder={t('adminTeam.inviteEmailPlaceholder')}
               />
             </div>
             <div>
-              <label style={labelStyle}>Role</label>
+              <label style={labelStyle}>{t('adminTeam.inviteRoleLabel')}</label>
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value)}
                 style={inputStyle}
               >
-                <option value='tech'>Technician</option>
-                <option value='admin'>Admin</option>
+                <option value='tech'>{t('adminTeam.roleTech')}</option>
+                <option value='admin'>{t('adminTeam.roleAdmin')}</option>
               </select>
             </div>
             {inviteError && <div className='notice'>{inviteError}</div>}
             <div>
               <button type='submit' className='button' disabled={sendingInvite}>
-                {sendingInvite ? 'Sending...' : 'Send Invite'}
+                {sendingInvite ? t('adminTeam.sendingEllipsis') : t('adminTeam.sendInvite')}
               </button>
             </div>
             {inviteLink && (
               <div>
-                <label style={{ ...labelStyle, color: '#16a34a' }}>Invite link (share with the new team member):</label>
+                <label style={{ ...labelStyle, color: '#16a34a' }}>{t('adminTeam.inviteLinkLabel')}</label>
                 <input
                   type='text'
                   readOnly
@@ -329,14 +332,4 @@ const inputStyle = {
   borderRadius: 6,
   fontSize: '0.95rem',
   boxSizing: 'border-box',
-}
-
-function formatRole(role) {
-  const map = { owner: 'Owner', admin: 'Admin', tech: 'Technician', viewer: 'Viewer' }
-  return map[role] || role || 'Unknown'
-}
-
-function formatStatus(status) {
-  if (!status) return 'Unknown'
-  return status.charAt(0).toUpperCase() + status.slice(1)
 }

@@ -1,14 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-
-const TYPE_OPTIONS = [
-  { value: 'bug', label: '🐛 Bug report', description: 'Something isn\'t working as expected' },
-  { value: 'feature', label: '💡 Feature request', description: 'I\'d like to see something new or improved' },
-  { value: 'general', label: '💬 General feedback', description: 'Anything else on your mind' },
-]
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function FeedbackPanel({ orgId, prefillEmail, onClose }) {
+  const t = useT()
   const [type, setType] = useState('general')
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState(prefillEmail || '')
@@ -16,6 +12,12 @@ export default function FeedbackPanel({ orgId, prefillEmail, onClose }) {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const panelRef = useRef(null)
+
+  const TYPE_OPTIONS = [
+    { value: 'bug', label: t('customerPortal.feedbackTypeBug'), description: t('customerPortal.feedbackTypeBugDesc') },
+    { value: 'feature', label: t('customerPortal.feedbackTypeFeature'), description: t('customerPortal.feedbackTypeFeatureDesc') },
+    { value: 'general', label: t('customerPortal.feedbackTypeGeneral'), description: t('customerPortal.feedbackTypeGeneralDesc') },
+  ]
 
   // Close on Escape
   useEffect(() => {
@@ -42,10 +44,10 @@ export default function FeedbackPanel({ orgId, prefillEmail, onClose }) {
         }),
       })
       const json = await res.json()
-      if (!res.ok) { setError(json.error || 'Failed to submit. Please try again.'); return }
+      if (!res.ok) { setError(json.error || t('customerPortal.feedbackErrorSubmit')); return }
       setSubmitted(true)
     } catch {
-      setError('Network error. Please try again.')
+      setError(t('customerPortal.feedbackErrorNetwork'))
     } finally {
       setSubmitting(false)
     }
@@ -69,7 +71,7 @@ export default function FeedbackPanel({ orgId, prefillEmail, onClose }) {
         ref={panelRef}
         role='dialog'
         aria-modal='true'
-        aria-label='Submit feedback'
+        aria-label={t('customerPortal.feedbackDialogAria')}
         style={{
           position: 'fixed', bottom: 0, right: 0,
           width: 'min(400px, 100vw)',
@@ -86,11 +88,11 @@ export default function FeedbackPanel({ orgId, prefillEmail, onClose }) {
       >
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <span style={{ fontWeight: 700, fontSize: '1rem' }}>Send feedback</span>
+          <span style={{ fontWeight: 700, fontSize: '1rem' }}>{t('customerPortal.feedbackPanelTitle')}</span>
           <button
             onClick={onClose}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 22, padding: 0, lineHeight: 1 }}
-            aria-label='Close feedback panel'
+            aria-label={t('customerPortal.feedbackCloseAria')}
           >×</button>
         </div>
 
@@ -98,21 +100,21 @@ export default function FeedbackPanel({ orgId, prefillEmail, onClose }) {
           {submitted ? (
             <div style={{ textAlign: 'center', padding: '32px 0' }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>🙏</div>
-              <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: 8 }}>Thanks for your feedback!</div>
+              <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: 8 }}>{t('customerPortal.feedbackThanksTitle')}</div>
               <p style={{ color: 'var(--muted)', fontSize: 14, margin: '0 0 24px' }}>
-                We review every submission and use it to improve the product.
+                {t('customerPortal.feedbackThanksBody')}
               </p>
               <button
                 className='button button-secondary'
                 onClick={onClose}
                 style={{ fontSize: 13 }}
-              >Close</button>
+              >{t('customerPortal.feedbackClose')}</button>
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
               {/* Type selector */}
               <fieldset style={{ border: 'none', padding: 0, margin: '0 0 20px' }}>
-                <legend style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: 8, display: 'block' }}>Type of feedback</legend>
+                <legend style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: 8, display: 'block' }}>{t('customerPortal.feedbackTypeLegend')}</legend>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {TYPE_OPTIONS.map((opt) => (
                     <label
@@ -145,34 +147,34 @@ export default function FeedbackPanel({ orgId, prefillEmail, onClose }) {
               {/* Message */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ fontWeight: 600, fontSize: '0.875rem', display: 'block', marginBottom: 6 }}>
-                  Your message <span style={{ color: 'var(--danger, #dc2626)' }}>*</span>
+                  {t('customerPortal.feedbackMessageLabel')} <span style={{ color: 'var(--danger, #dc2626)' }}>*</span>
                 </label>
                 <textarea
                   className='input'
                   value={message}
                   onChange={(e) => setMessage(e.target.value.slice(0, 1000))}
-                  placeholder='Describe the issue, idea, or feedback in detail…'
+                  placeholder={t('customerPortal.feedbackMessagePlaceholder')}
                   rows={5}
                   required
                   minLength={5}
                   style={{ resize: 'vertical', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: 14 }}
                 />
                 <div style={{ textAlign: 'right', fontSize: 11, color: remaining < 50 ? 'var(--danger, #dc2626)' : 'var(--muted)', marginTop: 4 }}>
-                  {remaining} characters remaining
+                  {t('customerPortal.feedbackCharactersRemaining', { count: remaining })}
                 </div>
               </div>
 
               {/* Email */}
               <div style={{ marginBottom: 20 }}>
                 <label style={{ fontWeight: 600, fontSize: '0.875rem', display: 'block', marginBottom: 6 }}>
-                  Your email <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--muted)' }}>(optional — for follow-up)</span>
+                  {t('customerPortal.feedbackEmailLabel')} <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--muted)' }}>{t('customerPortal.feedbackEmailHint')}</span>
                 </label>
                 <input
                   type='email'
                   className='input'
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder='you@example.com'
+                  placeholder={t('customerPortal.feedbackEmailPlaceholder')}
                   style={{ width: '100%', boxSizing: 'border-box' }}
                 />
               </div>
@@ -185,7 +187,7 @@ export default function FeedbackPanel({ orgId, prefillEmail, onClose }) {
                 disabled={submitting || message.trim().length < 5}
                 style={{ width: '100%' }}
               >
-                {submitting ? 'Sending…' : 'Send feedback'}
+                {submitting ? t('customerPortal.feedbackSending') : t('customerPortal.feedbackSend')}
               </button>
             </form>
           )}

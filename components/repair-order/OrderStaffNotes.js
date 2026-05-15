@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useT } from '../../lib/i18n/TranslationProvider'
 
 export default function OrderStaffNotes({ orderId, initialNotes }) {
+  const t = useT()
   const [notes, setNotes] = useState(initialNotes || '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -20,11 +22,11 @@ export default function OrderStaffNotes({ orderId, initialNotes }) {
         body: JSON.stringify({ notes }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Failed to save notes.')
+      if (!res.ok) throw new Error(json.error || t('adminRepairOrder.staffNotesErrorSave'))
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
-      setError(err.message || 'Failed to save notes.')
+      setError(err.message || t('adminRepairOrder.staffNotesErrorSave'))
     } finally {
       setSaving(false)
     }
@@ -32,22 +34,22 @@ export default function OrderStaffNotes({ orderId, initialNotes }) {
 
   return (
     <form className='policy-card' onSubmit={handleSave}>
-      <div className='kicker'>Internal</div>
-      <h3>Staff notes</h3>
+      <div className='kicker'>{t('adminRepairOrder.staffNotesKicker')}</div>
+      <h3>{t('adminRepairOrder.staffNotesHeading')}</h3>
       <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginTop: 4, marginBottom: 12 }}>
-        Private notes visible only to staff — not shared with the customer.
+        {t('adminRepairOrder.staffNotesIntro')}
       </p>
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         rows={4}
-        placeholder='Add internal notes about this repair…'
+        placeholder={t('adminRepairOrder.staffNotesPlaceholder')}
         style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', marginBottom: 10 }}
       />
       {error && <p className='notice notice-error' style={{ marginBottom: 8 }}>{error}</p>}
-      {success && <p className='notice notice-success' style={{ marginBottom: 8 }}>Notes saved.</p>}
+      {success && <p className='notice notice-success' style={{ marginBottom: 8 }}>{t('adminRepairOrder.staffNotesSaved')}</p>}
       <button type='submit' className='button' disabled={saving}>
-        {saving ? 'Saving…' : 'Save notes'}
+        {saving ? t('adminRepairOrder.saving') : t('adminRepairOrder.staffNotesSave')}
       </button>
     </form>
   )

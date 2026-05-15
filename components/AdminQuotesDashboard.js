@@ -1,21 +1,22 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AdminAuthGate from './AdminAuthGate'
 import QuoteStatusBadge from './QuoteStatusBadge'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 import { getSupabaseBrowser } from '../lib/supabase/browser'
 
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'All requests' },
-  { value: 'submitted', label: 'Submitted' },
-  { value: 'under_review', label: 'Under review' },
-  { value: 'estimate_sent', label: 'Estimate sent' },
-  { value: 'awaiting_customer', label: 'Awaiting customer' },
-  { value: 'approved_for_mail_in', label: 'Approved for mail-in' },
-  { value: 'declined', label: 'Declined' },
-  { value: 'archived', label: 'Archived' },
+const STATUS_KEYS = [
+  { value: 'all', tKey: 'adminQuotes.statusOptionAll' },
+  { value: 'submitted', tKey: 'adminQuotes.statusOptionSubmitted' },
+  { value: 'under_review', tKey: 'adminQuotes.statusOptionUnderReview' },
+  { value: 'estimate_sent', tKey: 'adminQuotes.statusOptionEstimateSent' },
+  { value: 'awaiting_customer', tKey: 'adminQuotes.statusOptionAwaitingCustomer' },
+  { value: 'approved_for_mail_in', tKey: 'adminQuotes.statusOptionApprovedForMailIn' },
+  { value: 'declined', tKey: 'adminQuotes.statusOptionDeclined' },
+  { value: 'archived', tKey: 'adminQuotes.statusOptionArchived' },
 ]
 
 const PAGE_SIZE = 25
@@ -29,6 +30,7 @@ export default function AdminQuotesDashboard() {
 }
 
 function AdminQuotesDashboardInner() {
+  const t = useT()
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeStatus = searchParams.get('status') || 'all'
@@ -36,6 +38,9 @@ function AdminQuotesDashboardInner() {
   const [page, setPage] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
   const [searchInput, setSearchInput] = useState('')
+
+  const guestCustomer = t('adminQuotes.guestCustomer')
+  const manualReview = t('adminQuotes.manualReview')
 
   const loadQuotes = useCallback(async (ignore = { current: false }) => {
     setState((current) => ({ ...current, loading: true, error: '' }))
@@ -95,18 +100,18 @@ function AdminQuotesDashboardInner() {
           totalCount: count || 0,
           items: (items || []).map((item) => ({
             ...item,
-            customer_name: [item.first_name, item.last_name].filter(Boolean).join(' ') || 'Guest customer',
-            price_display: formatPrice(item),
+            customer_name: [item.first_name, item.last_name].filter(Boolean).join(' ') || guestCustomer,
+            price_display: formatPrice(item, manualReview),
             photo_count: photoCountByRequestId[item.id] || 0,
           })),
         })
       }
     } catch (error) {
       if (!ignore.current) {
-        setState({ loading: false, error: error.message || 'Unable to load quotes.', items: [], stats: emptyStats(), totalCount: 0 })
+        setState({ loading: false, error: error.message || t('adminQuotes.errorGeneric'), items: [], stats: emptyStats(), totalCount: 0 })
       }
     }
-  }, [activeStatus, page, searchTerm])
+  }, [activeStatus, page, searchTerm, guestCustomer, manualReview, t])
 
   useEffect(() => {
     const ignore = { current: false }
@@ -115,7 +120,10 @@ function AdminQuotesDashboardInner() {
     return () => { ignore.current = true }
   }, [loadQuotes])
 
-  const activeLabel = useMemo(() => STATUS_OPTIONS.find((option) => option.value === activeStatus)?.label || 'All requests', [activeStatus])
+  const activeLabel = useMemo(() => {
+    const found = STATUS_KEYS.find((option) => option.value === activeStatus)
+    return found ? t(found.tKey) : t('adminQuotes.statusOptionAll')
+  }, [activeStatus, t])
 
   const totalPages = Math.max(1, Math.ceil(state.totalCount / PAGE_SIZE))
 
@@ -140,16 +148,13 @@ function AdminQuotesDashboardInner() {
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='info-card'>
-          <div className='kicker'>Admin workspace</div>
-          <h1>Quote review dashboard</h1>
-          <p>
-            Review incoming estimate requests, open each quote record, and move the customer toward estimate sent,
-            approval, or decline.
-          </p>
+          <div className='kicker'>{t('adminQuotes.kicker')}</div>
+          <h1>{t('adminQuotes.heading')}</h1>
+          <p>{t('adminQuotes.intro')}</p>
           <div style={{ marginTop: 8 }}>
-            <Link href='/admin/analytics' className='button button-secondary button-compact'>
-              View Analytics Dashboard
-            </Link>
+            <LocalizedLink href='/admin/analytics' className='button button-secondary button-compact'>
+              {t('adminQuotes.viewAnalytics')}
+            </LocalizedLink>
           </div>
 
           <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginTop: 14, marginBottom: 14 }}>
@@ -157,33 +162,33 @@ function AdminQuotesDashboardInner() {
               type='text'
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder='Search by Quote ID, email, or name…'
+              placeholder={t('adminQuotes.searchPlaceholder')}
               style={{ flex: 1 }}
             />
-            <button type='submit' className='button button-primary button-compact'>Search</button>
+            <button type='submit' className='button button-primary button-compact'>{t('adminQuotes.searchAction')}</button>
             {searchTerm ? (
-              <button type='button' className='button button-ghost button-compact' onClick={clearSearch}>Clear</button>
+              <button type='button' className='button button-ghost button-compact' onClick={clearSearch}>{t('adminQuotes.clearAction')}</button>
             ) : null}
           </form>
 
           <div className='inline-actions'>
-            {STATUS_OPTIONS.map((option) => (
+            {STATUS_KEYS.map((option) => (
               <button
                 key={option.value}
                 type='button'
                 className={`button ${option.value === activeStatus ? 'button-primary' : 'button-secondary'} button-compact`}
                 onClick={() => handleFilter(option.value)}
               >
-                {option.label}
+                {t(option.tKey)}
               </button>
             ))}
           </div>
         </div>
 
         <div className='grid-4'>
-          {STATUS_OPTIONS.map((option) => (
+          {STATUS_KEYS.map((option) => (
             <div key={option.value} className='feature-card'>
-              <div className='kicker'>{option.label}</div>
+              <div className='kicker'>{t(option.tKey)}</div>
               <h3>{state.stats[option.value] || 0}</h3>
             </div>
           ))}
@@ -192,29 +197,29 @@ function AdminQuotesDashboardInner() {
         <div className='list-card'>
           <div className='section-head' style={{ marginBottom: 0 }}>
             <div>
-              <div className='kicker'>Queue</div>
+              <div className='kicker'>{t('adminQuotes.queueKicker')}</div>
               <h3 style={{ marginBottom: 8 }}>
                 {activeLabel}
-                {searchTerm ? ` matching "${searchTerm}"` : ''}
+                {searchTerm ? t('adminQuotes.queueSearchMatch', { search: searchTerm }) : ''}
               </h3>
               <p className='muted'>
-                Showing {state.items.length} of {state.totalCount} results (page {page + 1} of {totalPages})
+                {t('adminQuotes.queueSubtitle', { shown: state.items.length, total: state.totalCount, page: page + 1, totalPages })}
               </p>
             </div>
           </div>
         </div>
 
         {state.error ? <div className='notice'>{state.error}</div> : null}
-        {state.loading ? <div className='policy-card'>Loading quote requests…</div> : null}
+        {state.loading ? <div className='policy-card'>{t('adminQuotes.loading')}</div> : null}
 
         {!state.loading && !state.items.length ? (
-          <div className='policy-card'>No quote requests match this filter{searchTerm ? ' and search' : ''}.</div>
+          <div className='policy-card'>{searchTerm ? t('adminQuotes.noMatchWithSearch') : t('adminQuotes.noMatchNoSearch')}</div>
         ) : null}
 
         {!state.loading && state.items.length ? (
           <div className='page-stack'>
             {state.items.map((item) => (
-              <Link key={item.id} href={`/admin/quotes/${item.quote_id}`} className='quote-card'>
+              <LocalizedLink key={item.id} href={`/admin/quotes/${item.quote_id}`} className='quote-card'>
                 <div className='quote-top'>
                   <div>
                     <div className='quote-id'>{item.quote_id}</div>
@@ -225,34 +230,34 @@ function AdminQuotesDashboardInner() {
 
                 <div className='quote-summary'>
                   <div className='quote-summary-card'>
-                    <strong>Device</strong>
-                    <span>{[item.brand_name, item.model_name].filter(Boolean).join(' ') || 'Unknown device'}</span>
+                    <strong>{t('adminQuotes.deviceHeader')}</strong>
+                    <span>{[item.brand_name, item.model_name].filter(Boolean).join(' ') || t('adminQuotes.deviceUnknown')}</span>
                   </div>
                   <div className='quote-summary-card'>
-                    <strong>Repair</strong>
-                    <span>{item.repair_type_key || 'Not set'}</span>
+                    <strong>{t('adminQuotes.repairHeader')}</strong>
+                    <span>{item.repair_type_key || t('adminQuotes.repairNotSet')}</span>
                   </div>
                   <div className='quote-summary-card'>
-                    <strong>Estimate</strong>
+                    <strong>{t('adminQuotes.estimateLabel')}</strong>
                     <span>{item.price_display}</span>
                   </div>
                 </div>
 
                 <div className='preview-meta'>
                   <div className='preview-meta-row'>
-                    <span>Submitted</span>
+                    <span>{t('adminQuotes.submittedHeader')}</span>
                     <span>{new Date(item.created_at).toLocaleString()}</span>
                   </div>
                   <div className='preview-meta-row'>
-                    <span>Photos attached</span>
+                    <span>{t('adminQuotes.photosAttached')}</span>
                     <span>{item.photo_count}</span>
                   </div>
                   <div className='preview-meta-row'>
-                    <span>Email</span>
+                    <span>{t('adminQuotes.emailLabel')}</span>
                     <span>{item.guest_email || '—'}</span>
                   </div>
                 </div>
-              </Link>
+              </LocalizedLink>
             ))}
 
             {totalPages > 1 ? (
@@ -263,10 +268,10 @@ function AdminQuotesDashboardInner() {
                   disabled={page === 0}
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                 >
-                  Previous
+                  {t('adminQuotes.previous')}
                 </button>
                 <span style={{ display: 'inline-flex', alignItems: 'center', fontWeight: 700, fontSize: '0.92rem' }}>
-                  Page {page + 1} of {totalPages}
+                  {t('adminQuotes.pageOf', { page: page + 1, totalPages })}
                 </span>
                 <button
                   type='button'
@@ -274,7 +279,7 @@ function AdminQuotesDashboardInner() {
                   disabled={page >= totalPages - 1}
                   onClick={() => setPage((p) => p + 1)}
                 >
-                  Next
+                  {t('adminQuotes.next')}
                 </button>
               </div>
             ) : null}
@@ -309,10 +314,10 @@ function buildStats(rows) {
   return stats
 }
 
-function formatPrice(item) {
+function formatPrice(item, manualReviewLabel) {
   if (item.preliminary_price_fixed != null) return `$${Number(item.preliminary_price_fixed).toFixed(2)}`
   if (item.preliminary_price_min != null && item.preliminary_price_max != null) {
     return `$${Number(item.preliminary_price_min).toFixed(2)}–$${Number(item.preliminary_price_max).toFixed(2)}`
   }
-  return 'Manual review'
+  return manualReviewLabel
 }
