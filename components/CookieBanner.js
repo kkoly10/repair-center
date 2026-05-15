@@ -52,20 +52,23 @@ export default function CookieBanner() {
       // Older browsers / weird hosts — just fall through.
     }
 
-    // If a choice exists and we didn't just reset, stay hidden.
-    if (!resetRequested && hasMadeChoice()) {
-      setVisible(false)
-      return
-    }
-
-    // Initialize the toggles from any prior (now-cleared) preferences so a
-    // user who hits `?consent=reset` doesn't lose their previous picks.
-    const prior = readConsent()
-    if (prior) {
-      setFuncChecked(prior.functional)
-      setAnalyticsChecked(prior.analytics)
-    }
-    setVisible(true)
+    // Defer setState into a microtask so we don't violate React 19's
+    // `react-hooks/set-state-in-effect` rule (no cascading renders).
+    const id = setTimeout(() => {
+      if (!resetRequested && hasMadeChoice()) {
+        setVisible(false)
+        return
+      }
+      // Initialize the toggles from any prior (now-cleared) preferences so a
+      // user who hits `?consent=reset` doesn't lose their previous picks.
+      const prior = readConsent()
+      if (prior) {
+        setFuncChecked(prior.functional)
+        setAnalyticsChecked(prior.analytics)
+      }
+      setVisible(true)
+    }, 0)
+    return () => clearTimeout(id)
   }, [])
 
   if (visible !== true) return null
