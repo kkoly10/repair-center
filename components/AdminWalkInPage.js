@@ -3,13 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminAuthGate from './AdminAuthGate'
+import { useT } from '../lib/i18n/TranslationProvider'
 
-const CATEGORIES = [
-  { key: 'phone', label: 'Phone' },
-  { key: 'tablet', label: 'Tablet' },
-  { key: 'laptop', label: 'Laptop' },
-  { key: 'other', label: 'Other' },
-]
+const CATEGORY_KEYS = ['phone', 'tablet', 'laptop', 'other']
 
 export default function AdminWalkInPage() {
   return (
@@ -20,7 +16,9 @@ export default function AdminWalkInPage() {
 }
 
 function WalkInWizard() {
+  const t = useT()
   const router = useRouter()
+  const CATEGORIES = CATEGORY_KEYS.map((key) => ({ key, label: t(`adminWalkin.category_${key}`) }))
   const [step, setStep] = useState(1)
 
   // Step 1: customer
