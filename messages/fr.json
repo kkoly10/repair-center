@@ -1809,6 +1809,7 @@
     "backToQueue": "Retour à la file d'attente",
     "quoteSaved": "Examen du devis enregistré.",
     "saveFailed": "Impossible d'enregistrer l'examen du devis.",
+    "depositMarkFailed": "Échec du marquage de l'acompte comme payé.",
     "quoteNotFound": "Demande de devis introuvable.",
     "loadFailed": "Impossible de charger la demande de devis.",
     "createEstimate": "Créer un devis",

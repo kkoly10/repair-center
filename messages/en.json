@@ -1819,6 +1819,7 @@
     "backToQueue": "Back to queue",
     "quoteSaved": "Quote review saved.",
     "saveFailed": "Unable to save quote review.",
+    "depositMarkFailed": "Failed to mark deposit paid.",
     "quoteNotFound": "Quote request not found.",
     "loadFailed": "Unable to load quote request.",
     "createEstimate": "Create Estimate",

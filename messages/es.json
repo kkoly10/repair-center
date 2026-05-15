@@ -1809,6 +1809,7 @@
     "backToQueue": "Volver a la cola",
     "quoteSaved": "Revisión del presupuesto guardada.",
     "saveFailed": "No se pudo guardar la revisión del presupuesto.",
+    "depositMarkFailed": "No se pudo marcar el depósito como pagado.",
     "quoteNotFound": "Solicitud de presupuesto no encontrada.",
     "loadFailed": "No se pudo cargar la solicitud de presupuesto.",
     "createEstimate": "Crear presupuesto",

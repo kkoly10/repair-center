@@ -1809,6 +1809,7 @@
     "backToQueue": "Voltar à fila",
     "quoteSaved": "Revisão do orçamento guardada.",
     "saveFailed": "Não foi possível guardar a revisão do orçamento.",
+    "depositMarkFailed": "Falha ao marcar o sinal como pago.",
     "quoteNotFound": "Pedido de orçamento não encontrado.",
     "loadFailed": "Não foi possível carregar o pedido de orçamento.",
     "createEstimate": "Criar orçamento",
