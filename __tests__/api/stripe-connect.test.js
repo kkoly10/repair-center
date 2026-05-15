@@ -171,6 +171,26 @@ describe('POST /api/billing/connect/webhook', () => {
   const { POST } = require('../../app/api/billing/connect/webhook/route')
   afterEach(() => jest.clearAllMocks())
 
+  it('returns 500 when STRIPE_CONNECT_WEBHOOK_SECRET is not set', async () => {
+    delete process.env.STRIPE_CONNECT_WEBHOOK_SECRET
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x'
+    Stripe.mockImplementation(() => ({}))
+
+    const req = { text: jest.fn().mockResolvedValue(''), headers: { get: jest.fn().mockReturnValue('sig') } }
+    const res = await POST(req)
+    expect(res.status).toBe(500)
+  })
+
+  it('returns 400 when stripe-signature header is missing', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x'
+    process.env.STRIPE_CONNECT_WEBHOOK_SECRET = 'whsec_test'
+    Stripe.mockImplementation(() => ({}))
+
+    const req = { text: jest.fn().mockResolvedValue('payload'), headers: { get: jest.fn().mockReturnValue(null) } }
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+  })
+
   it('returns 400 on bad signature', async () => {
     process.env.STRIPE_SECRET_KEY = 'sk_test_x'
     process.env.STRIPE_CONNECT_WEBHOOK_SECRET = 'whsec_test'
