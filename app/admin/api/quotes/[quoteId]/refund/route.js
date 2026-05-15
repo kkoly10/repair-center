@@ -116,9 +116,41 @@ export async function POST(request, context) {
     if (amountCents <= 0) {
       return NextResponse.json({ error: 'Refund amount must be greater than zero.' }, { status: 400 })
     }
-    if (amountCents > paymentAmountCents) {
+
+    // Authoritative remaining-refundable from Stripe. Validates against
+    // prior refunds on this PaymentIntent (whether they were issued through
+    // this app or directly in the Stripe dashboard) before we attempt a
+    // refund Stripe would reject.
+    const stripe = getStripe()
+    let remainingCents = paymentAmountCents
+    try {
+      const pi = await stripe.paymentIntents.retrieve(payment.provider_payment_intent_id)
+      // pi.amount is the original charge in the smallest currency unit; the
+      // running sum of refunds is in pi.amount_refunded. Fall back to the DB
+      // payment amount only if Stripe's response is unexpectedly empty.
+      if (pi && typeof pi.amount === 'number') {
+        remainingCents = Math.max(0, pi.amount - (pi.amount_refunded || 0))
+      }
+    } catch (piError) {
+      // Don't fail the whole refund if Stripe can't fetch the PI — log and
+      // proceed with the DB-derived cap. Stripe will still reject overage
+      // server-side; our error path catches it below.
+      reportError(piError, {
+        area: 'admin-refund',
+        stage: 'paymentIntent-retrieve',
+        quoteRequestId: quoteRequest.id,
+        paymentId,
+      })
+    }
+
+    if (amountCents > remainingCents) {
+      const alreadyRefundedCents = paymentAmountCents - remainingCents
       return NextResponse.json(
-        { error: 'Refund amount cannot exceed the original payment amount.' },
+        {
+          error: 'Refund amount exceeds the remaining refundable amount on this payment.',
+          remainingCents,
+          alreadyRefundedCents,
+        },
         { status: 400 }
       )
     }
@@ -133,8 +165,6 @@ export async function POST(request, context) {
 
     if (settingsError) throw settingsError
     const isConnect = !!paymentSettings?.stripe_connect_account_id
-
-    const stripe = getStripe()
 
     let refund
     try {

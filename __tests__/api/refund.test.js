@@ -57,11 +57,21 @@ function paidStripePayment(overrides = {}) {
   }
 }
 
-function mockStripeOk() {
+// `piAmountRefunded` (default 0) lets a test simulate a partially-refunded
+// PaymentIntent so we can verify the remaining-cap check against Stripe state.
+function mockStripeOk({ piAmount = 5000, piAmountRefunded = 0 } = {}) {
   process.env.STRIPE_SECRET_KEY = 'sk_test'
   const refundsCreate = jest.fn().mockResolvedValue({ id: REFUND_ID })
-  Stripe.mockImplementation(() => ({ refunds: { create: refundsCreate } }))
-  return refundsCreate
+  const paymentIntentsRetrieve = jest.fn().mockResolvedValue({
+    id: PAYMENT_INTENT_ID,
+    amount: piAmount,
+    amount_refunded: piAmountRefunded,
+  })
+  Stripe.mockImplementation(() => ({
+    refunds: { create: refundsCreate },
+    paymentIntents: { retrieve: paymentIntentsRetrieve },
+  }))
+  return { refundsCreate, paymentIntentsRetrieve }
 }
 
 function buildSupabase({ payment = paidStripePayment(), connectAccountId = null } = {}) {
@@ -134,7 +144,7 @@ describe('POST /admin/api/quotes/[quoteId]/refund', () => {
   test('happy path: calls Stripe with right args, inserts negative-amount refund row, returns refund id', async () => {
     const supabase = buildSupabase()
     getSupabaseAdmin.mockReturnValue(supabase)
-    const refundsCreate = mockStripeOk()
+    const { refundsCreate } = mockStripeOk()
 
     const res = await refundPOST(
       makeRequest({ paymentId: PAYMENT_ID, amountCents: 5000, reason: 'Customer changed mind' }),
@@ -185,7 +195,7 @@ describe('POST /admin/api/quotes/[quoteId]/refund', () => {
   test('Stripe Connect: passes reverse_transfer: true when org has stripe_connect_account_id', async () => {
     const supabase = buildSupabase({ connectAccountId: 'acct_test_789' })
     getSupabaseAdmin.mockReturnValue(supabase)
-    const refundsCreate = mockStripeOk()
+    const { refundsCreate } = mockStripeOk()
 
     const res = await refundPOST(
       makeRequest({ paymentId: PAYMENT_ID, amountCents: 5000 }),
@@ -210,6 +220,9 @@ describe('POST /admin/api/quotes/[quoteId]/refund', () => {
     const stripeError = new Error('charge_already_refunded')
     Stripe.mockImplementation(() => ({
       refunds: { create: jest.fn().mockRejectedValue(stripeError) },
+      paymentIntents: {
+        retrieve: jest.fn().mockResolvedValue({ id: PAYMENT_INTENT_ID, amount: 5000, amount_refunded: 0 }),
+      },
     }))
 
     const res = await refundPOST(
@@ -227,6 +240,41 @@ describe('POST /admin/api/quotes/[quoteId]/refund', () => {
         quoteRequestId: QUOTE_REQUEST_ID,
         paymentId: PAYMENT_ID,
       })
+    )
+  })
+
+  test('400 when amount exceeds remaining (Stripe shows prior refunds on the PaymentIntent)', async () => {
+    // Original payment was $50.00 (5000c); $30.00 (3000c) already refunded
+    // elsewhere. A request for $30.00 more must be rejected — only $20.00
+    // remains refundable.
+    const supabase = buildSupabase()
+    getSupabaseAdmin.mockReturnValue(supabase)
+    mockStripeOk({ piAmount: 5000, piAmountRefunded: 3000 })
+
+    const res = await refundPOST(
+      makeRequest({ paymentId: PAYMENT_ID, amountCents: 3000 }),
+      makeContext()
+    )
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toMatch(/exceeds.*remaining/i)
+    expect(body.remainingCents).toBe(2000)
+    expect(body.alreadyRefundedCents).toBe(3000)
+  })
+
+  test('200 when amount equals remaining after prior partial refund', async () => {
+    // $50 charged, $30 already refunded → $20 remaining. Request $20 → ok.
+    const supabase = buildSupabase()
+    getSupabaseAdmin.mockReturnValue(supabase)
+    const { refundsCreate } = mockStripeOk({ piAmount: 5000, piAmountRefunded: 3000 })
+
+    const res = await refundPOST(
+      makeRequest({ paymentId: PAYMENT_ID, amountCents: 2000 }),
+      makeContext()
+    )
+    expect(res.status).toBe(200)
+    expect(refundsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 2000 })
     )
   })
 })
