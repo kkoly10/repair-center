@@ -1,10 +1,10 @@
 'use client'
 
-import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 import {
-  CATEGORY_OPTIONS,
   formatPriceDisplay,
   getBrandsByCategory,
   getCatalogEntry,
@@ -13,29 +13,30 @@ import {
   getRepairsByModel,
 } from '../lib/repairCatalog'
 
-const DEVICE_TILES = [
-  { key: 'phone',  label: 'Phone',  icon: '📱' },
-  { key: 'tablet', label: 'Tablet', icon: '⬛' },
-  { key: 'laptop', label: 'Laptop', icon: '💻' },
-  { key: 'other',  label: 'Other',  icon: '🔧' },
+const DEVICE_TILE_KEYS = [
+  { key: 'phone',  icon: '📱', labelKey: 'estimateForm.deviceTilePhone' },
+  { key: 'tablet', icon: '⬛', labelKey: 'estimateForm.deviceTileTablet' },
+  { key: 'laptop', icon: '💻', labelKey: 'estimateForm.deviceTileLaptop' },
+  { key: 'other',  icon: '🔧', labelKey: 'estimateForm.deviceTileOther' },
 ]
 
 const DEVICE_TO_CATEGORY = { phone: 'phone', tablet: 'tablet', laptop: 'laptop', other: 'other' }
 
 const TOTAL_STEPS = 5
 
-function ProgressBar({ step }) {
+function ProgressBar({ step, t }) {
   return (
     <div className='form-progress-wrap'>
       <div className='form-progress'>
         <div className='form-progress-fill' style={{ width: `${(step / TOTAL_STEPS) * 100}%` }} />
       </div>
-      <span className='form-progress-label'>Step {step} of {TOTAL_STEPS}</span>
+      <span className='form-progress-label'>{t('estimateForm.progressLabel', { step, total: TOTAL_STEPS })}</span>
     </div>
   )
 }
 
 export default function EstimateForm({ orgSlug, prefillContact }) {
+  const t                = useT()
   const searchParams    = useSearchParams()
   const resolvedOrgSlug = orgSlug || searchParams.get('shop') || process.env.NEXT_PUBLIC_DEFAULT_ORG_SLUG || ''
 
@@ -69,7 +70,6 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
 
   const didRestoreHash = useRef(false)
 
-  // Hash routing: restore step from hash on mount, sync hash on change
   useEffect(() => {
     if (!didRestoreHash.current) {
       didRestoreHash.current = true
@@ -85,7 +85,6 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
     window.location.hash = `step-${step}`
   }, [step])
 
-  // DB pricing
   useEffect(() => {
     if (!resolvedOrgSlug) return
     fetch(`/api/pricing/${resolvedOrgSlug}`)
@@ -154,7 +153,7 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
     const fix = db?.public_price_fixed ?? s?.price
     const min = db?.public_price_min   ?? s?.min
     if (fix)  return `$${fix}`
-    if (min)  return `from $${min}`
+    if (min)  return t('estimateForm.tilePriceFrom', { price: `$${min}` })
     return null
   }
 
@@ -162,7 +161,7 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
     e.preventDefault()
     const phoneDigits = contact.phone.replace(/\D/g, '')
     if (contact.phone && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
-      setPhoneError('Enter a valid phone number with at least 10 digits.')
+      setPhoneError(t('estimateForm.errors.phoneInvalid'))
       return
     }
     setPhoneError('')
@@ -183,17 +182,16 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
 
       const res    = await fetch('/api/quote-requests', { method: 'POST', body: fd })
       const json   = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Unable to submit estimate request.')
+      if (!res.ok) throw new Error(json.error || t('estimateForm.errors.submitFailed'))
       setResult(json)
       window.location.hash = ''
     } catch (err) {
-      setSubmitError(err.message || 'Unable to submit.')
+      setSubmitError(err.message || t('estimateForm.errors.submitFailed'))
     } finally {
       setSubmitting(false)
     }
   }
 
-  // ── Success state ──────────────────────────────────────────────────────────
   if (result) {
     const trackHref = resolvedOrgSlug
       ? `/shop/${resolvedOrgSlug}/track/${result.quoteId}`
@@ -203,20 +201,20 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
         <div className='site-shell' style={{ maxWidth: 560, paddingTop: 48, paddingBottom: 64 }}>
           <div className='info-card' style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🎉</div>
-            <div className='kicker'>Request received</div>
-            <h1 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', marginBottom: 8 }}>You&apos;re all set!</h1>
+            <div className='kicker'>{t('estimateForm.successKicker')}</div>
+            <h1 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', marginBottom: 8 }}>{t('estimateForm.successTitle')}</h1>
             <p style={{ color: 'var(--muted)', marginBottom: 4 }}>
-              Quote ID: <span className='id-mono' style={{ fontWeight: 700, color: 'var(--text)' }}>{result.quoteId}</span>
+              {t('estimateForm.successQuoteId')} <span className='id-mono' style={{ fontWeight: 700, color: 'var(--text)' }}>{result.quoteId}</span>
             </p>
-            <p style={{ color: 'var(--muted)', margin: '0 0 28px' }}>We&apos;ll review your request and email you a detailed estimate, usually within one business day.</p>
+            <p style={{ color: 'var(--muted)', margin: '0 0 28px' }}>{t('estimateForm.successText')}</p>
 
             <div className='steps-grid' style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: 28 }}>
               {[
-                { icon: '🔍', step: '1', desc: 'We review your photos and device details' },
-                { icon: '📋', step: '2', desc: 'We send you a detailed estimate by email' },
-                { icon: '🚀', step: '3', desc: 'You approve and mail your device to us' },
-              ].map(({ icon, step: s, desc }) => (
-                <div key={s} className='step-tile' style={{ background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', padding: '16px 12px', alignItems: 'center', textAlign: 'center' }}>
+                { icon: '🔍', desc: t('estimateForm.successStep1') },
+                { icon: '📋', desc: t('estimateForm.successStep2') },
+                { icon: '🚀', desc: t('estimateForm.successStep3') },
+              ].map(({ icon, desc }, i) => (
+                <div key={i} className='step-tile' style={{ background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', padding: '16px 12px', alignItems: 'center', textAlign: 'center' }}>
                   <span style={{ fontSize: '1.4rem' }}>{icon}</span>
                   <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--muted)', lineHeight: 1.4 }}>{desc}</p>
                 </div>
@@ -224,7 +222,7 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
             </div>
 
             <div className='inline-actions' style={{ justifyContent: 'center' }}>
-              <Link href={trackHref} className='button button-primary'>Track my repair →</Link>
+              <LocalizedLink href={trackHref} className='button button-primary'>{t('estimateForm.successTrackButton')}</LocalizedLink>
             </div>
           </div>
         </div>
@@ -232,22 +230,20 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
     )
   }
 
-  // ── Multi-step form ────────────────────────────────────────────────────────
   return (
     <div className='page-hero'>
       <div className='site-shell' style={{ maxWidth: 600, paddingTop: 40, paddingBottom: 64 }}>
-        <ProgressBar step={step} />
+        <ProgressBar step={step} t={t} />
 
-        {/* ─ Step 1: Device type ─ */}
         {step === 1 && (
           <div className='page-stack'>
             <div>
-              <div className='kicker'>Step 1 — Device</div>
-              <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', margin: '4px 0 6px' }}>What type of device?</h1>
-              <p style={{ color: 'var(--muted)', margin: 0 }}>Select the device you need repaired to get started.</p>
+              <div className='kicker'>{t('estimateForm.kickerStep1')}</div>
+              <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', margin: '4px 0 6px' }}>{t('estimateForm.step1Title')}</h1>
+              <p style={{ color: 'var(--muted)', margin: 0 }}>{t('estimateForm.step1Subtitle')}</p>
             </div>
             <div className='step-tiles-grid'>
-              {DEVICE_TILES.map(({ key, label, icon }) => (
+              {DEVICE_TILE_KEYS.map(({ key, labelKey, icon }) => (
                 <button
                   key={key}
                   type='button'
@@ -259,52 +255,52 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
                   }}
                 >
                   <span className='device-tile-icon'>{icon}</span>
-                  <span className='device-tile-label'>{label}</span>
+                  <span className='device-tile-label'>{t(labelKey)}</span>
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* ─ Step 2: Brand & Model ─ */}
         {step === 2 && (
           <div className='page-stack'>
             <div>
-              <div className='kicker'>Step 2 — Device</div>
-              <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', margin: '4px 0 6px' }}>Which brand and model?</h1>
-              <p style={{ color: 'var(--muted)', margin: 0 }}>Select your device brand and the exact model.</p>
+              <div className='kicker'>{t('estimateForm.kickerStep2')}</div>
+              <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', margin: '4px 0 6px' }}>{t('estimateForm.step2Title')}</h1>
+              <p style={{ color: 'var(--muted)', margin: 0 }}>{t('estimateForm.step2Subtitle')}</p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className='field'>
-                <label htmlFor='brand-sel'>Brand</label>
+                <label htmlFor='brand-sel'>{t('estimateForm.step2Brand')}</label>
                 <select id='brand-sel' value={brand} onChange={(e) => cascadeFromBrand(e.target.value)}>
                   {brands.map((b) => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
               <div className='field'>
-                <label htmlFor='model-sel'>Model</label>
+                <label htmlFor='model-sel'>{t('estimateForm.step2Model')}</label>
                 <select id='model-sel' value={modelKey} onChange={(e) => cascadeFromModel(e.target.value)}>
                   {models.map((m) => <option key={m.modelKey} value={m.modelKey}>{m.model}</option>)}
                 </select>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button type='button' className='button button-secondary' onClick={() => setStep(1)}>← Back</button>
+              <button type='button' className='button button-secondary' onClick={() => setStep(1)}>{t('estimateForm.btnBack')}</button>
               <button type='button' className='button button-primary' onClick={() => setStep(3)} disabled={!modelKey}>
-                Next: Choose repair →
+                {t('estimateForm.btnNextRepair')}
               </button>
             </div>
           </div>
         )}
 
-        {/* ─ Step 3: Repair type ─ */}
         {step === 3 && (
           <div className='page-stack'>
             <div>
-              <div className='kicker'>Step 3 — Repair</div>
-              <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', margin: '4px 0 6px' }}>What needs fixing?</h1>
+              <div className='kicker'>{t('estimateForm.kickerStep3')}</div>
+              <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', margin: '4px 0 6px' }}>{t('estimateForm.step3Title')}</h1>
               <p style={{ color: 'var(--muted)', margin: 0 }}>
-                {entry ? `${entry.brand} ${entry.model}` : 'Your device'} — select the repair type.
+                {entry
+                  ? t('estimateForm.step3SubtitleForDevice', { device: `${entry.brand} ${entry.model}` })
+                  : t('estimateForm.step3SubtitleGeneric')}
               </p>
             </div>
             <div className='step-tiles-grid' style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
@@ -325,30 +321,29 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
               })}
             </div>
             {repairs.length === 0 && (
-              <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>No repairs listed for this model — you can still submit and describe the issue.</p>
+              <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>{t('estimateForm.step3NoRepairs')}</p>
             )}
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button type='button' className='button button-secondary' onClick={() => setStep(2)}>← Back</button>
+              <button type='button' className='button button-secondary' onClick={() => setStep(2)}>{t('estimateForm.btnBack')}</button>
               {repairs.length === 0 && (
-                <button type='button' className='button button-primary' onClick={() => setStep(4)}>Next: Photos →</button>
+                <button type='button' className='button button-primary' onClick={() => setStep(4)}>{t('estimateForm.btnNextPhotos')}</button>
               )}
             </div>
           </div>
         )}
 
-        {/* ─ Step 4: Photos & notes ─ */}
         {step === 4 && (
           <div className='page-stack'>
             <div>
-              <div className='kicker'>Step 4 — Photos</div>
-              <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', margin: '4px 0 6px' }}>Add photos &amp; notes</h1>
-              <p style={{ color: 'var(--muted)', margin: 0 }}>
-                Clear photos help us give a more accurate estimate. Up to 6 images.
-              </p>
+              <div className='kicker'>{t('estimateForm.kickerStep4')}</div>
+              <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', margin: '4px 0 6px' }}>{t('estimateForm.step4Title')}</h1>
+              <p style={{ color: 'var(--muted)', margin: 0 }}>{t('estimateForm.step4Subtitle')}</p>
             </div>
 
             <div className='field'>
-              <label htmlFor='photos-input'>Photos <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optional)</span></label>
+              <label htmlFor='photos-input'>
+                {t('estimateForm.step4Photos')} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>{t('estimateForm.step4PhotosOptional')}</span>
+              </label>
               <input
                 id='photos-input'
                 type='file'
@@ -370,41 +365,40 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
             )}
 
             <div className='field'>
-              <label htmlFor='notes-input'>Describe the issue <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optional)</span></label>
+              <label htmlFor='notes-input'>
+                {t('estimateForm.step4Notes')} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>{t('estimateForm.step4PhotosOptional')}</span>
+              </label>
               <textarea
                 id='notes-input'
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder='What happened? What is not working? Any other details we should know.'
+                placeholder={t('estimateForm.step4NotesPlaceholder')}
                 style={{ minHeight: 90 }}
               />
             </div>
 
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <button type='button' className='button button-secondary' onClick={() => setStep(3)}>← Back</button>
-              <button type='button' className='button button-primary' onClick={() => setStep(5)}>Next: Your contact info →</button>
+              <button type='button' className='button button-secondary' onClick={() => setStep(3)}>{t('estimateForm.btnBack')}</button>
+              <button type='button' className='button button-primary' onClick={() => setStep(5)}>{t('estimateForm.btnNextContact')}</button>
               <button type='button' style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem', padding: '4px 0' }} onClick={() => setStep(5)}>
-                Skip for now →
+                {t('estimateForm.step4SkipForNow')}
               </button>
             </div>
           </div>
         )}
 
-        {/* ─ Step 5: Contact ─ */}
         {step === 5 && (
           <form onSubmit={handleSubmit} className='page-stack'>
             <div>
-              <div className='kicker'>Step 5 — Contact</div>
-              <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', margin: '4px 0 6px' }}>Where should we send the estimate?</h1>
+              <div className='kicker'>{t('estimateForm.kickerStep5')}</div>
+              <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', margin: '4px 0 6px' }}>{t('estimateForm.step5Title')}</h1>
               <p style={{ color: 'var(--muted)', margin: 0 }}>
                 {prefillContact?.email
-                  ? <>Signed in as <strong>{prefillContact.email}</strong>. We&apos;ll email your estimate within one business day.</>
-                  : <>No account required. We&apos;ll email you the estimate within one business day.</>
-                }
+                  ? t('estimateForm.step5SubtitleSignedIn', { email: prefillContact.email })
+                  : t('estimateForm.step5SubtitleAnon')}
               </p>
             </div>
 
-            {/* Summary chip */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {[
                 { label: entry ? `${entry.brand} ${entry.model}` : brand },
@@ -419,25 +413,27 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div className='field'>
-                <label htmlFor='firstName'>First name</label>
-                <input id='firstName' type='text' value={contact.firstName} onChange={(e) => setContact((p) => ({ ...p, firstName: e.target.value }))} placeholder='First' required />
+                <label htmlFor='firstName'>{t('estimateForm.step5FirstName')}</label>
+                <input id='firstName' type='text' value={contact.firstName} onChange={(e) => setContact((p) => ({ ...p, firstName: e.target.value }))} placeholder={t('estimateForm.step5FirstPlaceholder')} required />
               </div>
               <div className='field'>
-                <label htmlFor='lastName'>Last name</label>
-                <input id='lastName' type='text' value={contact.lastName} onChange={(e) => setContact((p) => ({ ...p, lastName: e.target.value }))} placeholder='Last' />
+                <label htmlFor='lastName'>{t('estimateForm.step5LastName')}</label>
+                <input id='lastName' type='text' value={contact.lastName} onChange={(e) => setContact((p) => ({ ...p, lastName: e.target.value }))} placeholder={t('estimateForm.step5LastPlaceholder')} />
               </div>
               <div className='field' style={{ gridColumn: '1 / -1' }}>
-                <label htmlFor='email'>Email address</label>
-                <input id='email' type='email' value={contact.email} onChange={(e) => setContact((p) => ({ ...p, email: e.target.value }))} placeholder='name@example.com' required />
+                <label htmlFor='email'>{t('estimateForm.step5Email')}</label>
+                <input id='email' type='email' value={contact.email} onChange={(e) => setContact((p) => ({ ...p, email: e.target.value }))} placeholder={t('estimateForm.step5EmailPlaceholder')} required />
               </div>
               <div className='field' style={{ gridColumn: '1 / -1' }}>
-                <label htmlFor='phone'>Phone number <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optional)</span></label>
+                <label htmlFor='phone'>
+                  {t('estimateForm.step5Phone')} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>{t('estimateForm.step4PhotosOptional')}</span>
+                </label>
                 <input
                   id='phone'
                   type='tel'
                   value={contact.phone}
                   onChange={(e) => { setContact((p) => ({ ...p, phone: e.target.value })); if (phoneError) setPhoneError('') }}
-                  placeholder='(555) 555-5555'
+                  placeholder={t('estimateForm.step5PhonePlaceholder')}
                 />
                 {phoneError && <span style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4, display: 'block' }}>{phoneError}</span>}
               </div>
@@ -446,9 +442,9 @@ export default function EstimateForm({ orgSlug, prefillContact }) {
             {submitError && <div className='notice notice-warn'>{submitError}</div>}
 
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              <button type='button' className='button button-secondary' onClick={() => setStep(4)}>← Back</button>
+              <button type='button' className='button button-secondary' onClick={() => setStep(4)}>{t('estimateForm.btnBack')}</button>
               <button type='submit' className='button button-primary' disabled={submitting}>
-                {submitting ? 'Submitting…' : 'Get my estimate →'}
+                {submitting ? t('estimateForm.submitting') : t('estimateForm.step5Submit')}
               </button>
             </div>
           </form>

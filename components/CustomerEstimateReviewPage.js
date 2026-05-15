@@ -1,16 +1,12 @@
 'use client'
 
-import Link from 'next/link'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-
-function formatEstimateDecisionLabel(status) {
-  if (status === 'approved') return 'Estimate Accepted'
-  if (status === 'declined') return 'Estimate Declined'
-  return 'Decision'
-}
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
+  const t = useT()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -21,6 +17,12 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
   const [mailInPath, setMailInPath] = useState('')
   const [trackingPath, setTrackingPath] = useState('')
   const [manualPaymentInfo, setManualPaymentInfo] = useState(null)
+
+  function formatEstimateDecisionLabel(status) {
+    if (status === 'approved') return t('estimateReview.decisionLabelApproved')
+    if (status === 'declined') return t('estimateReview.decisionLabelDeclined')
+    return t('estimateReview.decisionLabelDefault')
+  }
 
   const totalDisplay = useMemo(() => {
     if (!record?.estimate?.total_amount && record?.estimate?.total_amount !== 0) return '—'
@@ -49,7 +51,7 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
       })
 
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Unable to verify this estimate.')
+      if (!response.ok) throw new Error(result.error || t('estimateReview.unableToVerify'))
 
       setRecord(result)
       setMailInPath(result.mailInPath || '')
@@ -58,7 +60,7 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
       setRecord(null)
       setMailInPath('')
       setTrackingPath('')
-      setError(verifyError.message || 'Unable to verify this estimate.')
+      setError(verifyError.message || t('estimateReview.unableToVerify'))
     } finally {
       setLoading(false)
     }
@@ -84,7 +86,7 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
       })
 
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Unable to update estimate decision.')
+      if (!response.ok) throw new Error(result.error || t('estimateReview.unableToUpdate'))
 
       if (action === 'approve' && result.requiresPayment) {
         router.push(result.checkoutPath)
@@ -102,16 +104,16 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
 
       if (action === 'approve') {
         if (result.nextAction === 'tracking') {
-          setResultMessage('Estimate approved. Repair can now continue and your tracking page has been updated.')
+          setResultMessage(t('estimateReview.estimateApprovedTrackingMsg'))
         } else {
           setResultMessage(
             result.orderNumber
-              ? `Estimate approved. Repair order ${result.orderNumber} has been created and the request is now ready for mail-in instructions.`
-              : 'Estimate approved. The request is now ready for mail-in instructions.'
+              ? t('estimateReview.estimateApprovedWithOrderMsg', { orderNumber: result.orderNumber })
+              : t('estimateReview.estimateApprovedMsg')
           )
         }
       } else {
-        setResultMessage('Estimate declined. The quote has been updated.')
+        setResultMessage(t('estimateReview.estimateDeclinedMsg'))
       }
 
       setMailInPath(result.mailInPath || '')
@@ -141,7 +143,7 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
           : current
       )
     } catch (decisionError) {
-      setError(decisionError.message || 'Unable to update estimate decision.')
+      setError(decisionError.message || t('estimateReview.unableToUpdate'))
     } finally {
       setSubmittingAction('')
     }
@@ -161,26 +163,23 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='info-card'>
-          <div className='kicker'>Estimate review</div>
-          <h1>Review the repair estimate before anything moves forward</h1>
-          <p>
-            Enter the same email used for the estimate request to securely view pricing, included
-            line items, turnaround notes, and the current decision status.
-          </p>
+          <div className='kicker'>{t('estimateReview.reviewKicker')}</div>
+          <h1>{t('estimateReview.reviewTitleAlt')}</h1>
+          <p>{t('estimateReview.reviewIntro')}</p>
         </div>
 
         <div className='grid-2'>
           <form className='policy-card' onSubmit={handleVerify}>
-            <div className='kicker'>Verify request</div>
-            <h3>Enter your email</h3>
+            <div className='kicker'>{t('estimateReview.verifyKicker')}</div>
+            <h3>{t('estimateReview.verifyTitle')}</h3>
             <div className='field' style={{ marginTop: 18 }}>
-              <label htmlFor='estimate-review-email'>Email address</label>
+              <label htmlFor='estimate-review-email'>{t('tracking.emailLabel')}</label>
               <input
                 id='estimate-review-email'
                 type='email'
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder='name@example.com'
+                placeholder={t('estimateReview.emailPlaceholder')}
                 required
               />
             </div>
@@ -195,11 +194,11 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
             {manualPaymentInfo ? (
               <div className='notice notice-warn' style={{ marginTop: 18 }}>
                 <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
-                  Deposit payment instructions
+                  {t('estimateReview.depositInstructionsTitle')}
                 </strong>
                 {manualPaymentInfo.depositAmount > 0 ? (
                   <span style={{ display: 'block', marginBottom: 8 }}>
-                    Inspection deposit due: <strong>${Number(manualPaymentInfo.depositAmount).toFixed(2)}</strong>
+                    {t('estimateReview.inspectionDepositDue', { amount: Number(manualPaymentInfo.depositAmount).toFixed(2) })}
                   </span>
                 ) : null}
                 {manualPaymentInfo.instructions ? (
@@ -207,36 +206,36 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
                     {manualPaymentInfo.instructions}
                   </span>
                 ) : (
-                  <span>Please contact the shop for payment details.</span>
+                  <span>{t('estimateReview.contactShopForPayment')}</span>
                 )}
               </div>
             ) : null}
 
             <div className='inline-actions'>
               <button type='submit' className='button button-primary' disabled={loading}>
-                {loading ? 'Verifying…' : 'View Estimate'}
+                {loading ? t('estimateReview.verifying') : t('estimateReview.viewEstimateBtn')}
               </button>
             </div>
           </form>
 
           <div className='policy-card'>
-            <div className='kicker'>What happens next</div>
-            <h3>Approval controls the next stage</h3>
+            <div className='kicker'>{t('estimateReview.whatHappensNextKicker')}</div>
+            <h3>{t('estimateReview.whatHappensNextTitle')}</h3>
             <div className='preview-meta' style={{ marginTop: 18 }}>
               <div className='preview-meta-row'>
                 <span>1</span>
-                <span>Review the estimate and included line items.</span>
+                <span>{t('estimateReview.step1Text')}</span>
               </div>
               <div className='preview-meta-row'>
                 <span>2</span>
-                <span>Approve only if you want the repair flow to continue.</span>
+                <span>{t('estimateReview.step2Text')}</span>
               </div>
               <div className='preview-meta-row'>
                 <span>3</span>
                 <span>
                   {record?.estimate?.estimate_kind != null && record.estimate.estimate_kind !== 'preliminary'
-                    ? 'If this is revised or final, the repair continues only after your approval.'
-                    : 'After approval, follow the next-step page shown by the system.'}
+                    ? t('estimateReview.step3TextRevised')
+                    : t('estimateReview.step3TextPreliminary')}
                 </span>
               </div>
             </div>
@@ -248,11 +247,13 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
             {record.estimate.estimate_kind !== 'preliminary' ? (
               <div className='notice notice-warn'>
                 <strong style={{ display: 'block', marginBottom: 8, color: 'var(--text)' }}>
-                  {record.estimate.estimate_kind === 'final' ? 'Final estimate' : 'Revised estimate'}
+                  {record.estimate.estimate_kind === 'final'
+                    ? t('estimateReview.finalEstimateTitle')
+                    : t('estimateReview.revisedEstimateTitle')}
                 </strong>
                 {record.estimate.estimate_kind === 'final'
-                  ? 'Inspection and diagnosis are complete. This final estimate reflects the full cost of the repair. Approving it authorizes the shop to proceed.'
-                  : 'New findings during inspection changed the repair scope. Please review the updated line items and cost before deciding whether to continue.'}
+                  ? t('estimateReview.finalEstimateText')
+                  : t('estimateReview.revisedEstimateText')}
               </div>
             ) : null}
 
@@ -263,23 +264,23 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
                   <h2 className='quote-title'>
                     {[record.quote.brand_name, record.quote.model_name].filter(Boolean).join(' ')}
                   </h2>
-                  <p className='muted'>{record.quote.repair_type_key || 'Repair type not set'}</p>
+                  <p className='muted'>{record.quote.repair_type_key || t('estimateReview.noRepairType')}</p>
                 </div>
                 <span className='price-chip'>{record.estimate.status}</span>
               </div>
 
               <div className='quote-summary'>
                 <div className='quote-summary-card'>
-                  <strong>Total estimate</strong>
+                  <strong>{t('estimateReview.totalEstimateLabel')}</strong>
                   <span>{totalDisplay}</span>
                 </div>
                 <div className='quote-summary-card'>
-                  <strong>Warranty</strong>
-                  <span>{record.estimate.warranty_days ? `${record.estimate.warranty_days} days` : '—'}</span>
+                  <strong>{t('estimateReview.warrantyLabel')}</strong>
+                  <span>{record.estimate.warranty_days ? t('estimateReview.warrantyDays', { count: record.estimate.warranty_days }) : '—'}</span>
                 </div>
                 <div className='quote-summary-card'>
-                  <strong>Turnaround</strong>
-                  <span>{record.estimate.turnaround_note || 'After approval'}</span>
+                  <strong>{t('estimateReview.turnaroundLabel')}</strong>
+                  <span>{record.estimate.turnaround_note || t('estimateReview.turnaroundAfterApproval')}</span>
                 </div>
               </div>
             </div>
@@ -287,8 +288,8 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
             <div className='grid-2'>
               <div className='page-stack'>
                 <div className='policy-card'>
-                  <div className='kicker'>Estimate items</div>
-                  <h3>Included services and charges</h3>
+                  <div className='kicker'>{t('estimateReview.itemsKicker')}</div>
+                  <h3>{t('estimateReview.itemsTitle')}</h3>
                   <div className='preview-meta' style={{ marginTop: 18 }}>
                     {record.items.map((item) => (
                       <div key={item.id} className='preview-meta-row'>
@@ -302,51 +303,51 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
                 </div>
 
                 <div className='policy-card'>
-                  <div className='kicker'>Summary</div>
-                  <h3>Repair notes</h3>
+                  <div className='kicker'>{t('estimateReview.summaryKicker')}</div>
+                  <h3>{t('estimateReview.summaryTitle')}</h3>
                   <p>
                     {record.estimate.customer_visible_notes ||
                       record.quote.quote_summary ||
-                      'No additional customer note provided.'}
+                      t('estimateReview.noNotes')}
                   </p>
                 </div>
               </div>
 
               <div className='page-stack'>
                 <div className='policy-card'>
-                  <div className='kicker'>Estimate totals</div>
-                  <h3>Breakdown</h3>
+                  <div className='kicker'>{t('estimateReview.totalsKicker')}</div>
+                  <h3>{t('estimateReview.totalsTitle')}</h3>
                   <div className='preview-meta' style={{ marginTop: 18 }}>
                     <div className='preview-meta-row'>
-                      <span>Subtotal</span>
+                      <span>{t('estimateReview.subtotal')}</span>
                       <span>${Number(record.estimate.subtotal_amount || 0).toFixed(2)}</span>
                     </div>
                     <div className='preview-meta-row'>
-                      <span>Shipping</span>
+                      <span>{t('estimateReview.shipping')}</span>
                       <span>${Number(record.estimate.shipping_amount || 0).toFixed(2)}</span>
                     </div>
                     <div className='preview-meta-row'>
-                      <span>Tax</span>
+                      <span>{t('estimateReview.tax')}</span>
                       <span>${Number(record.estimate.tax_amount || 0).toFixed(2)}</span>
                     </div>
                     <div className='preview-meta-row'>
-                      <span>Discount</span>
+                      <span>{t('estimateReview.discount')}</span>
                       <span>-${Number(record.estimate.discount_amount || 0).toFixed(2)}</span>
                     </div>
                     <div className='preview-meta-row'>
-                      <span>Deposit credit</span>
+                      <span>{t('estimateReview.depositCredit')}</span>
                       <span>-${Number(record.estimate.deposit_credit_amount || 0).toFixed(2)}</span>
                     </div>
                     <div className='preview-meta-row'>
-                      <span>Total</span>
+                      <span>{t('estimateReview.total')}</span>
                       <span>{totalDisplay}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className='policy-card'>
-                  <div className='kicker'>Decision</div>
-                  <h3>Approve or decline</h3>
+                  <div className='kicker'>{t('estimateReview.decisionKicker')}</div>
+                  <h3>{t('estimateReview.decisionTitle')}</h3>
 
                   {decisionLocked ? (
                     <div className='decision-card-locked'>
@@ -356,21 +357,21 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
 
                       <div className='notice notice-success'>
                         {decisionTimestamp
-                          ? `Recorded on ${new Date(decisionTimestamp).toLocaleString()}`
-                          : `This estimate has already been ${record.estimate.status}.`}
+                          ? t('estimateReview.recordedOn', { date: new Date(decisionTimestamp).toLocaleString() })
+                          : t('estimateReview.alreadyDecided', { status: record.estimate.status })}
                       </div>
 
                       <div className='inline-actions' style={{ marginTop: 0 }}>
                         {mailInPath ? (
-                          <Link href={mailInPath} className='button button-secondary'>
-                            View Mail-In Instructions
-                          </Link>
+                          <LocalizedLink href={mailInPath} className='button button-secondary'>
+                            {t('estimateReview.mailInBtn')}
+                          </LocalizedLink>
                         ) : null}
 
                         {trackingPath ? (
-                          <Link href={trackingPath} className='button button-secondary'>
-                            Open Tracking Page
-                          </Link>
+                          <LocalizedLink href={trackingPath} className='button button-secondary'>
+                            {t('estimateReview.trackingBtn')}
+                          </LocalizedLink>
                         ) : null}
                       </div>
                     </div>
@@ -378,8 +379,8 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
                     <>
                       <p>
                         {record.estimate.estimate_kind !== 'preliminary'
-                          ? 'Approving this revised estimate authorizes the repair to continue. Declining will close this estimate path.'
-                          : 'Approving this estimate moves the repair to the next stage. Declining will close this estimate path.'}
+                          ? t('estimateReview.approveTextRevised')
+                          : t('estimateReview.approveTextPreliminary')}
                       </p>
 
                       <div className='inline-actions'>
@@ -389,7 +390,7 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
                           onClick={() => handleDecision('approve')}
                           disabled={submittingAction !== ''}
                         >
-                          {submittingAction === 'approve' ? 'Approving…' : 'Approve Estimate'}
+                          {submittingAction === 'approve' ? t('estimateReview.approving') : t('estimateReview.approveBtn')}
                         </button>
                         <button
                           type='button'
@@ -397,23 +398,23 @@ export default function CustomerEstimateReviewPage({ quoteId, orgSlug, tok }) {
                           onClick={() => handleDecision('decline')}
                           disabled={submittingAction !== ''}
                         >
-                          {submittingAction === 'decline' ? 'Declining…' : 'Decline Estimate'}
+                          {submittingAction === 'decline' ? t('estimateReview.declining') : t('estimateReview.declineBtn')}
                         </button>
                       </div>
 
                       {mailInPath ? (
                         <div className='inline-actions' style={{ marginTop: 14 }}>
-                          <Link href={mailInPath} className='button button-secondary'>
-                            View Mail-In Instructions
-                          </Link>
+                          <LocalizedLink href={mailInPath} className='button button-secondary'>
+                            {t('estimateReview.mailInBtn')}
+                          </LocalizedLink>
                         </div>
                       ) : null}
 
                       {trackingPath ? (
                         <div className='inline-actions' style={{ marginTop: 14 }}>
-                          <Link href={trackingPath} className='button button-secondary'>
-                            Open Tracking Page
-                          </Link>
+                          <LocalizedLink href={trackingPath} className='button button-secondary'>
+                            {t('estimateReview.trackingBtn')}
+                          </LocalizedLink>
                         </div>
                       ) : null}
                     </>

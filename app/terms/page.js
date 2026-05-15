@@ -1,3 +1,5 @@
+import LegalDisclaimerBanner from '../../components/LegalDisclaimerBanner'
+
 export const metadata = {
   title: 'Terms of Service — RepairCenter',
   description:
@@ -8,6 +10,7 @@ export default function TermsPage() {
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
+        <LegalDisclaimerBanner />
         <div className='policy-card'>
           <div className='kicker'>Terms of service</div>
           <h1>Terms of Service</h1>

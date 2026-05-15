@@ -2,6 +2,9 @@ import './globals.css'
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import SiteHeader from '../components/SiteHeader'
 import SiteFooter from '../components/SiteFooter'
+import { TranslationProvider } from '../lib/i18n/TranslationProvider'
+import { getServerMessages } from '../lib/i18n/server'
+import { getTranslator } from '../lib/i18n/messages'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -15,19 +18,25 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   weight: ['600', '700', '800'],
 })
 
-export const metadata = {
-  title: 'Repair Center — Premium Mail-In Phone, Tablet & Laptop Repair',
-  description:
-    'Mail-in repair for phones, tablets, and laptops with free photo estimates, human review, tracked progress, and secure return shipping.',
+export async function generateMetadata() {
+  const { locale } = await getServerMessages()
+  const t = getTranslator(locale)
+  return {
+    title: t('home.metaTitle'),
+    description: t('home.metaDescription'),
+  }
 }
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const { locale, messages } = await getServerMessages()
   return (
-    <html lang='en'>
+    <html lang={locale}>
       <body className={`${inter.variable} ${plusJakartaSans.variable}`}>
-        <SiteHeader />
-        {children}
-        <SiteFooter />
+        <TranslationProvider locale={locale} messages={messages}>
+          <SiteHeader />
+          {children}
+          <SiteFooter />
+        </TranslationProvider>
       </body>
     </html>
   )

@@ -1,56 +1,7 @@
-import Link from 'next/link'
 import Image from 'next/image'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { getT } from '../lib/i18n/server'
 import { REPAIR_CATALOG } from '../lib/repairCatalog'
-
-const deviceCards = [
-  {
-    title: 'Phones',
-    text: 'Screen repairs, batteries, charging ports, cameras, and common hardware issues.',
-    image: '/images/phone-repair.jpg',
-  },
-  {
-    title: 'Laptops',
-    text: 'Battery service, keyboards, storage upgrades, software recovery, and select hardware repairs.',
-    image: '/images/laptop-open.jpg',
-  },
-  {
-    title: 'Tablets',
-    text: 'Glass and screen repairs, batteries, charging ports, and other common tablet repairs.',
-    image: '/images/tablet-product.jpg',
-  },
-  {
-    title: 'Select desktops',
-    text: 'Handled case by case when the repair and shipping make sense for a mail-in service.',
-    image: '/images/circuit-dark.jpg',
-  },
-]
-
-const commonRepairs = [
-  {
-    title: 'Screen replacement',
-    text: 'Cracked glass, dead pixels, or touch issues repaired with quality replacement parts.',
-  },
-  {
-    title: 'Battery replacement',
-    text: 'Weak, swollen, or fast-draining batteries replaced to restore reliable daily use.',
-  },
-  {
-    title: 'Charging port repair',
-    text: 'Loose, damaged, or inconsistent charging ports repaired so your device powers properly again.',
-  },
-  {
-    title: 'Keyboard repair',
-    text: 'Stuck, damaged, or unresponsive laptop keys repaired with compatible replacement parts.',
-  },
-  {
-    title: 'SSD upgrade',
-    text: 'Upgrade storage for faster performance, more space, and smoother everyday use.',
-  },
-  {
-    title: 'Software recovery',
-    text: 'Help for devices that will not boot, run poorly, or need a clean operating system reinstall.',
-  },
-]
 
 const highlightedRepairs = REPAIR_CATALOG.slice(0, 6).map((entry) => ({
   model: entry.model,
@@ -59,29 +10,44 @@ const highlightedRepairs = REPAIR_CATALOG.slice(0, 6).map((entry) => ({
   preview: entry.repairs[0],
 }))
 
-export default function HomePage() {
+export default async function HomePage() {
+  const t = await getT()
+
+  const deviceCards = [
+    { title: t('home.deviceCardPhones'),    text: t('home.deviceCardPhonesText'),    image: '/images/phone-repair.jpg' },
+    { title: t('home.deviceCardLaptops'),   text: t('home.deviceCardLaptopsText'),   image: '/images/laptop-open.jpg' },
+    { title: t('home.deviceCardTablets'),   text: t('home.deviceCardTabletsText'),   image: '/images/tablet-product.jpg' },
+    { title: t('home.deviceCardDesktops'),  text: t('home.deviceCardDesktopsText'),  image: '/images/circuit-dark.jpg' },
+  ]
+
+  const commonRepairs = [
+    { title: t('home.repairScreen'),   text: t('home.repairScreenText') },
+    { title: t('home.repairBattery'),  text: t('home.repairBatteryText') },
+    { title: t('home.repairCharging'), text: t('home.repairChargingText') },
+    { title: t('home.repairKeyboard'), text: t('home.repairKeyboardText') },
+    { title: t('home.repairSsd'),      text: t('home.repairSsdText') },
+    { title: t('home.repairSoftware'), text: t('home.repairSoftwareText') },
+  ]
+
   return (
     <main>
       <section className='hero-full'>
         <div className='site-shell hero-full-grid'>
           <div className='hero-full-copy'>
-            <div className='hero-full-eyebrow'>Premium mail-in device repair</div>
-            <h1>Mail-in device repair you can trust.</h1>
-            <p>
-              Repair for phones, tablets, and laptops with a simple estimate process,
-              clear approval steps, and tracked return shipping.
-            </p>
+            <div className='hero-full-eyebrow'>{t('home.heroEyebrow')}</div>
+            <h1>{t('home.heroTitle')}</h1>
+            <p>{t('home.heroDescription')}</p>
 
             <div className='hero-actions-row'>
-              <Link href='/instant-estimate' className='button button-primary'>
-                Instant Estimate
-              </Link>
-              <Link href='/estimate' className='button button-outline'>
-                Full Estimate Form
-              </Link>
-              <Link href='/repairs' className='button button-outline'>
-                See Repair Services
-              </Link>
+              <LocalizedLink href='/instant-estimate' className='button button-primary'>
+                {t('home.ctaInstantEstimate')}
+              </LocalizedLink>
+              <LocalizedLink href='/estimate' className='button button-outline'>
+                {t('home.ctaFullEstimate')}
+              </LocalizedLink>
+              <LocalizedLink href='/repairs' className='button button-outline'>
+                {t('home.seeRepairServices')}
+              </LocalizedLink>
             </div>
           </div>
 
@@ -89,7 +55,7 @@ export default function HomePage() {
             <div className='hero-device-img hero-device-img-phone'>
               <Image
                 src='/images/phone-repair.jpg'
-                alt='Phone repair'
+                alt={t('home.altPhoneRepair')}
                 width={220}
                 height={420}
                 style={{ objectFit: 'cover', borderRadius: 24 }}
@@ -100,7 +66,7 @@ export default function HomePage() {
             <div className='hero-device-img hero-device-img-tablet'>
               <Image
                 src='/images/tablet-product.jpg'
-                alt='Tablet repair'
+                alt={t('home.altTabletRepair')}
                 width={320}
                 height={240}
                 style={{ objectFit: 'cover', borderRadius: 18 }}
@@ -111,7 +77,7 @@ export default function HomePage() {
             <div className='hero-device-img hero-device-img-laptop'>
               <Image
                 src='/images/laptop-open.jpg'
-                alt='Laptop repair'
+                alt={t('home.altLaptopRepair')}
                 width={480}
                 height={320}
                 style={{ objectFit: 'cover', borderRadius: 14 }}
@@ -142,7 +108,7 @@ export default function HomePage() {
                 <line x1='16' y1='17' x2='8' y2='17' />
               </svg>
             </div>
-            <span>Get a Quote</span>
+            <span>{t('home.processGetQuote')}</span>
           </div>
 
           <div className='process-arrow'>
@@ -179,7 +145,7 @@ export default function HomePage() {
                 <circle cx='18.5' cy='18.5' r='2.5' />
               </svg>
             </div>
-            <span>Ship Your Device</span>
+            <span>{t('home.processShipDevice')}</span>
           </div>
 
           <div className='process-arrow'>
@@ -214,7 +180,7 @@ export default function HomePage() {
                 <polyline points='22 4 12 14.01 9 11.01' />
               </svg>
             </div>
-            <span>Repair &amp; Return</span>
+            <span>{t('home.processRepairReturn')}</span>
           </div>
         </div>
       </section>
@@ -223,8 +189,8 @@ export default function HomePage() {
         <div className='site-shell'>
           <div className='section-head'>
             <div>
-              <div className='kicker'>What we repair</div>
-              <h2 className='section-title'>Phones, tablets, laptops, and select desktops</h2>
+              <div className='kicker'>{t('home.whatWeRepair')}</div>
+              <h2 className='section-title'>{t('home.whatWeRepairTitle')}</h2>
             </div>
           </div>
 
@@ -252,8 +218,8 @@ export default function HomePage() {
         <div className='site-shell'>
           <div className='section-head'>
             <div>
-              <div className='kicker kicker-dark-section'>Common repairs</div>
-              <h2 className='section-title section-title-light'>Popular repair services</h2>
+              <div className='kicker kicker-dark-section'>{t('home.commonRepairs')}</div>
+              <h2 className='section-title section-title-light'>{t('home.popularRepairs')}</h2>
             </div>
           </div>
 
@@ -272,8 +238,8 @@ export default function HomePage() {
         <div className='site-shell'>
           <div className='section-head'>
             <div>
-              <div className='kicker'>Sample pricing</div>
-              <h2 className='section-title'>Examples from supported repairs</h2>
+              <div className='kicker'>{t('home.samplePricing')}</div>
+              <h2 className='section-title'>{t('home.samplePricingTitle')}</h2>
             </div>
           </div>
 
@@ -290,7 +256,7 @@ export default function HomePage() {
                     ? `$${item.preview.price}`
                     : item.preview.mode === 'range'
                       ? `$${item.preview.min}–$${item.preview.max}`
-                      : 'Inspection required'}
+                      : t('home.inspectionRequired')}
                 </div>
               </div>
             ))}
@@ -298,22 +264,22 @@ export default function HomePage() {
 
           <div className='cta-strip'>
             <div>
-              <div className='kicker'>Ready to start?</div>
-              <h3 className='card-title'>Get your repair price in seconds.</h3>
+              <div className='kicker'>{t('home.readyToStart')}</div>
+              <h3 className='card-title'>{t('home.readyHeading')}</h3>
               <p className='muted'>
-                Use our instant estimator to see pricing right away, or submit a full estimate with photos.
+                {t('home.readyBody')}
               </p>
             </div>
             <div className='inline-actions'>
-              <Link href='/instant-estimate' className='button button-primary'>
-                Instant Estimate
-              </Link>
-              <Link href='/estimate' className='button button-secondary'>
-                Full Estimate Form
-              </Link>
-              <Link href='/track' className='button button-secondary'>
-                Track a Repair
-              </Link>
+              <LocalizedLink href='/instant-estimate' className='button button-primary'>
+                {t('home.ctaInstantEstimate')}
+              </LocalizedLink>
+              <LocalizedLink href='/estimate' className='button button-secondary'>
+                {t('home.ctaFullEstimate')}
+              </LocalizedLink>
+              <LocalizedLink href='/track' className='button button-secondary'>
+                {t('home.trackARepair')}
+              </LocalizedLink>
             </div>
           </div>
         </div>

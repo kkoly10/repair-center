@@ -1,9 +1,11 @@
 import { LEGAL } from '../../lib/legalConfig'
+import LegalDisclaimerBanner from '../../components/LegalDisclaimerBanner'
 
 export default function DataPrivacyPage() {
   return (
     <main className='page-hero'>
       <div className='site-shell page-stack'>
+        <LegalDisclaimerBanner />
         <div className='policy-card'>
           <div className='kicker'>Your privacy choices</div>
           <h1>Data privacy rights</h1>

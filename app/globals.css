@@ -1835,6 +1835,30 @@ main {
   .sidebar-hamburger { display: flex; }
 }
 .shop-secondary a:hover { color: var(--text); }
+/* Language switcher */
+.language-switcher {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid var(--border, #e5e7eb);
+  background: #fff;
+  color: var(--text, #1c1917);
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 28px 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'><path d='M1 1.5L6 6.5L11 1.5' stroke='%23666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 10px;
+}
+.language-switcher:hover { border-color: var(--text); }
+.language-switcher:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+.header-language-switcher { margin-left: 4px; }
+
+@media (max-width: 720px) {
+  .header-actions .language-switcher { display: none; }
+}
 
 /* ── Responsive admin tables ─────────────────────────────────────── */
 

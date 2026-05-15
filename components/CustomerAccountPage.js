@@ -1,13 +1,15 @@
-import Link from 'next/link'
 import CustomerSignOutButton from './CustomerSignOutButton'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
 import { statusPill } from '../lib/statusPills'
+import { getT } from '../lib/i18n/server'
 
 function fmtDateTime(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
-export default function CustomerAccountPage({ customer, quotes, appointments = [], orgSlug }) {
+export default async function CustomerAccountPage({ customer, quotes, appointments = [], orgSlug }) {
+  const t = await getT()
   const name = [customer.first_name, customer.last_name].filter(Boolean).join(' ') || customer.email
 
   return (
@@ -17,7 +19,7 @@ export default function CustomerAccountPage({ customer, quotes, appointments = [
         <div className='info-card'>
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <div className='kicker'>My Account</div>
+              <div className='kicker'>{t('customerAccount.accountKicker')}</div>
               <h1>{name}</h1>
               {customer.email ? (
                 <p style={{ margin: 0, color: 'var(--muted)' }}>{customer.email}</p>
@@ -30,35 +32,35 @@ export default function CustomerAccountPage({ customer, quotes, appointments = [
         </div>
 
         <div className='policy-card'>
-          <div className='kicker'>Repair history</div>
-          <h3>Your repairs</h3>
+          <div className='kicker'>{t('customerAccount.repairHistoryKicker')}</div>
+          <h3>{t('customerAccount.yourRepairs')}</h3>
 
           {quotes.length === 0 ? (
             <div style={{ marginTop: 16 }}>
-              <p style={{ color: 'var(--muted)' }}>No repairs found for this account yet.</p>
+              <p style={{ color: 'var(--muted)' }}>{t('customerAccount.noRepairsBody')}</p>
               <div className='inline-actions' style={{ marginTop: 16 }}>
-                <Link href={`/shop/${orgSlug}/estimate`} className='button button-primary'>
-                  Start Free Estimate
-                </Link>
+                <LocalizedLink href={`/shop/${orgSlug}/estimate`} className='button button-primary'>
+                  {t('customerAccount.startFreeEstimate')}
+                </LocalizedLink>
               </div>
             </div>
           ) : (
             <div className='preview-meta' style={{ marginTop: 18 }}>
               {quotes.map((q) => {
-                const device = [q.brand_name, q.model_name].filter(Boolean).join(' ') || 'Device'
+                const device = [q.brand_name, q.model_name].filter(Boolean).join(' ') || t('customerAccount.defaultDevice')
                 const rawStatus = q.order_status || q.quote_status
                 const { cls, label } = statusPill(rawStatus)
 
                 return (
                   <div key={q.quote_id} className='preview-meta-row'>
                     <span>
-                      <Link
+                      <LocalizedLink
                         href={`/shop/${orgSlug}/track/${q.quote_id}`}
                         style={{ fontWeight: 600 }}
                         className='id-mono'
                       >
                         {q.quote_id}
-                      </Link>
+                      </LocalizedLink>
                       {' — '}
                       {device}
                       {q.repair_type_key ? ` · ${q.repair_type_key}` : ''}
@@ -77,8 +79,8 @@ export default function CustomerAccountPage({ customer, quotes, appointments = [
 
         {appointments.length > 0 && (
           <div className='policy-card'>
-            <div className='kicker'>Appointments</div>
-            <h3>Your drop-off appointments</h3>
+            <div className='kicker'>{t('customerAccount.appointmentsKicker')}</div>
+            <h3>{t('customerAccount.appointmentsHeading')}</h3>
             <div className='preview-meta' style={{ marginTop: 18 }}>
               {appointments.map((a) => {
                 const device = [a.brand_name, a.model_name].filter(Boolean).join(' ') || null
@@ -103,21 +105,21 @@ export default function CustomerAccountPage({ customer, quotes, appointments = [
               })}
             </div>
             <div className='inline-actions' style={{ marginTop: 16 }}>
-              <Link href={`/shop/${orgSlug}/book`} className='button button-secondary'>
-                Book Another Appointment
-              </Link>
+              <LocalizedLink href={`/shop/${orgSlug}/book`} className='button button-secondary'>
+                {t('customerAccount.bookAnother')}
+              </LocalizedLink>
             </div>
           </div>
         )}
 
         <div className='policy-card'>
-          <div className='kicker'>Track a specific repair</div>
-          <h3>Use a Quote ID or Order Number</h3>
-          <p>Have an ID handy? Look up any repair directly.</p>
+          <div className='kicker'>{t('customerAccount.trackKicker')}</div>
+          <h3>{t('customerAccount.trackHeading')}</h3>
+          <p>{t('customerAccount.trackBody')}</p>
           <div className='inline-actions' style={{ marginTop: 16 }}>
-            <Link href={`/shop/${orgSlug}/track`} className='button button-secondary'>
-              Track a Repair
-            </Link>
+            <LocalizedLink href={`/shop/${orgSlug}/track`} className='button button-secondary'>
+              {t('customerAccount.trackButton')}
+            </LocalizedLink>
           </div>
         </div>
 

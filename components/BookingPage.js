@@ -1,10 +1,12 @@
 'use client'
 import { useState } from 'react'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }
 const labelStyle = { display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#555' }
 
 export default function BookingPage({ orgSlug, orgName, prefill }) {
+  const t = useT()
   const [form, setForm] = useState(() => ({
     firstName: prefill?.firstName || '',
     lastName:  prefill?.lastName  || '',
@@ -38,7 +40,7 @@ export default function BookingPage({ orgSlug, orgName, prefill }) {
         body: JSON.stringify({ orgSlug, ...form }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Failed to book appointment.')
+      if (!res.ok) throw new Error(json.error || t('booking.errors.submitFailed'))
       setSuccess(true)
     } catch (err) {
       setError(err.message)
@@ -53,11 +55,11 @@ export default function BookingPage({ orgSlug, orgName, prefill }) {
         <div className='site-shell page-stack'>
           <div className='info-card' style={{ textAlign: 'center', padding: '40px 24px' }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
-            <h1 style={{ margin: '0 0 8px' }}>Request Received!</h1>
+            <h1 style={{ margin: '0 0 8px' }}>{t('booking.successHeading')}</h1>
             <p style={{ color: 'var(--muted)', maxWidth: 400, margin: '0 auto 24px' }}>
-              We&apos;ll review your request and send a confirmation email to <strong>{form.email}</strong> shortly.
+              {t('booking.successConfirmation', { email: form.email })}
             </p>
-            <a href={`/shop/${orgSlug}`} className='button button-secondary'>Back to {orgName}</a>
+            <a href={`/shop/${orgSlug}`} className='button button-secondary'>{t('booking.backToShop', { orgName })}</a>
           </div>
         </div>
       </main>
@@ -69,52 +71,52 @@ export default function BookingPage({ orgSlug, orgName, prefill }) {
       <div className='site-shell page-stack'>
         <div className='info-card'>
           <div className='kicker'>{orgName}</div>
-          <h1>Book a Drop-Off Appointment</h1>
-          <p>Request a time to drop off your device. We&apos;ll confirm your appointment by email.</p>
+          <h1>{t('booking.pageTitle')}</h1>
+          <p>{t('booking.pageDescription')}</p>
           {prefill?.email && (
             <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: 'var(--muted)' }}>
-              Booking as <strong>{prefill.email}</strong>
+              {t('booking.bookingAs', { email: prefill.email })}
             </p>
           )}
         </div>
 
         <form onSubmit={handleSubmit} className='policy-card' style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
           <div>
-            <label style={labelStyle}>First name *</label>
-            <input style={inputStyle} value={form.firstName} onChange={set('firstName')} required placeholder='Jane' />
+            <label style={labelStyle}>{t('booking.firstNameRequired')}</label>
+            <input style={inputStyle} value={form.firstName} onChange={set('firstName')} required placeholder={t('booking.firstNamePlaceholder')} />
           </div>
           <div>
-            <label style={labelStyle}>Last name</label>
-            <input style={inputStyle} value={form.lastName} onChange={set('lastName')} placeholder='Smith' />
+            <label style={labelStyle}>{t('booking.lastName')}</label>
+            <input style={inputStyle} value={form.lastName} onChange={set('lastName')} placeholder={t('booking.lastNamePlaceholder')} />
           </div>
           <div>
-            <label style={labelStyle}>Email *</label>
-            <input style={inputStyle} type='email' value={form.email} onChange={set('email')} required placeholder='jane@example.com' />
+            <label style={labelStyle}>{t('booking.emailRequired')}</label>
+            <input style={inputStyle} type='email' value={form.email} onChange={set('email')} required placeholder={t('booking.emailPlaceholder')} />
           </div>
           <div>
-            <label style={labelStyle}>Phone</label>
-            <input style={inputStyle} type='tel' value={form.phone} onChange={set('phone')} placeholder='(555) 000-0000' />
+            <label style={labelStyle}>{t('booking.phone')}</label>
+            <input style={inputStyle} type='tel' value={form.phone} onChange={set('phone')} placeholder={t('booking.phonePlaceholder')} />
           </div>
           <div>
-            <label style={labelStyle}>Device brand</label>
-            <input style={inputStyle} value={form.brandName} onChange={set('brandName')} placeholder='Apple, Samsung…' />
+            <label style={labelStyle}>{t('booking.deviceBrand')}</label>
+            <input style={inputStyle} value={form.brandName} onChange={set('brandName')} placeholder={t('booking.brandPlaceholder')} />
           </div>
           <div>
-            <label style={labelStyle}>Device model</label>
-            <input style={inputStyle} value={form.modelName} onChange={set('modelName')} placeholder='iPhone 15, Galaxy S24…' />
+            <label style={labelStyle}>{t('booking.deviceModel')}</label>
+            <input style={inputStyle} value={form.modelName} onChange={set('modelName')} placeholder={t('booking.modelPlaceholder')} />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
-            <label style={labelStyle}>What needs to be repaired?</label>
+            <label style={labelStyle}>{t('booking.repairLabel')}</label>
             <textarea
               style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }}
               value={form.repairDescription}
               onChange={set('repairDescription')}
-              placeholder='Cracked screen, battery not charging, water damage…'
+              placeholder={t('booking.descriptionPlaceholder')}
               maxLength={1000}
             />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
-            <label style={labelStyle}>Preferred drop-off time *</label>
+            <label style={labelStyle}>{t('booking.preferredTimeRequired')}</label>
             <input
               style={inputStyle}
               type='datetime-local'
@@ -133,9 +135,9 @@ export default function BookingPage({ orgSlug, orgName, prefill }) {
 
           <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 10 }}>
             <button type='submit' className='button button-primary' disabled={saving}>
-              {saving ? 'Submitting…' : 'Request Appointment'}
+              {saving ? t('booking.submitting') : t('booking.submit')}
             </button>
-            <a href={`/shop/${orgSlug}`} className='button button-secondary'>Cancel</a>
+            <a href={`/shop/${orgSlug}`} className='button button-secondary'>{t('booking.cancel')}</a>
           </div>
         </form>
       </div>

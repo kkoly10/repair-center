@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getSupabaseBrowser } from '../lib/supabase/browser'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function AdminLoginForm() {
+  const t = useT()
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextPath = searchParams.get('next') || '/admin/quotes'
@@ -32,7 +34,7 @@ export default function AdminLoginForm() {
       router.replace(nextPath)
       router.refresh()
     } catch (submitError) {
-      setError(submitError.message || 'Unable to sign in right now.')
+      setError(submitError.message || t('adminLogin.errorGeneric'))
     } finally {
       setLoading(false)
     }
@@ -42,42 +44,46 @@ export default function AdminLoginForm() {
     <div className='page-hero'>
       <div className='site-shell'>
         <div className='policy-card center-card'>
-          <div className='kicker'>Admin access</div>
-          <h1>Sign in to review quotes</h1>
+          <div className='kicker'>{t('adminLogin.kicker')}</div>
+          <h1>{t('adminLogin.heading')}</h1>
           <p>
-            Use a staff account from Supabase Auth. The account must also have a matching row in
-            <strong> profiles </strong>
-            with role <strong>admin</strong> or <strong>tech</strong>.
+            {t('adminLogin.introBefore')}{' '}
+            <strong>{t('adminLogin.introProfiles')}</strong>{' '}
+            {t('adminLogin.introMiddle')}{' '}
+            <strong>{t('adminLogin.introAdmin')}</strong>{' '}
+            {t('adminLogin.introOr')}{' '}
+            <strong>{t('adminLogin.introTech')}</strong>
+            {t('adminLogin.introAfter')}
           </p>
 
           <form onSubmit={handleSubmit} className='page-stack' style={{ marginTop: 24 }}>
             <div className='field'>
-              <label htmlFor='admin-email'>Email address</label>
+              <label htmlFor='admin-email'>{t('adminLogin.emailLabel')}</label>
               <input
                 id='admin-email'
                 type='email'
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder='admin@example.com'
+                placeholder={t('adminLogin.emailPlaceholder')}
                 required
               />
             </div>
 
             <div className='field'>
-              <label htmlFor='admin-password'>Password</label>
+              <label htmlFor='admin-password'>{t('adminLogin.passwordLabel')}</label>
               <input
                 id='admin-password'
                 type='password'
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder='Password'
+                placeholder={t('adminLogin.passwordPlaceholder')}
                 required
               />
             </div>
 
             {queryError === 'unauthorized' ? (
               <div className='notice'>
-                Your account exists, but it does not have admin or tech access yet.
+                {t('adminLogin.noticeUnauthorized')}
               </div>
             ) : null}
 
@@ -85,15 +91,19 @@ export default function AdminLoginForm() {
 
             <div className='inline-actions'>
               <button type='submit' className='button button-primary' disabled={loading}>
-                {loading ? 'Signing in…' : 'Sign in'}
+                {loading ? t('adminLogin.signingIn') : t('adminLogin.submit')}
               </button>
             </div>
           </form>
 
           <div className='notice' style={{ marginTop: 20 }}>
-            Long-term setup: create the staff user in Supabase Auth, then set that user’s row in
-            <strong> public.profiles </strong>
-            to role <strong>admin</strong> or <strong>tech</strong>.
+            {t('adminLogin.longSetupBefore')}{' '}
+            <strong>{t('adminLogin.longSetupProfiles')}</strong>{' '}
+            {t('adminLogin.longSetupMiddle')}{' '}
+            <strong>{t('adminLogin.longSetupAdmin')}</strong>{' '}
+            {t('adminLogin.longSetupOr')}{' '}
+            <strong>{t('adminLogin.longSetupTech')}</strong>
+            {t('adminLogin.longSetupAfter')}
           </div>
         </div>
       </div>

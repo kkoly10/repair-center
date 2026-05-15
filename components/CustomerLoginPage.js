@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { getSupabaseBrowser } from '../lib/supabase/browser'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function CustomerLoginPage({ orgSlug }) {
+  const t = useT()
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -27,7 +29,7 @@ export default function CustomerLoginPage({ orgSlug }) {
       if (otpError) throw otpError
       setSent(true)
     } catch (err) {
-      setError(err.message || 'Unable to send login link right now.')
+      setError(err.message || t('customerLogin.genericError'))
     } finally {
       setLoading(false)
     }
@@ -38,11 +40,10 @@ export default function CustomerLoginPage({ orgSlug }) {
       <main className='page-hero'>
         <div className='site-shell'>
           <div className='info-card'>
-            <div className='kicker'>Check your inbox</div>
-            <h1>Magic link sent</h1>
+            <div className='kicker'>{t('customerLogin.kickerCheckInbox')}</div>
+            <h1>{t('customerLogin.magicLinkSentTitle')}</h1>
             <p>
-              We sent a sign-in link to <strong>{email}</strong>. Click the link in the email
-              to access your account. The link expires in 60 minutes.
+              {t('customerLogin.magicLinkSentBody', { email })}
             </p>
           </div>
         </div>
@@ -54,23 +55,20 @@ export default function CustomerLoginPage({ orgSlug }) {
     <main className='page-hero'>
       <div className='site-shell page-stack'>
         <div className='info-card'>
-          <div className='kicker'>My Account</div>
-          <h1>Sign in to view your repairs</h1>
-          <p>
-            Enter the email address you used when submitting your repair request.
-            We&apos;ll send you a secure sign-in link — no password needed.
-          </p>
+          <div className='kicker'>{t('customerLogin.kickerAccount')}</div>
+          <h1>{t('customerLogin.signInTitle')}</h1>
+          <p>{t('customerLogin.signInDescription')}</p>
         </div>
 
         <form className='policy-card' onSubmit={handleSubmit}>
           <div className='field'>
-            <label htmlFor='customer-login-email'>Email address</label>
+            <label htmlFor='customer-login-email'>{t('customerLogin.emailAddressLabel')}</label>
             <input
               id='customer-login-email'
               type='email'
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder='name@example.com'
+              placeholder={t('customerLogin.emailPlaceholder')}
               required
             />
           </div>
@@ -81,7 +79,7 @@ export default function CustomerLoginPage({ orgSlug }) {
 
           <div className='inline-actions' style={{ marginTop: 16 }}>
             <button type='submit' className='button button-primary' disabled={loading}>
-              {loading ? 'Sending…' : 'Send Sign-In Link'}
+              {loading ? t('customerLogin.sending') : t('customerLogin.submitButton')}
             </button>
           </div>
         </form>

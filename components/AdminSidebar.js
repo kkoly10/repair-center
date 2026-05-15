@@ -1,52 +1,54 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import AdminSignOutButton from './AdminSignOutButton'
 import FeedbackButton from './FeedbackButton'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 const NAV_SECTIONS = [
   {
-    label: 'Customer-Facing',
+    sectionKey: 'sectionCustomer',
     items: [
-      { href: '/admin/quotes',       label: 'Quotes',       icon: '💬', badgeKey: 'unreviewed' },
-      { href: '/admin/appointments', label: 'Appointments', icon: '📅', badgeKey: 'appointments' },
-      { href: '/admin/customers',    label: 'Customers',    icon: '👥' },
+      { href: '/admin/quotes',       labelKey: 'quotes',       icon: '💬', badgeKey: 'unreviewed' },
+      { href: '/admin/appointments', labelKey: 'appointments', icon: '📅', badgeKey: 'appointments' },
+      { href: '/admin/customers',    labelKey: 'customers',    icon: '👥' },
     ],
   },
   {
-    label: 'Operations',
+    sectionKey: 'sectionOperations',
     items: [
-      { href: '/admin/orders',  label: 'Orders',   icon: '🔧' },
-      { href: '/admin/walkin',  label: 'Walk-in',  icon: '🏪' },
-      { href: '/admin/parts',   label: 'Parts',    icon: '⚙️' },
-      { href: '/admin/catalog', label: 'Catalog',  icon: '📋' },
+      { href: '/admin/orders',  labelKey: 'orders',  icon: '🔧' },
+      { href: '/admin/walkin',  labelKey: 'walkin',  icon: '🏪' },
+      { href: '/admin/parts',   labelKey: 'parts',   icon: '⚙️' },
+      { href: '/admin/catalog', labelKey: 'catalog', icon: '📋' },
     ],
   },
   {
-    label: 'Business',
+    sectionKey: 'sectionBusiness',
     items: [
-      { href: '/admin/analytics', label: 'Analytics', icon: '📊' },
-      { href: '/admin/sla',       label: 'SLA',       icon: '⏱' },
-      { href: '/admin/reviews',   label: 'Reviews',   icon: '⭐' },
-      { href: '/admin/staff',     label: 'Staff',     icon: '👔' },
+      { href: '/admin/analytics', labelKey: 'analytics', icon: '📊' },
+      { href: '/admin/sla',       labelKey: 'sla',       icon: '⏱' },
+      { href: '/admin/reviews',   labelKey: 'reviews',   icon: '⭐' },
+      { href: '/admin/staff',     labelKey: 'staff',     icon: '👔' },
     ],
   },
   {
-    label: 'Account',
+    sectionKey: 'sectionAccount',
     items: [
-      { href: '/admin/settings', label: 'Settings', icon: '🔩' },
-      { href: '/admin/team',     label: 'Team',     icon: '🫂' },
-      { href: '/admin/billing',  label: 'Billing',  icon: '💳', badgeKey: 'billing' },
+      { href: '/admin/settings', labelKey: 'settings', icon: '🔩' },
+      { href: '/admin/team',     labelKey: 'team',     icon: '🫂' },
+      { href: '/admin/billing',  labelKey: 'billing',  icon: '💳', badgeKey: 'billing' },
     ],
   },
 ]
 
-const TYPE_ICONS  = { quote: '💬', order: '🔧', customer: '👤' }
-const TYPE_LABELS = { quote: 'Quote', order: 'Order', customer: 'Customer' }
+const TYPE_ICONS = { quote: '💬', order: '🔧', customer: '👤' }
+const TYPE_LABEL_KEYS = { quote: 'searchTypeQuote', order: 'searchTypeOrder', customer: 'searchTypeCustomer' }
 
 export default function AdminSidebar() {
+  const t = useT()
   const pathname = usePathname()
   const router   = useRouter()
 
@@ -131,7 +133,7 @@ export default function AdminSidebar() {
   return (
     <>
       {/* Mobile hamburger */}
-      <button className='sidebar-hamburger' onClick={() => setMobileOpen((o) => !o)} aria-label='Menu'>
+      <button className='sidebar-hamburger' onClick={() => setMobileOpen((o) => !o)} aria-label={t('adminNav.menuAria')}>
         {mobileOpen ? '✕' : '☰'}
       </button>
 
@@ -153,11 +155,11 @@ export default function AdminSidebar() {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
           }}>
             <span>
-              {trialDaysLeft === 0 ? 'Trial expired.' : `Trial: ${trialDaysLeft}d left`}
+              {trialDaysLeft === 0 ? t('adminNav.trialExpired') : t('adminNav.trialLeftShort', { days: trialDaysLeft })}
             </span>
-            <Link href='/admin/billing' style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline', whiteSpace: 'nowrap' }}>
-              Upgrade
-            </Link>
+            <LocalizedLink href='/admin/billing' style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline', whiteSpace: 'nowrap' }}>
+              {t('adminNav.upgradeShort')}
+            </LocalizedLink>
           </div>
         )}
         {isPastDue && (
@@ -165,25 +167,25 @@ export default function AdminSidebar() {
             background: '#dc2626', color: '#fff', fontSize: '0.75rem',
             padding: '8px 14px',
           }}>
-            Payment failed —{' '}
-            <Link href='/admin/billing' style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline' }}>
-              fix now
-            </Link>
+            {t('adminNav.paymentFailedShort')}{' '}
+            <LocalizedLink href='/admin/billing' style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline' }}>
+              {t('adminNav.fixNow')}
+            </LocalizedLink>
           </div>
         )}
 
         {/* Logo */}
-        <Link href='/admin/quotes' className='sidebar-logo'>
+        <LocalizedLink href='/admin/quotes' className='sidebar-logo'>
           <span className='sidebar-logo-mark'>R</span>
-          <span>RepairCenter</span>
-        </Link>
+          <span>{t('adminNav.logoText')}</span>
+        </LocalizedLink>
 
         {/* Search */}
         <div ref={searchRef} className='sidebar-search-wrap' style={{ position: 'relative' }}>
           <input
             type='search'
             className='sidebar-search'
-            placeholder='Search…'
+            placeholder={t('adminNav.searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setSearchFocused(true)}
@@ -214,7 +216,7 @@ export default function AdminSidebar() {
                     <div style={{ fontSize: '0.82rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</div>
                     {r.subtitle && <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.subtitle}</div>}
                   </div>
-                  <span style={{ marginLeft: 4, fontSize: '0.68rem', color: 'rgba(255,255,255,0.28)', flexShrink: 0, alignSelf: 'center' }}>{TYPE_LABELS[r.type]}</span>
+                  <span style={{ marginLeft: 4, fontSize: '0.68rem', color: 'rgba(255,255,255,0.28)', flexShrink: 0, alignSelf: 'center' }}>{t(`adminNav.${TYPE_LABEL_KEYS[r.type]}`)}</span>
                 </button>
               ))}
             </div>
@@ -225,31 +227,31 @@ export default function AdminSidebar() {
               borderRadius: 8, padding: '10px 12px',
               fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', zIndex: 300,
             }}>
-              No results for &ldquo;{query}&rdquo;
+              {t('adminNav.noResultsFor', { query })}
             </div>
           ) : null)}
         </div>
 
         {/* Nav sections */}
         <nav style={{ flex: 1, paddingBottom: 8 }}>
-          {NAV_SECTIONS.map(({ label, items }) => (
-            <div key={label}>
-              <div className='sidebar-section-label'>{label}</div>
-              {items.map(({ href, label: itemLabel, icon, badgeKey }) => {
+          {NAV_SECTIONS.map(({ sectionKey, items }) => (
+            <div key={sectionKey}>
+              <div className='sidebar-section-label'>{t(`adminNav.${sectionKey}`)}</div>
+              {items.map(({ href, labelKey, icon, badgeKey }) => {
                 const active = pathname === href || pathname.startsWith(href + '/')
                 const cnt    = badgeKey ? badge(badgeKey) : null
                 const dot    = badgeKey === 'billing' ? billingDot() : null
                 return (
-                  <Link
+                  <LocalizedLink
                     key={href}
                     href={href}
                     className={`sidebar-nav-link${active ? ' active' : ''}`}
                   >
                     <span className='sidebar-icon'>{icon}</span>
-                    <span className='sidebar-label'>{itemLabel}</span>
+                    <span className='sidebar-label'>{t(`adminNav.${labelKey}`)}</span>
                     {cnt  && <span className='sidebar-badge'>{cnt}</span>}
                     {dot}
-                  </Link>
+                  </LocalizedLink>
                 )
               })}
             </div>

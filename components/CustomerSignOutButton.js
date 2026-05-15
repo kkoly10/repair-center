@@ -3,9 +3,11 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { getSupabaseBrowser } from '../lib/supabase/browser'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function CustomerSignOutButton({ orgSlug }) {
   const router = useRouter()
+  const t = useT()
   const [loading, setLoading] = useState(false)
 
   const handleSignOut = async () => {
@@ -24,7 +26,7 @@ export default function CustomerSignOutButton({ orgSlug }) {
       onClick={handleSignOut}
       disabled={loading}
     >
-      {loading ? 'Signing out…' : 'Sign out'}
+      {loading ? t('common.signingOut') : t('common.signOut')}
     </button>
   )
 }

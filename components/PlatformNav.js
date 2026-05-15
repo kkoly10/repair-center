@@ -1,16 +1,18 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-
-const NAV_LINKS = [
-  { href: '/platform',            label: 'Dashboard' },
-  { href: '/platform/orgs',       label: 'Organizations' },
-  { href: '/platform/feedback',   label: 'Feedback' },
-]
+import LocalizedLink from '../lib/i18n/LocalizedLink'
+import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function PlatformNav() {
   const pathname = usePathname()
+  const t = useT()
+
+  const NAV_LINKS = [
+    { href: '/platform',          label: t('platformAdmin.navDashboard') },
+    { href: '/platform/orgs',     label: t('platformAdmin.navOrgs') },
+    { href: '/platform/feedback', label: t('platformAdmin.navFeedback') },
+  ]
 
   return (
     <nav style={{
@@ -22,12 +24,12 @@ export default function PlatformNav() {
         color: '#fff', fontWeight: 700, fontSize: '0.9rem',
         letterSpacing: '-0.01em', marginRight: 16, flexShrink: 0,
       }}>
-        ⚡ Platform Console
+        ⚡ {t('platformAdmin.title')}
       </span>
       {NAV_LINKS.map(({ href, label }) => {
         const active = pathname === href || (href !== '/platform' && pathname.startsWith(href + '/'))
         return (
-          <Link
+          <LocalizedLink
             key={href}
             href={href}
             style={{
@@ -39,7 +41,7 @@ export default function PlatformNav() {
             }}
           >
             {label}
-          </Link>
+          </LocalizedLink>
         )
       })}
     </nav>
