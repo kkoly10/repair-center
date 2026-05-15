@@ -360,7 +360,22 @@
     "step3Text": "Técnicos qualificados usam peças de qualidade e documentam cada passo.",
     "step4Title": "Receba-o de volta",
     "step4Text": "Enviamos de volta (ou ligamos para recolha) quando estiver totalmente testado e pronto.",
-    "reviewsAverage": "{avg} de {count} clientes"
+    "reviewsAverage": "{avg} de {count} clientes",
+    "getEstimateButton": "Obter orçamento",
+    "defaultHeadline": "{orgName} repara telemóveis, tablets e portáteis.",
+    "defaultSubheadline": "Obtenha um orçamento gratuito em menos de 60 segundos.",
+    "startFreeEstimate": "Começar orçamento gratuito",
+    "bookAppointment": "Marcar consulta",
+    "reviewsSingular": "avaliação",
+    "reviewsPlural": "avaliações",
+    "howKicker": "Como funciona",
+    "fourEasySteps": "Quatro passos simples",
+    "stepSubmit": "Envie o seu aparelho",
+    "stepInspect": "Inspecionamos e orçamentamos",
+    "stepRepair": "Reparamo-lo",
+    "stepShip": "Devolvemo-lo",
+    "secondaryTrack": "Já submeteu? Acompanhe a sua reparação →",
+    "secondarySignIn": "Cliente habitual? Entrar →"
   },
   "customerAccount": {
     "title": "Bem-vindo de volta",
@@ -372,7 +387,19 @@
     "viewDetails": "Ver detalhes",
     "statusLabel": "Estado",
     "deviceLabel": "Aparelho",
-    "submittedLabel": "Submetido"
+    "submittedLabel": "Submetido",
+    "accountKicker": "A minha conta",
+    "repairHistoryKicker": "Histórico de reparações",
+    "noRepairsBody": "Ainda não foram encontradas reparações para esta conta.",
+    "startFreeEstimate": "Começar orçamento gratuito",
+    "appointmentsKicker": "Marcações",
+    "appointmentsHeading": "As suas marcações de entrega",
+    "bookAnother": "Marcar outra consulta",
+    "trackKicker": "Acompanhar uma reparação específica",
+    "trackHeading": "Use um ID de orçamento ou número de pedido",
+    "trackBody": "Tem um ID à mão? Procure qualquer reparação diretamente.",
+    "trackButton": "Acompanhar uma reparação",
+    "defaultDevice": "Aparelho"
   },
   "customerLogin": {
     "title": "Entre na sua conta",
@@ -382,7 +409,17 @@
     "sending": "A enviar…",
     "sentTitle": "Verifique o seu e-mail",
     "sentText": "Enviámos um link de início de sessão para {email}. Clique para aceder à sua conta.",
-    "error": "Não foi possível enviar o link. Por favor, tente novamente."
+    "error": "Não foi possível enviar o link. Por favor, tente novamente.",
+    "kickerCheckInbox": "Verifique a sua caixa de entrada",
+    "kickerAccount": "A minha conta",
+    "magicLinkSentTitle": "Link mágico enviado",
+    "magicLinkSentBody": "Enviámos um link de início de sessão para {email}. Clique no link no e-mail para aceder à sua conta. O link expira em 60 minutos.",
+    "signInTitle": "Entre para ver as suas reparações",
+    "signInDescription": "Introduza o endereço de e-mail que utilizou ao submeter o seu pedido de reparação. Enviamos-lhe um link de início de sessão seguro — sem necessidade de palavra-passe.",
+    "emailAddressLabel": "Endereço de e-mail",
+    "emailPlaceholder": "nome@example.com",
+    "submitButton": "Enviar link de início de sessão",
+    "genericError": "Não é possível enviar o link de início de sessão de momento."
   },
   "customerReview": {
     "title": "Como correu a sua reparação?",
@@ -393,7 +430,16 @@
     "submitting": "A enviar…",
     "thanksTitle": "Obrigado pelos comentários!",
     "thanksText": "Agradecemos o tempo que dispensou para partilhar a sua experiência.",
-    "alreadySubmitted": "Já deixou uma avaliação para esta reparação."
+    "alreadySubmitted": "Já deixou uma avaliação para esta reparação.",
+    "thanksHeading": "Obrigado pelos seus comentários!",
+    "thanksBody": "A sua avaliação ajuda-nos a melhorar o nosso serviço. Agradecemos o tempo dispensado.",
+    "heading": "Como correu a sua reparação?",
+    "bodyGreeting": "Olá {firstName}, esperamos que esteja a desfrutar do seu {device} reparado. Toque numa estrela para avaliar a sua experiência.",
+    "tellMore": "Conte-nos mais (opcional)",
+    "tellMorePlaceholder": "O que correu bem? Há algo que possamos melhorar?",
+    "submitButton": "Enviar avaliação",
+    "networkError": "Erro de rede. Por favor, tente novamente.",
+    "submitFailed": "Não foi possível enviar a avaliação."
   },
   "status": {
     "submitted": "Submetido",

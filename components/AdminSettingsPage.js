@@ -189,12 +189,12 @@ function AdminSettingsPageInner() {
       })
       if (!res.ok) {
         const json = await res.json().catch(() => ({}))
-        throw new Error(json.error || 'Failed to save address & instructions.')
+        throw new Error(json.error || t('adminSettings.saveAddressFailed'))
       }
       setSavedAddress(true)
       setTimeout(() => setSavedAddress(false), 3000)
     } catch (err) {
-      setErrorAddress(err.message || 'Failed to save address & instructions.')
+      setErrorAddress(err.message || t('adminSettings.saveAddressFailed'))
     } finally {
       setSavingAddress(false)
     }
@@ -221,12 +221,12 @@ function AdminSettingsPageInner() {
       })
       if (!res.ok) {
         const json = await res.json().catch(() => ({}))
-        throw new Error(json.error || 'Failed to save branding.')
+        throw new Error(json.error || t('adminSettings.saveBrandingFailed'))
       }
       setSavedBranding(true)
       setTimeout(() => setSavedBranding(false), 3000)
     } catch (err) {
-      setErrorBranding(err.message || 'Failed to save branding.')
+      setErrorBranding(err.message || t('adminSettings.saveBrandingFailed'))
     } finally {
       setSavingBranding(false)
     }
@@ -253,12 +253,12 @@ function AdminSettingsPageInner() {
       })
       if (!res.ok) {
         const json = await res.json().catch(() => ({}))
-        throw new Error(json.error || 'Failed to save payment settings.')
+        throw new Error(json.error || t('adminSettings.savePaymentFailed'))
       }
       setSavedPayment(true)
       setTimeout(() => setSavedPayment(false), 3000)
     } catch (err) {
-      setErrorPayment(err.message || 'Failed to save payment settings.')
+      setErrorPayment(err.message || t('adminSettings.savePaymentFailed'))
     } finally {
       setSavingPayment(false)
     }
@@ -268,7 +268,7 @@ function AdminSettingsPageInner() {
     return (
       <main className='page-hero'>
         <div className='site-shell page-stack'>
-          <div className='policy-card'>Loading settings...</div>
+          <div className='policy-card'>{t('adminSettings.loading')}</div>
         </div>
       </main>
     )
@@ -289,14 +289,14 @@ function AdminSettingsPageInner() {
       <div className='site-shell page-stack'>
 
         <div className='info-card'>
-          <div className='kicker'>Admin — Settings</div>
-          <h1>Settings</h1>
+          <div className='kicker'>{t('adminSettings.kicker')}</div>
+          <h1>{t('adminSettings.title')}</h1>
         </div>
 
         {/* Shop Links */}
         {orgSlug && (
           <div className='policy-card'>
-            <h2 style={{ marginBottom: 12 }}>Your Shop</h2>
+            <h2 style={{ marginBottom: 12 }}>{t('adminSettings.shopLinkTitle')}</h2>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <a
                 href={`/shop/${orgSlug}`}
@@ -304,7 +304,7 @@ function AdminSettingsPageInner() {
                 rel='noreferrer'
                 className='button button-secondary button-compact'
               >
-                Preview shop page
+                {t('adminSettings.previewShop')}
               </a>
               <a
                 href={`/shop/${orgSlug}/estimate`}
@@ -312,7 +312,7 @@ function AdminSettingsPageInner() {
                 rel='noreferrer'
                 className='button button-secondary button-compact'
               >
-                Preview estimate form
+                {t('adminSettings.previewEstimate')}
               </a>
               <button
                 type='button'
@@ -320,70 +320,70 @@ function AdminSettingsPageInner() {
                 onClick={() => {
                   const url = `${window.location.origin}/shop/${orgSlug}`
                   navigator.clipboard.writeText(url).then(() => {
-                    setCopyFeedback('Copied!')
+                    setCopyFeedback(t('adminSettings.copied'))
                     setTimeout(() => setCopyFeedback(''), 2000)
                   })
                 }}
               >
-                {copyFeedback || 'Copy shop link'}
+                {copyFeedback || t('adminSettings.copyShopLink')}
               </button>
             </div>
             <p style={{ fontSize: '0.84rem', color: 'var(--muted)', marginTop: 10 }}>
-              Public URL: <code style={{ fontSize: '0.82rem' }}>/shop/{orgSlug}</code>
+              {t('adminSettings.publicUrlLabel')} <code style={{ fontSize: '0.82rem' }}>/shop/{orgSlug}</code>
             </p>
           </div>
         )}
 
         {/* Section 1 — Business Info */}
         <div className='policy-card'>
-          <h2>Business Info</h2>
+          <h2>{t('adminSettings.businessInfoTitle')}</h2>
           <form onSubmit={handleSaveOrg} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
             <div>
-              <label style={labelStyle}>Business Name</label>
+              <label style={labelStyle}>{t('adminSettings.businessNameLabel')}</label>
               <input
                 type='text'
                 value={orgName}
                 onChange={(e) => setOrgName(e.target.value)}
                 style={inputStyle}
-                placeholder='Your legal or DBA business name'
+                placeholder={t('adminSettings.businessNamePlaceholder')}
               />
             </div>
             <div>
-              <label style={labelStyle}>Display Name</label>
+              <label style={labelStyle}>{t('adminSettings.displayNameLabel')}</label>
               <input
                 type='text'
                 value={orgPublicName}
                 onChange={(e) => setOrgPublicName(e.target.value)}
                 style={inputStyle}
-                placeholder='Name shown to customers'
+                placeholder={t('adminSettings.displayNamePlaceholder')}
               />
             </div>
             <div>
-              <label style={labelStyle}>Support Email</label>
+              <label style={labelStyle}>{t('adminSettings.supportEmail')}</label>
               <input
                 type='email'
                 value={orgSupportEmail}
                 onChange={(e) => setOrgSupportEmail(e.target.value)}
                 style={inputStyle}
-                placeholder='support@yourshop.com'
+                placeholder={t('adminSettings.supportEmailPlaceholder')}
               />
             </div>
             <div>
-              <label style={labelStyle}>Support Phone</label>
+              <label style={labelStyle}>{t('adminSettings.supportPhone')}</label>
               <input
                 type='text'
                 value={orgSupportPhone}
                 onChange={(e) => setOrgSupportPhone(e.target.value)}
                 style={inputStyle}
-                placeholder='(555) 555-5555'
+                placeholder={t('adminSettings.supportPhonePlaceholder')}
               />
             </div>
             {errorOrg && <div className='notice'>{errorOrg}</div>}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <button type='submit' className='button' disabled={savingOrg}>
-                {savingOrg ? 'Saving...' : 'Save Business Info'}
+                {savingOrg ? t('adminSettings.savingDots') : t('adminSettings.saveBusinessInfo')}
               </button>
-              {savedOrg && <span style={{ color: '#16a34a', fontWeight: 600 }}>Saved!</span>}
+              {savedOrg && <span style={{ color: '#16a34a', fontWeight: 600 }}>{t('adminSettings.savedExclaim')}</span>}
             </div>
           </form>
         </div>
