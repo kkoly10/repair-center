@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getSupabaseBrowser } from '../lib/supabase/browser'
+import LocalizedLink from '../lib/i18n/LocalizedLink'
 import { useT } from '../lib/i18n/TranslationProvider'
 
 export default function AdminLoginForm() {
@@ -89,10 +90,16 @@ export default function AdminLoginForm() {
 
             {error ? <div className='notice'>{error}</div> : null}
 
-            <div className='inline-actions'>
+            <div className='inline-actions' style={{ justifyContent: 'space-between', alignItems: 'center' }}>
               <button type='submit' className='button button-primary' disabled={loading}>
                 {loading ? t('adminLogin.signingIn') : t('adminLogin.submit')}
               </button>
+              <LocalizedLink
+                href='/admin/forgot-password'
+                style={{ fontSize: '0.875rem', color: 'var(--muted)' }}
+              >
+                {t('adminLogin.forgotPassword')}
+              </LocalizedLink>
             </div>
           </form>
 

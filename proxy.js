@@ -100,7 +100,11 @@ export async function proxy(request) {
     },
   })
 
-  const isAdminLogin = canonicalPath === '/admin/login'
+  // Admin routes that must be reachable without an active session
+  const isAdminPublic =
+    canonicalPath === '/admin/login' ||
+    canonicalPath === '/admin/forgot-password' ||
+    canonicalPath === '/admin/reset-password'
   const isBlockedStatusBypass =
     canonicalPath === '/admin/suspended' || canonicalPath.startsWith('/admin/billing')
 
@@ -108,7 +112,7 @@ export async function proxy(request) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (isAdminLogin) {
+  if (isAdminPublic) {
     return response
   }
 
