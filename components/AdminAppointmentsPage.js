@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState, useEffect, useMemo } from 'react'
 import { statusPill } from '../lib/statusPills'
 import AdminAppointmentCalendar from './AdminAppointmentCalendar'
@@ -15,10 +16,12 @@ function fmtDatetime(iso) {
 }
 
 function AppointmentRow({ appt, onPatch }) {
+  const router = useRouter()
   const [patching, setPatching] = useState(false)
   const [patchError, setPatchError] = useState('')
   const [cancelPending, setCancelPending] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
+  const [converting, setConverting] = useState(false)
 
   async function patch(update) {
     setPatching(true)
@@ -36,6 +39,26 @@ function AppointmentRow({ appt, onPatch }) {
       setPatchError('Network error. Please try again.')
     } finally {
       setPatching(false)
+    }
+  }
+
+  async function convertToOrder() {
+    if (!window.confirm('Convert this appointment to a walk-in repair order?')) return
+    setConverting(true)
+    setPatchError('')
+    try {
+      const res = await fetch(`/admin/api/appointments/${appt.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'convert' }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setPatchError(json.error || 'Conversion failed.'); return }
+      router.push(`/admin/quotes/${json.quoteId}/order`)
+    } catch {
+      setPatchError('Network error. Please try again.')
+    } finally {
+      setConverting(false)
     }
   }
 
@@ -128,7 +151,12 @@ function AppointmentRow({ appt, onPatch }) {
               </>
             )}
             {appt.status === 'confirmed' && !appt.quote_request_id && (
-              <Link href='/admin/quotes' style={{ fontSize: 12, color: '#6366f1' }}>→ Quotes</Link>
+              <button
+                className='button button-small'
+                style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
+                disabled={patching || converting}
+                onClick={convertToOrder}
+              >{converting ? 'Converting…' : 'Convert →'}</button>
             )}
             {appt.quote_request_id && (
               <Link href={`/admin/quotes/${appt.quote_request_id}`} style={{ fontSize: 12, color: '#6366f1' }}>View quote →</Link>

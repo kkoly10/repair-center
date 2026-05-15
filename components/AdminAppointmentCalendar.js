@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { statusPill } from '../lib/statusPills'
 
 function getMonday(d) {
@@ -54,12 +55,15 @@ function fmtDatetime(iso) {
 }
 
 export default function AdminAppointmentCalendar() {
+  const router = useRouter()
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()))
   const [appointments, setAppts] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState(null)
   const [singleDay, setSingleDay] = useState(false)
   const [dayOffset, setDayOffset] = useState(0)
+  const [converting, setConverting] = useState(false)
+  const [convertError, setConvertError] = useState('')
 
   // Detect mobile width — deferred to avoid SSR/hydration mismatch
   useEffect(() => {
@@ -126,6 +130,25 @@ export default function AdminAppointmentCalendar() {
     setWeekStart(getMonday(new Date()))
     const d = new Date().getDay()
     setDayOffset(d === 0 ? 6 : d - 1)
+  }
+
+  async function convertToOrder(apptId) {
+    if (!window.confirm('Convert this appointment to a walk-in repair order?')) return
+    setConverting(true)
+    setConvertError('')
+    try {
+      const res = await fetch(`/admin/api/appointments/${apptId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'convert' }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setConvertError(json.error || 'Conversion failed.'); setConverting(false); return }
+      router.push(`/admin/quotes/${json.quoteId}/order`)
+    } catch {
+      setConvertError('Network error.')
+      setConverting(false)
+    }
   }
 
   const weekLabel = singleDay
@@ -273,6 +296,22 @@ export default function AdminAppointmentCalendar() {
                 <span className={statusPill(selectedAppt.status).cls}>{statusPill(selectedAppt.status).label}</span>
                 <span style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDatetime(selectedAppt.preferred_at)}</span>
               </div>
+              {selectedAppt.status === 'confirmed' && !selectedAppt.quote_request_id && (
+                <div style={{ marginTop: 10 }}>
+                  <button
+                    className='button button-secondary'
+                    style={{ fontSize: 12, padding: '4px 12px' }}
+                    disabled={converting}
+                    onClick={() => convertToOrder(selectedAppt.id)}
+                  >{converting ? 'Converting…' : 'Convert to order →'}</button>
+                  {convertError && <div style={{ marginTop: 4, fontSize: 12, color: 'var(--danger, #dc2626)' }}>{convertError}</div>}
+                </div>
+              )}
+              {selectedAppt.quote_request_id && (
+                <div style={{ marginTop: 10 }}>
+                  <a href={`/admin/quotes/${selectedAppt.quote_request_id}/order`} style={{ fontSize: 12, color: 'var(--blue)' }}>View order →</a>
+                </div>
+              )}
             </div>
             <button
               onClick={() => setSelectedId(null)}
