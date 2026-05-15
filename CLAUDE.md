@@ -936,6 +936,34 @@ Platform creates PaymentIntent on its own account with `transfer_data: { destina
 
 ---
 
+## Sprint 37 — Guided Onboarding Banner ✅ COMPLETE
+
+### Migration applied to production
+- `20260515_023_onboarding_dismissed_at.sql` — adds `onboarding_dismissed_at timestamptz` (nullable) to `organizations`; NULL = never dismissed
+
+### What was done
+- **`GET /admin/api/onboarding/status`** (new) — 5 parallel queries via `Promise.all`; derives step completion from branding, pricing, payment, estimates, org row; returns `{ ok, dismissedAt, steps }` shape; completion booleans computed server-side so client is a pure renderer
+- **`POST /admin/api/onboarding/dismiss`** (new) — writes `onboarding_dismissed_at = now()` to the org row; requires auth; no request body
+- **`components/AdminOnboardingBanner.js`** (new) — `'use client'` component; fetches status on mount; lazy `useState` init for collapse (avoids sync setState in effect); `useEffect` watches `allComplete` to trigger celebration timer (avoids ref access during render); Zeigarnik pre-fill (step 1 always complete, pct starts at 20%); animated progress bar; 5-step checklist with direct `<Link>` navigation; Dismiss button (optimistic + fire-and-forget server write); 4-second celebration state on all-complete; auto-hides when dismissed, celebrated, or server says dismissed
+- **`app/admin/layout.js`** (modified) — imports `AdminOnboardingBanner`; renders it inside `.admin-main` before the `Suspense` block; zero server-side latency (banner fetches client-side)
+- **`components/AdminOrdersQueue.js`** (modified) — replaces bare empty-state text with `<FirstOrderGuide>` card when active view + no search; shows mock RCO-001 order row at 0.55 opacity; CTAs to create quote and invite tech; existing terse text preserved for all other views/searches
+- **`__tests__/api/onboarding.test.js`** (new) — 15 tests: GET (all step permutations, null-safety, dismissedAt shape, 500 on DB error) and POST (auth, DB write verification, ok shape, 500 on DB failure); custom `makeDb` factory handles mixed count-chain + data-chain query types
+
+### Checklist items and detection signals
+
+| Step | Label | Signal |
+|------|-------|--------|
+| 1 | Create your account | Always `true` |
+| 2 | Set up your shop profile | `branding.primary_color OR logo_url OR hero_headline IS NOT NULL` |
+| 3 | Add a pricing rule | `COUNT(active pricing_rules) > 0` |
+| 4 | Configure payments | `manual_payment_instructions IS NOT NULL OR payment_mode != 'manual'` |
+| 5 | Send your first estimate | `COUNT(quote_estimates WHERE status='sent') > 0` |
+
+### Test suite after Sprint 37
+233 tests across 22 suites — all passing.
+
+---
+
 ## Environment notes
 - Next.js on Vercel — uses `proxy.js` (not `middleware.js`) as the edge middleware file
 - Supabase publishable key env var: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (also falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` in proxy.js)

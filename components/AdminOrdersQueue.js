@@ -298,9 +298,13 @@ function AdminOrdersQueueInner() {
         ) : loading ? (
           <div className='policy-card center-card'>Loading {activeViewLabel.toLowerCase()} orders…</div>
         ) : !orders.length ? (
-          <div className='policy-card center-card'>
-            No {activeViewLabel.toLowerCase()} orders{searchTerm ? ` matching "${searchTerm}"` : ''}.
-          </div>
+          !searchTerm && activeView === 'active'
+            ? <FirstOrderGuide />
+            : (
+              <div className='policy-card center-card'>
+                No {activeViewLabel.toLowerCase()} orders{searchTerm ? ` matching "${searchTerm}"` : ''}.
+              </div>
+            )
         ) : (
           <div className='policy-card' style={{ padding: 0, overflowX: 'auto' }}>
             <table className='data-table'>
@@ -474,5 +478,48 @@ function AdminOrdersQueueInner() {
         )}
       </div>
     </main>
+  )
+}
+
+function FirstOrderGuide() {
+  return (
+    <div className='policy-card' style={{ padding: '32px 28px', textAlign: 'center', maxWidth: 560, margin: '0 auto' }}>
+      <div style={{ fontSize: '2rem', marginBottom: 12 }}>🔧</div>
+      <h2 style={{ marginTop: 0, marginBottom: 8, letterSpacing: '-0.02em' }}>Your queue is empty</h2>
+      <p style={{ color: 'var(--muted)', marginBottom: 24, lineHeight: 1.6 }}>
+        Orders appear here once a customer&apos;s estimate is approved and converted to a repair order.
+        Get started by creating a quote request from a customer.
+      </p>
+
+      <div style={{
+        background: 'var(--surface-alt, var(--surface))',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--radius-md, 8px)',
+        padding: '12px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        textAlign: 'left',
+        marginBottom: 24,
+        opacity: 0.55,
+        fontSize: '0.85rem',
+      }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--warn, #f59e0b)', flexShrink: 0 }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 600, fontFamily: 'monospace', fontSize: '0.82rem' }}>RCO-001</div>
+          <div style={{ color: 'var(--muted)' }}>Jane Doe — iPhone 14 Screen Replacement</div>
+        </div>
+        <div style={{ whiteSpace: 'nowrap', color: 'var(--muted)' }}>Repairing · 2d left</div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <Link href='/admin/quotes' className='button button-secondary button-compact'>
+          Create a quote request
+        </Link>
+        <Link href='/admin/team' className='button button-ghost button-compact'>
+          Invite a technician
+        </Link>
+      </div>
+    </div>
   )
 }
