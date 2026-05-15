@@ -1,5 +1,6 @@
 import './globals.css'
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
+import { headers } from 'next/headers'
 import SiteHeader from '../components/SiteHeader'
 import SiteFooter from '../components/SiteFooter'
 import { TranslationProvider } from '../lib/i18n/TranslationProvider'
@@ -29,9 +30,14 @@ export async function generateMetadata() {
 
 export default async function RootLayout({ children }) {
   const { locale, messages } = await getServerMessages()
+  // Reading the nonce here lets Next.js auto-attach it to its built-in
+  // <script> tags so they satisfy our nonce-based CSP. See proxy.js +
+  // lib/csp.js. The read also forces dynamic rendering (acceptable — most
+  // pages are already dynamic).
+  const nonce = (await headers()).get('x-nonce') || undefined
   return (
     <html lang={locale}>
-      <body className={`${inter.variable} ${plusJakartaSans.variable}`}>
+      <body className={`${inter.variable} ${plusJakartaSans.variable}`} data-nonce={nonce}>
         <TranslationProvider locale={locale} messages={messages}>
           <SiteHeader />
           {children}

@@ -1,29 +1,10 @@
 /** @type {import('next').NextConfig} */
 
-// Security headers applied to every response. CSP intentionally permissive
-// for Stripe + Supabase + Resend integrations; tighten as the third-party
-// surface stabilizes.
-const STRIPE_HOSTS = "https://js.stripe.com https://*.stripe.com https://api.stripe.com"
-const SUPABASE_HOSTS = "https://*.supabase.co wss://*.supabase.co"
-const RESEND_HOSTS = "https://api.resend.com"
-
-const csp = [
-  `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${STRIPE_HOSTS}`,
-  `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
-  `img-src 'self' data: blob: https:`,
-  `font-src 'self' data: https://fonts.gstatic.com`,
-  `connect-src 'self' ${SUPABASE_HOSTS} ${STRIPE_HOSTS} ${RESEND_HOSTS}`,
-  `frame-src 'self' ${STRIPE_HOSTS}`,
-  `object-src 'none'`,
-  `base-uri 'self'`,
-  `form-action 'self' ${STRIPE_HOSTS}`,
-  `frame-ancestors 'none'`,
-  `upgrade-insecure-requests`,
-].join('; ')
-
+// Static security headers. CSP itself is built per-request in proxy.js so it
+// can carry a fresh nonce — see lib/csp.js. These remaining headers don't
+// need per-request data, so keeping them here lets Next.js attach them at
+// the framework level (cheaper than middleware).
 const securityHeaders = [
-  { key: 'Content-Security-Policy', value: csp },
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },

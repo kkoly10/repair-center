@@ -7,6 +7,7 @@ import {
   detectLocaleFromAcceptLanguage,
   isLocale,
 } from './lib/i18n/config'
+import { buildCsp, generateNonce } from './lib/csp'
 
 function extractLocale(pathname) {
   const segments = pathname.split('/').filter(Boolean)
@@ -26,15 +27,34 @@ function shouldSkipLocale(pathname) {
   return false
 }
 
+// CSP is built once per request and applied to every response path. The same
+// nonce is exposed via x-nonce so the root layout can wire it into Next's
+// auto-attached scripts. Report-only mode (CSP_REPORT_ONLY=1) ships the policy
+// for a rollout phase without blocking violators — flip to enforce once
+// /api/csp-report shows the policy is clean.
+function attachSecurity(response, csp) {
+  response.headers.set(csp.headerName, csp.value)
+  return response
+}
+
 export async function proxy(request) {
   const pathname = request.nextUrl.pathname
+
+  // Per-request nonce + CSP header. The Edge runtime exposes Web Crypto +
+  // btoa so generateNonce() runs in both Node and Edge.
+  const nonce = generateNonce()
+  const csp = buildCsp(nonce, {
+    reportOnly: process.env.CSP_REPORT_ONLY === '1',
+  })
 
   // Step 1: Locale resolution and rewrite
   let activeLocale = DEFAULT_LOCALE
   let response
 
   if (shouldSkipLocale(pathname)) {
-    response = NextResponse.next({ request: { headers: request.headers } })
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-nonce', nonce)
+    response = NextResponse.next({ request: { headers: requestHeaders } })
   } else {
     const { locale: pathLocale, rest } = extractLocale(pathname)
     const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value
@@ -47,6 +67,7 @@ export async function proxy(request) {
       url.pathname = rest === '' ? '/' : rest
       const requestHeaders = new Headers(request.headers)
       requestHeaders.set('x-locale', activeLocale)
+      requestHeaders.set('x-nonce', nonce)
       response = NextResponse.rewrite(url, { request: { headers: requestHeaders } })
       // Persist user's choice
       response.cookies.set(LOCALE_COOKIE, activeLocale, {
@@ -58,6 +79,7 @@ export async function proxy(request) {
       activeLocale = isLocale(cookieLocale) ? cookieLocale : headerLocale
       const requestHeaders = new Headers(request.headers)
       requestHeaders.set('x-locale', activeLocale)
+      requestHeaders.set('x-nonce', nonce)
       response = NextResponse.next({ request: { headers: requestHeaders } })
       // Persist detected locale if cookie absent
       if (!cookieLocale) {
@@ -76,14 +98,14 @@ export async function proxy(request) {
   const isAdminPath = canonicalPath.startsWith('/admin')
 
   if (!isAdminPath) {
-    return response
+    return attachSecurity(response, csp)
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseKey) {
-    return response
+    return attachSecurity(response, csp)
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
@@ -113,19 +135,19 @@ export async function proxy(request) {
   } = await supabase.auth.getUser()
 
   if (isAdminPublic) {
-    return response
+    return attachSecurity(response, csp)
   }
 
   function localizedRedirect(target) {
     const localePrefix = activeLocale === DEFAULT_LOCALE ? '' : `/${activeLocale}`
-    return NextResponse.redirect(new URL(`${localePrefix}${target}`, request.url))
+    return attachSecurity(NextResponse.redirect(new URL(`${localePrefix}${target}`, request.url)), csp)
   }
 
   if (!user) {
     const localePrefix = activeLocale === DEFAULT_LOCALE ? '' : `/${activeLocale}`
     const loginUrl = new URL(`${localePrefix}/admin/login`, request.url)
     loginUrl.searchParams.set('next', canonicalPath)
-    return NextResponse.redirect(loginUrl)
+    return attachSecurity(NextResponse.redirect(loginUrl), csp)
   }
 
   const { data: membership } = await supabase
@@ -140,7 +162,7 @@ export async function proxy(request) {
     const localePrefix = activeLocale === DEFAULT_LOCALE ? '' : `/${activeLocale}`
     const loginUrl = new URL(`${localePrefix}/admin/login`, request.url)
     loginUrl.searchParams.set('error', 'unauthorized')
-    return NextResponse.redirect(loginUrl)
+    return attachSecurity(NextResponse.redirect(loginUrl), csp)
   }
 
   const BLOCKED_STATUSES = new Set(['suspended', 'cancelled'])
@@ -153,7 +175,7 @@ export async function proxy(request) {
     return localizedRedirect('/admin/suspended')
   }
 
-  return response
+  return attachSecurity(response, csp)
 }
 
 export const config = {
