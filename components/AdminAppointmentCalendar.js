@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { statusPill } from '../lib/statusPills'
@@ -141,7 +142,6 @@ export default function AdminAppointmentCalendar() {
   }
 
   async function convertToOrder(apptId) {
-    if (!window.confirm(t('adminAppointments.confirmConvert'))) return
     setConverting(true)
     setConvertError('')
     try {
@@ -317,7 +317,7 @@ export default function AdminAppointmentCalendar() {
               )}
               {selectedAppt.quote_request_id && (
                 <div style={{ marginTop: 10 }}>
-                  <a href={`/admin/quotes/${selectedAppt.quote_request_id}/order`} style={{ fontSize: 12, color: 'var(--blue)' }}>{t('adminAppointments.viewOrder')}</a>
+                  <Link href={`/admin/quotes/${selectedAppt.quote_request_id}/order`} style={{ fontSize: 12, color: 'var(--blue)', textDecoration: 'none' }}>{t('adminAppointments.viewOrder')}</Link>
                 </div>
               )}
             </div>
