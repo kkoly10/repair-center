@@ -317,11 +317,7 @@ export default function AdminAppointmentCalendar() {
               )}
               {selectedAppt.quote_request_id && (
                 <div style={{ marginTop: 10 }}>
-<<<<<<< HEAD
-                  <a href={`/admin/quotes/${selectedAppt.quote_request_id}/order`} style={{ fontSize: 12, color: 'var(--blue)' }}>{t('adminAppointments.viewOrder')}</a>
-=======
-                  <Link href={`/admin/quotes/${selectedAppt.quote_request_id}/order`} style={{ fontSize: 12, color: 'var(--blue)', textDecoration: 'none' }}>View order →</Link>
->>>>>>> f152711 (fix: three bugs found in /review pass)
+                  <Link href={`/admin/quotes/${selectedAppt.quote_request_id}/order`} style={{ fontSize: 12, color: 'var(--blue)', textDecoration: 'none' }}>{t('adminAppointments.viewOrder')}</Link>
                 </div>
               )}
             </div>
