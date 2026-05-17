@@ -38,6 +38,7 @@ export async function GET(request, context) {
       .from('repair_orders')
       .select('id')
       .eq('quote_request_id', quoteRequest.id)
+      .eq('organization_id', orgId)
       .maybeSingle()
 
     if (orderError) throw orderError
@@ -108,6 +109,7 @@ export async function POST(request, context) {
       .from('repair_orders')
       .select('id')
       .eq('quote_request_id', quoteRequest.id)
+      .eq('organization_id', orgId)
       .maybeSingle()
 
     if (orderError) throw orderError
