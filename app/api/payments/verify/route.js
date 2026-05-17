@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { finalizeDepositPayment } from '../webhook/route'
+import { checkRateLimit } from '../../../../lib/rateLimiter'
 
 export const runtime = 'nodejs'
 
@@ -14,6 +15,10 @@ function getStripe() {
 // Called by the client after Stripe redirects back on payment success.
 // Verifies the payment intent status and finalizes the repair order.
 export async function POST(request) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown'
+  const { allowed } = await checkRateLimit(ip, { maxRequests: 20, windowMs: 60 * 60 * 1000 })
+  if (!allowed) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 })
+
   try {
     const body = await request.json()
     const paymentIntentId = (body?.paymentIntentId || '').toString().trim()

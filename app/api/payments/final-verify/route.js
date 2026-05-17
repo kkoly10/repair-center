@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { finalizeFinalBalancePayment } from '../../../../lib/payments/finalizeFinalBalancePayment'
+import { checkRateLimit } from '../../../../lib/rateLimiter'
 
 export const runtime = 'nodejs'
 
@@ -13,6 +14,10 @@ function getStripe() {
 }
 
 export async function POST(request) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown'
+  const { allowed } = await checkRateLimit(ip, { maxRequests: 20, windowMs: 60 * 60 * 1000 })
+  if (!allowed) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 })
+
   try {
     const body = await request.json()
     const paymentIntentId = (body?.paymentIntentId || '').toString().trim()

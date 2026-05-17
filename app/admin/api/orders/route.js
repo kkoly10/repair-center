@@ -51,11 +51,12 @@ export async function GET(request) {
           return NextResponse.json({ ok: true, orders: [], totalCount: 0, page })
         }
       } else if (!/^RCO-/i.test(search)) {
+        const safeSearch = search.replace(/[,()"%]/g, ' ').replace(/\\/g, '\\\\').replace(/_/g, '\\_').trim()
         const { data: customers } = await supabase
           .from('customers')
           .select('id')
           .eq('organization_id', orgId)
-          .or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`)
+          .or(`first_name.ilike.%${safeSearch}%,last_name.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%`)
           .limit(100)
         searchCustomerIds = (customers || []).map((c) => c.id)
       }
