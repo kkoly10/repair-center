@@ -125,6 +125,7 @@ function AdminRepairOrderInner({ quoteId }) {
 
         if (!ignore) {
           setRecord(result)
+          setIntakeConfirmSent(!!result.intakeConfirmAlreadySent)
           setStatus(result.order?.current_status || 'awaiting_mail_in')
           setTechnicianNote(result.order?.technician_note || '')
           setTechnicianId(result.order?.assigned_technician_user_id || '')
@@ -323,7 +324,8 @@ function AdminRepairOrderInner({ quoteId }) {
     try {
       const res = await fetch(`/admin/api/orders/${record?.order?.id}/notify-intake`, { method: 'POST' })
       const data = await res.json()
-      if (data.ok) {
+      if (data.ok || res.status === 409) {
+        // 409 = already sent — treat as success so button hides correctly
         setIntakeConfirmSent(true)
       } else {
         setIntakeConfirmError(data.error || t('adminRepairOrder.intakeConfirmFailed'))

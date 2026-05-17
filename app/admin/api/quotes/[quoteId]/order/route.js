@@ -97,8 +97,11 @@ export async function GET(request, context) {
     let shipments = []
     let auditLog = []
 
+    let intakeConfirmAlreadySent = false
+
     if (orderResult.data?.id) {
-      const [historyResult, shipmentsResult, auditLogResult] = await Promise.all([
+      const isWalkIn = quoteRequest.submission_source === 'walk_in'
+      const [historyResult, shipmentsResult, auditLogResult, intakeNotifResult] = await Promise.all([
         supabase
           .from('repair_order_status_history')
           .select('id, repair_order_id, previous_status, new_status, customer_visible, note, created_at')
@@ -114,6 +117,14 @@ export async function GET(request, context) {
           .select('id, event_type, old_value, new_value, actor_user_id, created_at')
           .eq('repair_order_id', orderResult.data.id)
           .order('created_at', { ascending: true }),
+        isWalkIn
+          ? supabase
+              .from('notifications')
+              .select('id')
+              .eq('repair_order_id', orderResult.data.id)
+              .eq('dedupe_key', 'repair-status:null')
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
       ])
 
       if (historyResult.error) throw historyResult.error
@@ -123,6 +134,7 @@ export async function GET(request, context) {
       history = historyResult.data || []
       shipments = shipmentsResult.data || []
       auditLog = auditLogResult.data || []
+      intakeConfirmAlreadySent = !!intakeNotifResult.data
     }
 
     return NextResponse.json({
@@ -131,12 +143,15 @@ export async function GET(request, context) {
         id: quoteRequest.id,
         quote_id: quoteRequest.quote_id,
         status: quoteRequest.status,
+        submission_source: quoteRequest.submission_source,
+        guest_email: quoteRequest.guest_email,
         brand_name: quoteRequest.brand_name,
         model_name: quoteRequest.model_name,
         repair_type_key: quoteRequest.repair_type_key,
         issue_description: quoteRequest.issue_description,
         quote_summary: quoteRequest.quote_summary,
       },
+      intakeConfirmAlreadySent,
       customer: {
         name: [
           customerResult.data?.first_name || quoteRequest.first_name,
