@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import Link from 'next/link'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { useT } from '../lib/i18n/TranslationProvider'
@@ -188,7 +189,7 @@ export default function PaymentCheckoutPage({ quoteId }) {
             <h3>{t('paymentCheckout.noPaymentTitle')}</h3>
             <p>{t('paymentCheckout.noPaymentBody')}</p>
             <div className='inline-actions' style={{ marginTop: 16 }}>
-              <a href={`/mail-in/${quoteId}`} className='button button-primary'>{t('paymentCheckout.viewMailIn')}</a>
+              <Link href={`/mail-in/${quoteId}`} className='button button-primary'>{t('paymentCheckout.viewMailIn')}</Link>
             </div>
           </div>
         ) : null}
@@ -199,7 +200,7 @@ export default function PaymentCheckoutPage({ quoteId }) {
             <h3>{t('paymentCheckout.alreadyPaidTitle')}</h3>
             <p>{t('paymentCheckout.alreadyPaidBody')}</p>
             <div className='inline-actions' style={{ marginTop: 16 }}>
-              <a href={`/mail-in/${quoteId}`} className='button button-primary'>{t('paymentCheckout.viewMailIn')}</a>
+              <Link href={`/mail-in/${quoteId}`} className='button button-primary'>{t('paymentCheckout.viewMailIn')}</Link>
             </div>
           </div>
         ) : null}

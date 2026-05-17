@@ -73,6 +73,7 @@ export default function AdminAppointmentCalendar() {
   const [dayOffset, setDayOffset] = useState(0)
   const [converting, setConverting] = useState(false)
   const [convertError, setConvertError] = useState('')
+  const [convertPending, setConvertPending] = useState(false)
 
   // Detect mobile width — deferred to avoid SSR/hydration mismatch
   useEffect(() => {
@@ -306,12 +307,30 @@ export default function AdminAppointmentCalendar() {
               </div>
               {selectedAppt.status === 'confirmed' && !selectedAppt.quote_request_id && (
                 <div style={{ marginTop: 10 }}>
-                  <button
-                    className='button button-secondary'
-                    style={{ fontSize: 12, padding: '4px 12px' }}
-                    disabled={converting}
-                    onClick={() => convertToOrder(selectedAppt.id)}
-                  >{converting ? t('adminAppointments.converting') : t('adminAppointments.convertToOrder')}</button>
+                  {convertPending ? (
+                    <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 12, color: 'var(--muted)' }}>{t('adminAppointments.confirmConvert')}</span>
+                      <button
+                        className='button button-secondary'
+                        style={{ fontSize: 12, padding: '4px 12px' }}
+                        disabled={converting}
+                        onClick={() => { setConvertPending(false); convertToOrder(selectedAppt.id) }}
+                      >{converting ? t('adminAppointments.converting') : t('adminAppointments.convert')}</button>
+                      <button
+                        className='button button-secondary'
+                        style={{ fontSize: 12, padding: '4px 12px' }}
+                        disabled={converting}
+                        onClick={() => setConvertPending(false)}
+                      >{t('adminAppointments.back')}</button>
+                    </span>
+                  ) : (
+                    <button
+                      className='button button-secondary'
+                      style={{ fontSize: 12, padding: '4px 12px' }}
+                      disabled={converting}
+                      onClick={() => setConvertPending(true)}
+                    >{t('adminAppointments.convertToOrder')}</button>
+                  )}
                   {convertError && <div style={{ marginTop: 4, fontSize: 12, color: 'var(--danger, #dc2626)' }}>{convertError}</div>}
                 </div>
               )}

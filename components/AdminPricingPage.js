@@ -453,7 +453,7 @@ function AdminPricingPageInner() {
                             <span style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
                               <span style={{ color: 'var(--danger, #dc2626)' }}>{t('adminPricing.confirmDelete')}</span>
                               <button type='button' className='button button-compact' style={{ fontSize: 12, background: 'var(--danger, #dc2626)', color: '#fff', border: 'none' }} disabled={isDeleting} onClick={() => handleDelete(rule.id)}>{isDeleting ? '…' : t('adminPricing.confirmYes')}</button>
-                              <button type='button' className='button button-secondary button-compact' style={{ fontSize: 12 }} onClick={() => setPendingDeleteId(null)}>{t('adminPricing.confirmNo')}</button>
+                              <button type='button' className='button button-secondary button-compact' style={{ fontSize: 12 }} disabled={isDeleting} onClick={() => setPendingDeleteId(null)}>{t('adminPricing.confirmNo')}</button>
                             </span>
                           ) : (
                             <button

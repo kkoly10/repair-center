@@ -20,7 +20,9 @@ export async function GET(request) {
   }
 
   const supabase = getSupabaseAdmin()
-  const pattern = `%${q}%`
+  // Strip chars that break PostgREST or() filter syntax, then escape SQL LIKE wildcards
+  const safeQ = q.replace(/[,()"%]/g, ' ').replace(/\\/g, '\\\\').replace(/_/g, '\\_').trim()
+  const pattern = `%${safeQ}%`
 
   const [quotesResult, ordersResult, customersResult] = await Promise.all([
     // Quote requests: search by quote_id, first_name, last_name, email, brand_name, model_name
