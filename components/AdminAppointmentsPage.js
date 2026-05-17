@@ -47,7 +47,6 @@ function AppointmentRow({ appt, onPatch }) {
   }
 
   async function convertToOrder() {
-    if (!window.confirm(t('adminAppointments.confirmConvert'))) return
     setConverting(true)
     setPatchError('')
     try {
