@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import Link from 'next/link'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { useT } from '../lib/i18n/TranslationProvider'
@@ -190,7 +191,7 @@ export default function FinalBalanceCheckoutPage({ quoteId }) {
             <h3>{t('paymentCheckout.noBalanceTitle')}</h3>
             <p>{t('paymentCheckout.noBalanceBody')}</p>
             <div className='inline-actions' style={{ marginTop: 16 }}>
-              <a href={`/track/${quoteId}`} className='button button-primary'>{t('paymentCheckout.openTracking')}</a>
+              <Link href={`/track/${quoteId}`} className='button button-primary'>{t('paymentCheckout.openTracking')}</Link>
             </div>
           </div>
         ) : null}

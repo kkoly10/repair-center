@@ -26,6 +26,7 @@ function AppointmentRow({ appt, onPatch }) {
   const [cancelPending, setCancelPending] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [converting, setConverting] = useState(false)
+  const [convertPending, setConvertPending] = useState(false)
 
   async function patch(update) {
     setPatching(true)
@@ -47,7 +48,6 @@ function AppointmentRow({ appt, onPatch }) {
   }
 
   async function convertToOrder() {
-    if (!window.confirm(t('adminAppointments.confirmConvert'))) return
     setConverting(true)
     setPatchError('')
     try {
@@ -155,12 +155,30 @@ function AppointmentRow({ appt, onPatch }) {
               </>
             )}
             {appt.status === 'confirmed' && !appt.quote_request_id && (
-              <button
-                className='button button-small'
-                style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
-                disabled={patching || converting}
-                onClick={convertToOrder}
-              >{converting ? t('adminAppointments.converting') : t('adminAppointments.convert')}</button>
+              convertPending ? (
+                <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>{t('adminAppointments.confirmConvert')}</span>
+                  <button
+                    className='button button-small'
+                    style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
+                    disabled={converting}
+                    onClick={() => { setConvertPending(false); convertToOrder() }}
+                  >{converting ? t('adminAppointments.converting') : t('adminAppointments.convert')}</button>
+                  <button
+                    className='button button-small'
+                    style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
+                    disabled={converting}
+                    onClick={() => setConvertPending(false)}
+                  >{t('adminAppointments.back')}</button>
+                </span>
+              ) : (
+                <button
+                  className='button button-small'
+                  style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}
+                  disabled={patching}
+                  onClick={() => setConvertPending(true)}
+                >{t('adminAppointments.convert')}</button>
+              )
             )}
             {appt.quote_request_id && (
               <LocalizedLink href={`/admin/quotes/${appt.quote_request_id}`} style={{ fontSize: 12, color: '#6366f1' }}>{t('adminAppointments.viewQuote')}</LocalizedLink>

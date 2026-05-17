@@ -48,7 +48,12 @@ export async function GET() {
     const overdueOrders = []
     const stuckOrders = []
     const completedTurnarounds = []
-    const terminalStatuses = ['delivered', 'completed', 'cancelled', 'refunded']
+    const terminalStatuses = new Set([
+      'shipped', 'delivered', 'cancelled', 'declined',
+      'returned_unrepaired', 'beyond_economical_repair', 'no_fault_found',
+    ])
+    // Statuses that should not count toward SLA turnaround averages
+    const notRepairedStatuses = new Set(['cancelled', 'declined', 'returned_unrepaired', 'beyond_economical_repair', 'no_fault_found'])
     const fortyEightHoursMs = 48 * 60 * 60 * 1000
     let totalOrders = 0
     let onTimeOrders = 0
@@ -60,7 +65,7 @@ export async function GET() {
       const repairKey = pricingRule?.repair_types?.repair_key || order.quote_requests?.repair_type_key || 'unknown'
       const createdAt = new Date(order.created_at)
       const updatedAt = new Date(order.updated_at || order.created_at)
-      const isTerminal = terminalStatuses.includes(order.current_status)
+      const isTerminal = terminalStatuses.has(order.current_status)
 
       // Check for overdue orders (non-terminal, past expected turnaround)
       if (turnaroundDays && !isTerminal) {
@@ -94,7 +99,7 @@ export async function GET() {
       }
 
       // Track completed order turnaround for averages
-      if (isTerminal && order.current_status !== 'cancelled' && order.current_status !== 'refunded') {
+      if (isTerminal && !notRepairedStatuses.has(order.current_status)) {
         const turnaroundMs = updatedAt - createdAt
         const turnaroundActualDays = turnaroundMs / (24 * 60 * 60 * 1000)
         completedTurnarounds.push({

@@ -1136,6 +1136,8 @@
     "actionFailed": "Action failed.",
     "actionDone": "Done — org status is now \"{status}\".",
     "suspendConfirm": "Suspend \"{name}\"? This will block all admin access.",
+    "confirmYes": "Yes, suspend",
+    "confirmNo": "Cancel",
     "labelBilling": "Billing",
     "labelSubscription": "Subscription",
     "labelTeam": "Team",
@@ -1867,7 +1869,9 @@
     "priceUpTo": "Up to {price}",
     "rangeUnset": "Range (unset)",
     "categoryOther": "Other",
-    "unknownBrand": "Unknown"
+    "unknownBrand": "Unknown",
+    "confirmYes": "Yes, delete",
+    "confirmNo": "Cancel"
   },
   "adminQuoteDetail": {
     "kicker": "Admin quote",
@@ -2482,6 +2486,8 @@
     "confirmDeleteBrand": "Delete this brand? This will also remove its models and any linked pricing rules.",
     "confirmDeleteModel": "Delete this model? Pricing rules for this model will also be removed.",
     "confirmDeleteRepairType": "Delete this repair type? Pricing rules using it will also be removed.",
+    "confirmYes": "Yes, delete",
+    "confirmNo": "Cancel",
     "errorLoad": "Failed to load.",
     "errorLoadBrands": "Failed to load brands.",
     "errorLoadModels": "Failed to load models.",

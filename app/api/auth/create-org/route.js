@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
 import { isReservedSlug } from '../../../../lib/reservedSlugs'
+import { checkRateLimit } from '../../../../lib/rateLimiter'
 
 export const runtime = 'nodejs'
 
@@ -11,6 +12,10 @@ const supabaseKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 export async function POST(request) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown'
+  const { allowed } = await checkRateLimit(ip, { maxRequests: 5, windowMs: 60 * 60 * 1000 })
+  if (!allowed) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 })
+
   const supabase = getSupabaseAdmin()
 
   try {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin'
 import { resolveTrackingIdentifier } from '../../../../lib/resolveTrackingIdentifier'
 import { verifyToken } from '../../../../lib/hmacToken'
+import { checkRateLimit } from '../../../../lib/rateLimiter'
 
 export const runtime = 'nodejs'
 
@@ -17,6 +18,10 @@ async function resolveOrgId(supabase, orgSlug) {
 }
 
 export async function POST(request, context) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown'
+  const { allowed } = await checkRateLimit(ip, { maxRequests: 20, windowMs: 60 * 60 * 1000 })
+  if (!allowed) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 })
+
   const supabase = getSupabaseAdmin()
 
   try {

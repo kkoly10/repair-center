@@ -24,7 +24,7 @@ export async function GET(request) {
   // Typeahead path: skip orders join, return lightweight results fast
   if (q.length >= 2) {
     try {
-      const safe = q.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')
+      const safe = q.replace(/[,()"%]/g, ' ').replace(/\\/g, '\\\\').replace(/_/g, '\\_').trim()
       const { data, error } = await supabase
         .from('customers')
         .select('id, first_name, last_name, email, phone, created_at')

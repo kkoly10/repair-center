@@ -81,6 +81,7 @@ export async function POST(request, context) {
       .from('repair_orders')
       .select('*')
       .eq('quote_request_id', quoteRequest.id)
+      .eq('organization_id', orgId)
       .maybeSingle()
 
     if (repairOrderError) throw repairOrderError

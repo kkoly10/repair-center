@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Link from 'next/link'
 import { useT } from '../lib/i18n/TranslationProvider'
 
 const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }
@@ -59,7 +60,7 @@ export default function BookingPage({ orgSlug, orgName, prefill }) {
             <p style={{ color: 'var(--muted)', maxWidth: 400, margin: '0 auto 24px' }}>
               {t('booking.successConfirmation', { email: form.email })}
             </p>
-            <a href={`/shop/${orgSlug}`} className='button button-secondary'>{t('booking.backToShop', { orgName })}</a>
+            <Link href={`/shop/${orgSlug}`} className='button button-secondary'>{t('booking.backToShop', { orgName })}</Link>
           </div>
         </div>
       </main>
@@ -137,7 +138,7 @@ export default function BookingPage({ orgSlug, orgName, prefill }) {
             <button type='submit' className='button button-primary' disabled={saving}>
               {saving ? t('booking.submitting') : t('booking.submit')}
             </button>
-            <a href={`/shop/${orgSlug}`} className='button button-secondary'>{t('booking.cancel')}</a>
+            <Link href={`/shop/${orgSlug}`} className='button button-secondary'>{t('booking.cancel')}</Link>
           </div>
         </form>
       </div>

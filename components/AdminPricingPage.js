@@ -53,6 +53,7 @@ function AdminPricingPageInner() {
 
   // Delete state
   const [deletingId, setDeletingId] = useState(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState(null)
   const [deleteError, setDeleteError] = useState('')
 
   useEffect(() => {
@@ -122,7 +123,7 @@ function AdminPricingPageInner() {
   }
 
   async function handleDelete(ruleId) {
-    if (!window.confirm(t('adminPricing.confirmDelete'))) return
+    setPendingDeleteId(null)
     setDeletingId(ruleId)
     setDeleteError('')
     try {
@@ -448,15 +449,23 @@ function AdminPricingPageInner() {
                           <button type='button' className='button button-secondary button-compact' onClick={() => startEdit(rule)}>
                             {t('adminPricing.edit')}
                           </button>
-                          <button
-                            type='button'
-                            className='button button-secondary button-compact'
-                            style={{ color: 'var(--danger, #dc2626)', borderColor: 'var(--danger, #dc2626)' }}
-                            disabled={isDeleting}
-                            onClick={() => handleDelete(rule.id)}
-                          >
-                            {isDeleting ? '…' : t('adminPricing.delete')}
-                          </button>
+                          {pendingDeleteId === rule.id ? (
+                            <span style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
+                              <span style={{ color: 'var(--danger, #dc2626)' }}>{t('adminPricing.confirmDelete')}</span>
+                              <button type='button' className='button button-compact' style={{ fontSize: 12, background: 'var(--danger, #dc2626)', color: '#fff', border: 'none' }} disabled={isDeleting} onClick={() => handleDelete(rule.id)}>{isDeleting ? '…' : t('adminPricing.confirmYes')}</button>
+                              <button type='button' className='button button-secondary button-compact' style={{ fontSize: 12 }} disabled={isDeleting} onClick={() => setPendingDeleteId(null)}>{t('adminPricing.confirmNo')}</button>
+                            </span>
+                          ) : (
+                            <button
+                              type='button'
+                              className='button button-secondary button-compact'
+                              style={{ color: 'var(--danger, #dc2626)', borderColor: 'var(--danger, #dc2626)' }}
+                              disabled={isDeleting}
+                              onClick={() => setPendingDeleteId(rule.id)}
+                            >
+                              {t('adminPricing.delete')}
+                            </button>
+                          )}
                         </>
                       )}
                     </div>
