@@ -18,6 +18,7 @@ export default function PlatformOrgDetailPage({ orgId }) {
   const [actionError, setActionError] = useState('')
   const [actionMsg,   setActionMsg]   = useState('')
   const [acting,      setActing]      = useState(false)
+  const [suspendConfirm, setSuspendConfirm] = useState(false)
 
   async function loadData() {
     const res  = await fetch(`/platform/api/orgs/${orgId}`)
@@ -93,14 +94,32 @@ export default function PlatformOrgDetailPage({ orgId }) {
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
           {isSuspendable ? (
-            <button
-              className='button button-secondary'
-              style={{ fontSize: '0.82rem', color: '#b91c1c', borderColor: '#fca5a5' }}
-              disabled={acting}
-              onClick={() => { if (window.confirm(t('platformAdmin.suspendConfirm', { name: org.name }))) doAction('suspend') }}
-            >
-              {t('platformAdmin.actionSuspend')}
-            </button>
+            suspendConfirm ? (
+              <span style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: '0.82rem' }}>
+                <span style={{ color: '#b91c1c' }}>{t('platformAdmin.suspendConfirm', { name: org.name })}</span>
+                <button
+                  className='button button-secondary'
+                  style={{ fontSize: '0.82rem', color: '#b91c1c', borderColor: '#fca5a5' }}
+                  disabled={acting}
+                  onClick={() => { setSuspendConfirm(false); doAction('suspend') }}
+                >{t('platformAdmin.confirmYes')}</button>
+                <button
+                  className='button button-secondary'
+                  style={{ fontSize: '0.82rem' }}
+                  disabled={acting}
+                  onClick={() => setSuspendConfirm(false)}
+                >{t('platformAdmin.confirmNo')}</button>
+              </span>
+            ) : (
+              <button
+                className='button button-secondary'
+                style={{ fontSize: '0.82rem', color: '#b91c1c', borderColor: '#fca5a5' }}
+                disabled={acting}
+                onClick={() => setSuspendConfirm(true)}
+              >
+                {t('platformAdmin.actionSuspend')}
+              </button>
+            )
           ) : (
             <button
               className='button button-secondary'

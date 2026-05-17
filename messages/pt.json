@@ -1136,6 +1136,8 @@
     "actionFailed": "A ação falhou.",
     "actionDone": "Concluído — o estado da organização é agora «{status}».",
     "suspendConfirm": "Suspender «{name}»? Isto bloqueará todo o acesso de administração.",
+    "confirmYes": "Sim, suspender",
+    "confirmNo": "Cancelar",
     "labelBilling": "Faturação",
     "labelSubscription": "Subscrição",
     "labelTeam": "Equipa",
@@ -1867,7 +1869,9 @@
     "priceUpTo": "Até {price}",
     "rangeUnset": "Intervalo (por definir)",
     "categoryOther": "Outro",
-    "unknownBrand": "Desconhecida"
+    "unknownBrand": "Desconhecida",
+    "confirmYes": "Sim, excluir",
+    "confirmNo": "Cancelar"
   },
   "adminQuoteDetail": {
     "kicker": "Orçamento do administrador",
@@ -2482,6 +2486,8 @@
     "confirmDeleteBrand": "Eliminar esta marca? Tal também removerá os modelos e quaisquer regras de preço associadas.",
     "confirmDeleteModel": "Eliminar este modelo? As regras de preço para este modelo também serão removidas.",
     "confirmDeleteRepairType": "Eliminar este tipo de reparação? As regras de preço que o utilizem também serão removidas.",
+    "confirmYes": "Sim, excluir",
+    "confirmNo": "Cancelar",
     "errorLoad": "Falha no carregamento.",
     "errorLoadBrands": "Falha ao carregar as marcas.",
     "errorLoadModels": "Falha ao carregar os modelos.",

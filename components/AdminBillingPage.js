@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useT } from '../lib/i18n/TranslationProvider'
 
 const STATUS_COLORS = {
@@ -293,7 +294,7 @@ export default function AdminBillingPage() {
           <li>{t('adminBilling.aboutPlan2')}</li>
           <li>{t('adminBilling.aboutPlan3')}</li>
           <li>{t('adminBilling.aboutPlan4')}</li>
-          <li>{t('adminBilling.aboutPlan5Prefix')} <a href='/platform-terms'>{t('adminBilling.aboutPlan5Link')}</a> {t('adminBilling.aboutPlan5Suffix')}</li>
+          <li>{t('adminBilling.aboutPlan5Prefix')} <Link href='/platform-terms'>{t('adminBilling.aboutPlan5Link')}</Link> {t('adminBilling.aboutPlan5Suffix')}</li>
         </ul>
       </div>
     </div>

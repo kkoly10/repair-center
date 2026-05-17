@@ -12,40 +12,41 @@ export default function FinalBalanceCompletePage({ quoteId }) {
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
-    const paymentIntentId = searchParams.get('payment_intent')
-    const redirectStatus = searchParams.get('redirect_status')
+    async function run() {
+      const paymentIntentId = searchParams.get('payment_intent')
+      const redirectStatus = searchParams.get('redirect_status')
 
-    if (!paymentIntentId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setState('error')
-      setErrorMessage(t('paymentCheckout.missingPayInfo'))
-      return
-    }
+      if (!paymentIntentId) {
+        setState('error')
+        setErrorMessage(t('paymentCheckout.missingPayInfo'))
+        return
+      }
 
-    if (redirectStatus === 'failed') {
-      setState('failed')
-      setErrorMessage(t('paymentCheckout.paymentFailedMsg'))
-      return
-    }
+      if (redirectStatus === 'failed') {
+        setState('failed')
+        setErrorMessage(t('paymentCheckout.paymentFailedMsg'))
+        return
+      }
 
-    fetch('/api/payments/final-verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentIntentId, quoteId }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
+      try {
+        const res = await fetch('/api/payments/final-verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentIntentId, quoteId }),
+        })
+        const data = await res.json()
         if (data.ok) {
           setState('success')
         } else {
           setErrorMessage(data.error || t('paymentCheckout.unableConfirm'))
           setState('error')
         }
-      })
-      .catch(() => {
+      } catch {
         setErrorMessage(t('paymentCheckout.unableConfirmFull'))
         setState('error')
-      })
+      }
+    }
+    run()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, quoteId])
 

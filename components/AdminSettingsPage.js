@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import AdminAuthGate from './AdminAuthGate'
 import { useT } from '../lib/i18n/TranslationProvider'
 
@@ -588,12 +589,12 @@ function AdminSettingsPageInner() {
               </p>
               {paymentMode === 'stripe_connect' && connectStatus && !connectStatus.connected && (
                 <p className='notice-warn' style={{ marginTop: 8, fontSize: '0.85rem' }}>
-                  {t('adminSettings.connectFirstHintPrefix')} <a href='/admin/billing'>{t('adminSettings.connectFirstHintLink')}</a>{t('adminSettings.connectFirstHintSuffix')}
+                  {t('adminSettings.connectFirstHintPrefix')} <Link href='/admin/billing'>{t('adminSettings.connectFirstHintLink')}</Link>{t('adminSettings.connectFirstHintSuffix')}
                 </p>
               )}
               {paymentMode === 'stripe_connect' && connectStatus?.connected && !connectStatus.chargesEnabled && (
                 <p className='notice-warn' style={{ marginTop: 8, fontSize: '0.85rem' }}>
-                  {t('adminSettings.connectIncompleteSettings')} <a href='/admin/billing'>{t('adminSettings.connectIncompleteLink')}</a>
+                  {t('adminSettings.connectIncompleteSettings')} <Link href='/admin/billing'>{t('adminSettings.connectIncompleteLink')}</Link>
                 </p>
               )}
               {paymentMode === 'stripe_connect' && connectStatus?.connected && connectStatus.chargesEnabled && (

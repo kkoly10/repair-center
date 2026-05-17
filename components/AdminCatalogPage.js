@@ -36,6 +36,7 @@ function BrandsTab() {
   const [saving, setSaving] = useState(false)
   const [editId, setEditId] = useState(null)
   const [editDraft, setEditDraft] = useState({})
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null)
 
   useEffect(() => {
     fetch('/admin/api/catalog/brands')
@@ -77,7 +78,7 @@ function BrandsTab() {
   }
 
   async function handleDelete(brandId) {
-    if (!confirm(t('adminCatalog.confirmDeleteBrand'))) return
+    setDeleteConfirmId(null)
     setActionError('')
     const res = await fetch(`/admin/api/catalog/brands/${brandId}`, { method: 'DELETE' })
     const json = await res.json()
@@ -164,10 +165,16 @@ function BrandsTab() {
                           <button className='button button-small' onClick={() => handleSaveEdit(brand.id)} disabled={saving} style={{ fontSize: 12 }}>{t('adminCatalog.save')}</button>
                           <button className='button button-small' onClick={() => setEditId(null)} style={{ fontSize: 12, background: '#f3f4f6', color: '#374151' }}>{t('adminCatalog.cancel')}</button>
                         </>
+                      ) : deleteConfirmId === brand.id ? (
+                        <span style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
+                          <span style={{ color: 'var(--danger, #dc2626)' }}>{t('adminCatalog.confirmDeleteBrand')}</span>
+                          <button className='button button-small' onClick={() => handleDelete(brand.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>{t('adminCatalog.confirmYes')}</button>
+                          <button className='button button-small' onClick={() => setDeleteConfirmId(null)} style={{ fontSize: 12, background: '#f3f4f6', color: '#374151' }}>{t('adminCatalog.confirmNo')}</button>
+                        </span>
                       ) : (
                         <>
                           <button className='button button-small' onClick={() => { setEditId(brand.id); setEditDraft({}) }} style={{ fontSize: 12 }}>{t('adminCatalog.edit')}</button>
-                          <button className='button button-small' onClick={() => handleDelete(brand.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>{t('adminCatalog.delete')}</button>
+                          <button className='button button-small' onClick={() => setDeleteConfirmId(brand.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>{t('adminCatalog.delete')}</button>
                         </>
                       )}
                     </div>
@@ -197,6 +204,7 @@ function ModelsTab() {
   const [editId, setEditId] = useState(null)
   const [editDraft, setEditDraft] = useState({})
   const [search, setSearch] = useState('')
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null)
 
   useEffect(() => {
     Promise.all([
@@ -246,7 +254,7 @@ function ModelsTab() {
   }
 
   async function handleDelete(modelId) {
-    if (!confirm(t('adminCatalog.confirmDeleteModel'))) return
+    setDeleteConfirmId(null)
     setActionError('')
     const res = await fetch(`/admin/api/catalog/models/${modelId}`, { method: 'DELETE' })
     const json = await res.json()
@@ -350,10 +358,16 @@ function ModelsTab() {
                             <button className='button button-small' onClick={() => handleSaveEdit(model.id)} disabled={saving} style={{ fontSize: 12 }}>{t('adminCatalog.save')}</button>
                             <button className='button button-small' onClick={() => setEditId(null)} style={{ fontSize: 12, background: '#f3f4f6', color: '#374151' }}>{t('adminCatalog.cancel')}</button>
                           </>
+                        ) : deleteConfirmId === model.id ? (
+                          <span style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
+                            <span style={{ color: 'var(--danger, #dc2626)' }}>{t('adminCatalog.confirmDeleteModel')}</span>
+                            <button className='button button-small' onClick={() => handleDelete(model.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>{t('adminCatalog.confirmYes')}</button>
+                            <button className='button button-small' onClick={() => setDeleteConfirmId(null)} style={{ fontSize: 12, background: '#f3f4f6', color: '#374151' }}>{t('adminCatalog.confirmNo')}</button>
+                          </span>
                         ) : (
                           <>
                             <button className='button button-small' onClick={() => { setEditId(model.id); setEditDraft({}) }} style={{ fontSize: 12 }}>{t('adminCatalog.edit')}</button>
-                            <button className='button button-small' onClick={() => handleDelete(model.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>{t('adminCatalog.delete')}</button>
+                            <button className='button button-small' onClick={() => setDeleteConfirmId(model.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>{t('adminCatalog.delete')}</button>
                           </>
                         )}
                       </div>
@@ -385,6 +399,7 @@ function RepairTypesTab() {
   const [saving, setSaving] = useState(false)
   const [editId, setEditId] = useState(null)
   const [editDraft, setEditDraft] = useState({})
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null)
 
   useEffect(() => {
     fetch('/admin/api/catalog/repair-types')
@@ -426,7 +441,7 @@ function RepairTypesTab() {
   }
 
   async function handleDelete(typeId) {
-    if (!confirm(t('adminCatalog.confirmDeleteRepairType'))) return
+    setDeleteConfirmId(null)
     setActionError('')
     const res = await fetch(`/admin/api/catalog/repair-types/${typeId}`, { method: 'DELETE' })
     const json = await res.json()
@@ -534,10 +549,16 @@ function RepairTypesTab() {
                             <button className='button button-small' onClick={() => handleSaveEdit(rt.id)} disabled={saving} style={{ fontSize: 12 }}>{t('adminCatalog.save')}</button>
                             <button className='button button-small' onClick={() => setEditId(null)} style={{ fontSize: 12, background: '#f3f4f6', color: '#374151' }}>{t('adminCatalog.cancel')}</button>
                           </>
+                        ) : deleteConfirmId === rt.id ? (
+                          <span style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
+                            <span style={{ color: 'var(--danger, #dc2626)' }}>{t('adminCatalog.confirmDeleteRepairType')}</span>
+                            <button className='button button-small' onClick={() => handleDelete(rt.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>{t('adminCatalog.confirmYes')}</button>
+                            <button className='button button-small' onClick={() => setDeleteConfirmId(null)} style={{ fontSize: 12, background: '#f3f4f6', color: '#374151' }}>{t('adminCatalog.confirmNo')}</button>
+                          </span>
                         ) : (
                           <>
                             <button className='button button-small' onClick={() => { setEditId(rt.id); setEditDraft({}) }} style={{ fontSize: 12 }}>{t('adminCatalog.edit')}</button>
-                            <button className='button button-small' onClick={() => handleDelete(rt.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>{t('adminCatalog.delete')}</button>
+                            <button className='button button-small' onClick={() => setDeleteConfirmId(rt.id)} style={{ fontSize: 12, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>{t('adminCatalog.delete')}</button>
                           </>
                         )}
                       </div>
